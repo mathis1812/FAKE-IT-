@@ -36,13 +36,22 @@ export default function GradientText({
   yoyo = true,
 }: GradientTextProps) {
   const [isPaused, setIsPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const progress = useMotionValue(0);
   const elapsedRef = useRef(0);
   const lastTimeRef = useRef<number | null>(null);
   const animationDuration = animationSpeed * 1000;
 
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReducedMotion(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
+
   useAnimationFrame((time) => {
-    if (isPaused) {
+    if (isPaused || reducedMotion) {
       lastTimeRef.current = null;
       return;
     }

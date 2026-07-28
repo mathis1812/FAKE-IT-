@@ -49,25 +49,38 @@ export default function BlurText({
   stepDuration = 0.35,
   as = "p",
 }: BlurTextProps) {
-  const elements = animateBy === "words" ? text.split(" ") : text.split("");
   const [inView, setInView] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const ref = useRef<HTMLElement>(null);
   const Tag = as;
 
   useEffect(() => {
-    if (!ref.current) return;
+    const element = ref.current;
+    if (!element) return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setInView(true);
-          observer.unobserve(ref.current as Element);
+          // On cible l'élément capturé, pas ref.current, qui peut déjà être
+          // null si le composant est démonté entre-temps.
+          observer.unobserve(element);
         }
       },
       { threshold, rootMargin },
     );
-    observer.observe(ref.current);
+
+    observer.observe(element);
     return () => observer.disconnect();
   }, [threshold, rootMargin]);
+
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReducedMotion(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
 
   const defaultFrom = useMemo(
     () =>
@@ -89,6 +102,11 @@ export default function BlurText({
     [direction],
   );
 
+  if (reducedMotion) {
+    return <Tag className={`flex flex-wrap ${className}`}>{text}</Tag>;
+  }
+
+  const elements = animateBy === "words" ? text.split(" ") : text.split("");
   const fromSnapshot = animationFrom ?? defaultFrom;
   const toSnapshots = animationTo ?? defaultTo;
   const stepCount = toSnapshots.length + 1;
@@ -96,11 +114,11 @@ export default function BlurText({
   const times = Array.from({ length: stepCount }, (_, i) =>
     stepCount === 1 ? 0 : i / (stepCount - 1),
   );
+  const animateKeyframes = buildKeyframes(fromSnapshot, toSnapshots);
 
   return (
-    <Tag ref={ref as never} className={`blur-text flex flex-wrap ${className}`}>
+    <Tag ref={ref as never} className={`flex flex-wrap ${className}`}>
       {elements.map((segment, index) => {
-        const animateKeyframes = buildKeyframes(fromSnapshot, toSnapshots);
         const spanTransition: Transition = {
           duration: totalDuration,
           times,

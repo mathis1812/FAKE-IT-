@@ -3,12 +3,11 @@
 import { fal } from "@fal-ai/client";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Panel from "@/components/Panel";
 import BlurText from "@/components/react-bits/BlurText";
-import ClickSpark from "@/components/react-bits/ClickSpark";
 import GlareHover from "@/components/react-bits/GlareHover";
 import GradientText from "@/components/react-bits/GradientText";
 import Magnet from "@/components/react-bits/Magnet";
-import SpotlightCard from "@/components/react-bits/SpotlightCard";
 import StarBorder from "@/components/react-bits/StarBorder";
 
 const SoftAurora = dynamic(
@@ -214,6 +213,10 @@ function DropZone({
         {label}
       </p>
       <div
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+        aria-label={label}
+        aria-disabled={disabled}
         onDragOver={(e) => {
           e.preventDefault();
           if (!disabled) setDragging(true);
@@ -229,7 +232,14 @@ function DropZone({
         onClick={() => {
           if (!disabled) inputRef.current?.click();
         }}
-        className={`cursor-pointer rounded-2xl border border-dashed p-5 text-center transition ${
+        onKeyDown={(e) => {
+          if (disabled) return;
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
+        className={`cursor-pointer rounded-2xl border border-dashed p-5 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/60 ${
           dragging
             ? "border-champagne/70 bg-champagne/5"
             : "border-white/10 bg-white/[0.02] hover:border-white/20"
@@ -242,6 +252,7 @@ function DropZone({
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
+            e.target.value = "";
             if (file) onPick(file);
           }}
         />
@@ -286,13 +297,20 @@ export default function Home() {
   const [videoError, setVideoError] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
 
+  // Un effet par upload : l'URL est libérée quand l'upload change ou que la
+  // page est démontée. L'ancienne version dépendait d'un tableau de deps vide
+  // et capturait donc toujours null, sans jamais rien libérer.
   useEffect(() => {
-    return () => {
-      if (videoSource) URL.revokeObjectURL(videoSource.previewUrl);
-      if (videoObject) URL.revokeObjectURL(videoObject.previewUrl);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const url = videoSource?.previewUrl;
+    if (!url) return;
+    return () => URL.revokeObjectURL(url);
+  }, [videoSource]);
+
+  useEffect(() => {
+    const url = videoObject?.previewUrl;
+    if (!url) return;
+    return () => URL.revokeObjectURL(url);
+  }, [videoObject]);
 
   const handleFile = useCallback(async (file: File) => {
     setError("");
@@ -318,6 +336,9 @@ export default function Home() {
   const onInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
+      // Réinitialiser la valeur permet de re-sélectionner le même fichier :
+      // sinon l'input ne change pas et onChange ne se déclenche jamais.
+      e.target.value = "";
       if (file) void handleFile(file);
     },
     [handleFile],
@@ -479,14 +500,12 @@ export default function Home() {
   }, [videoUrl]);
 
   const resetVideo = useCallback(() => {
-    if (videoSource) URL.revokeObjectURL(videoSource.previewUrl);
-    if (videoObject) URL.revokeObjectURL(videoObject.previewUrl);
     setVideoSource(null);
     setVideoObject(null);
     setVideoPrompt("");
     setVideoUrl("");
     setVideoError("");
-  }, [videoSource, videoObject]);
+  }, []);
 
   return (
     <div className="studio-shell min-h-screen">
@@ -495,7 +514,7 @@ export default function Home() {
       </div>
       <div className="studio-vignette" aria-hidden />
 
-      <ClickSpark className="studio-content min-h-screen">
+      <div className="studio-content min-h-screen">
         <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-ink/55 backdrop-blur-2xl">
           <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
             <div className="flex items-baseline gap-3">
@@ -533,7 +552,7 @@ export default function Home() {
           {mode === "image" ? (
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
               <aside className="animate-fade-up lg:col-span-5">
-                <SpotlightCard className="p-5 sm:p-6 lg:sticky lg:top-24">
+                <Panel className="p-5 sm:p-6 lg:sticky lg:top-24">
                   <div className="mb-6">
                     <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-champagne">
                       Génération image
@@ -551,7 +570,10 @@ export default function Home() {
                   </div>
 
                   <GlareHover className="mb-6 rounded-2xl border border-dashed border-white/10">
-                    <section
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Choisir une photo à transformer"
                       onDragOver={(e) => {
                         e.preventDefault();
                         setIsDragging(true);
@@ -559,7 +581,13 @@ export default function Home() {
                       onDragLeave={() => setIsDragging(false)}
                       onDrop={onDrop}
                       onClick={() => inputRef.current?.click()}
-                      className={`cursor-pointer overflow-hidden rounded-2xl transition ${
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          inputRef.current?.click();
+                        }
+                      }}
+                      className={`cursor-pointer overflow-hidden rounded-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/60 ${
                         isDragging
                           ? "bg-champagne/[0.08]"
                           : "bg-white/[0.02] hover:bg-white/[0.035]"
@@ -614,7 +642,7 @@ export default function Home() {
                           </p>
                         </div>
                       )}
-                    </section>
+                    </div>
                   </GlareHover>
 
                   <section className="mb-6">
@@ -708,14 +736,11 @@ export default function Home() {
                       </button>
                     )}
                   </div>
-                </SpotlightCard>
+                </Panel>
               </aside>
 
               <section className="animate-fade-up-delay lg:col-span-7">
-                <SpotlightCard
-                  className="relative min-h-[420px] p-4 sm:p-6 lg:min-h-[640px]"
-                  spotlightColor="rgba(245, 230, 200, 0.12)"
-                >
+                <Panel className="min-h-[420px] p-4 sm:p-6 lg:min-h-[640px]">
                   <div className="mb-4 flex items-end justify-between gap-3">
                     <div>
                       <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">
@@ -788,12 +813,12 @@ export default function Home() {
                       </p>
                     </div>
                   )}
-                </SpotlightCard>
+                </Panel>
               </section>
             </div>
           ) : (
             <div className="animate-fade-up mx-auto max-w-4xl">
-              <SpotlightCard className="mb-6 p-5 sm:p-6">
+              <Panel className="mb-6 p-5 sm:p-6">
                 <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-champagne">
                   Remplacer un objet
                 </p>
@@ -803,9 +828,9 @@ export default function Home() {
                 <p className="mt-2 text-sm text-neutral-500">
                   ~5 s de vidéo · génération ~90 s · Kling O3 via fal.ai
                 </p>
-              </SpotlightCard>
+              </Panel>
 
-              <SpotlightCard className="p-5 sm:p-6">
+              <Panel className="p-5 sm:p-6">
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <DropZone
                     label="Image source (requis)"
@@ -899,7 +924,7 @@ export default function Home() {
                     </div>
                   </section>
                 )}
-              </SpotlightCard>
+              </Panel>
             </div>
           )}
 
@@ -907,7 +932,7 @@ export default function Home() {
             Gemini Flash Image · Kling O3 · React Bits
           </footer>
         </main>
-      </ClickSpark>
+      </div>
     </div>
   );
 }
