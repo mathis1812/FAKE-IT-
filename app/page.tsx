@@ -1,7 +1,7 @@
 "use client";
 
 import { fal } from "@fal-ai/client";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 fal.config({
   proxyUrl: "/api/fal/proxy",
@@ -10,22 +10,25 @@ fal.config({
 type Mode = "image" | "video";
 type CategoryId = "montre" | "voiture" | "lieu";
 
-const PRESETS: Record<CategoryId, { label: string; emoji: string; prompt: string }> = {
+const PRESETS: Record<
+  CategoryId,
+  { label: string; subtitle: string; prompt: string }
+> = {
   montre: {
     label: "Montre",
-    emoji: "⌚",
+    subtitle: "Rolex-style",
     prompt:
       "Replace only the watch on the subject's wrist with a photorealistic luxury watch (Rolex Submariner style, stainless steel, ceramic bezel). Preserve the exact wrist, hand, skin tone, veins, hair, pose and background. Match the original lighting, shadows and reflections on the metal case realistically. Photorealistic, shot on a smartphone, natural grain. Do not alter anything else in the image.",
   },
   voiture: {
     label: "Voiture",
-    emoji: "🏎️",
+    subtitle: "Ferrari-style",
     prompt:
       "Replace only the vehicle with a photorealistic luxury sports car (Ferrari style) in a plausible color, keeping the exact same position, angle, perspective and scale in the scene. Preserve the background, road, lighting, weather and shadows exactly. Keep the license plate area realistic. Candid smartphone photo look, natural depth of field. Do not change anything else.",
   },
   lieu: {
     label: "Lieu",
-    emoji: "🌇",
+    subtitle: "Rooftop luxe",
     prompt:
       "Keep the subject, their exact face, pose, outfit and body unchanged. Replace only the background with a photorealistic upscale setting (luxury rooftop restaurant at golden hour, city skyline, tasteful ambient lighting). Blend the subject naturally into the new environment with matching light direction, color temperature and soft shadows. Candid iPhone photo aesthetic, realistic, not over-processed.",
   },
@@ -34,8 +37,8 @@ const PRESETS: Record<CategoryId, { label: string; emoji: string; prompt: string
 const VIDEO_PROMPT_PLACEHOLDER =
   "Ex : Remplace la montre au poignet par une Rolex Submariner en acier, mouvements naturels, conserve le visage, la pose et le fond…";
 
-const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 Mo
-const COMPRESS_THRESHOLD_BYTES = 2 * 1024 * 1024; // 2 Mo
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const COMPRESS_THRESHOLD_BYTES = 2 * 1024 * 1024;
 const MAX_DIMENSION = 1536;
 const JPEG_QUALITY = 0.9;
 
@@ -118,6 +121,65 @@ function validateImageFile(file: File): string | null {
   return null;
 }
 
+function BeforeAfterSlider({
+  before,
+  after,
+}: {
+  before: string;
+  after: string;
+}) {
+  const [pos, setPos] = useState(50);
+  const ref = useRef<HTMLDivElement>(null);
+
+  return (
+    <div
+      ref={ref}
+      className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-black sm:aspect-[3/4] lg:aspect-square"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={before}
+        alt="Avant"
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      <div
+        className="absolute inset-0 overflow-hidden"
+        style={{ clipPath: `inset(0 0 0 ${pos}%)` }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={after}
+          alt="Après"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      </div>
+      <div
+        className="pointer-events-none absolute inset-y-0 w-px bg-amber-300/90"
+        style={{ left: `${pos}%` }}
+      >
+        <div className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-amber-300/40 bg-neutral-950/90 text-[10px] font-semibold tracking-wide text-amber-200">
+          ↔
+        </div>
+      </div>
+      <div className="pointer-events-none absolute left-3 top-3 rounded-md bg-black/55 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-white/80 backdrop-blur-sm">
+        Avant
+      </div>
+      <div className="pointer-events-none absolute right-3 top-3 rounded-md bg-amber-400/15 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-amber-200 backdrop-blur-sm">
+        Après
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={pos}
+        onChange={(e) => setPos(Number(e.target.value))}
+        aria-label="Comparer avant et après"
+        className="compare-range absolute inset-0 z-10 h-full w-full opacity-0"
+      />
+    </div>
+  );
+}
+
 function DropZone({
   label,
   hint,
@@ -136,7 +198,9 @@ function DropZone({
 
   return (
     <div>
-      <p className="mb-2 text-sm font-medium text-neutral-300">{label}</p>
+      <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-neutral-500">
+        {label}
+      </p>
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -153,10 +217,10 @@ function DropZone({
         onClick={() => {
           if (!disabled) inputRef.current?.click();
         }}
-        className={`cursor-pointer rounded-2xl border-2 border-dashed p-6 text-center transition ${
+        className={`cursor-pointer rounded-2xl border border-dashed p-5 text-center transition ${
           dragging
-            ? "border-amber-400 bg-amber-400/5"
-            : "border-neutral-700 bg-neutral-900/50 hover:border-neutral-500"
+            ? "border-amber-400/70 bg-amber-400/5"
+            : "border-white/10 bg-white/[0.02] hover:border-white/20"
         } ${disabled ? "pointer-events-none opacity-50" : ""}`}
       >
         <input
@@ -175,17 +239,14 @@ function DropZone({
             <img
               src={upload.previewUrl}
               alt={label}
-              className="max-h-48 rounded-lg object-contain shadow-lg"
+              className="max-h-40 rounded-lg object-contain"
             />
-            <p className="text-xs text-neutral-400">
-              {upload.name} — cliquez pour changer
-            </p>
+            <p className="text-xs text-neutral-500">{upload.name}</p>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2 py-4">
-            <span className="text-3xl">📷</span>
-            <p className="text-sm font-medium">{hint}</p>
-            <p className="text-xs text-neutral-500">JPG, PNG, WebP… — max 10 Mo</p>
+          <div className="flex flex-col items-center gap-2 py-6">
+            <p className="text-sm font-medium text-neutral-200">{hint}</p>
+            <p className="text-xs text-neutral-600">JPG, PNG, WebP — max 10 Mo</p>
           </div>
         )}
       </div>
@@ -196,35 +257,39 @@ function DropZone({
 export default function Home() {
   const [mode, setMode] = useState<Mode>("image");
 
-  // --- Image mode state (existing flow) ---
   const [prepared, setPrepared] = useState<PreparedImage | null>(null);
-  const [fileName, setFileName] = useState<string>("");
+  const [fileName, setFileName] = useState("");
   const [category, setCategory] = useState<CategoryId>("montre");
-  const [customPrompt, setCustomPrompt] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
-  const [result, setResult] = useState<string>("");
-  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // --- Video mode state ---
   const [videoSource, setVideoSource] = useState<VideoUpload | null>(null);
   const [videoObject, setVideoObject] = useState<VideoUpload | null>(null);
-  const [videoPrompt, setVideoPrompt] = useState<string>("");
-  const [videoLoading, setVideoLoading] = useState<boolean>(false);
-  const [videoError, setVideoError] = useState<string>("");
-  const [videoUrl, setVideoUrl] = useState<string>("");
+  const [videoPrompt, setVideoPrompt] = useState("");
+  const [videoLoading, setVideoLoading] = useState(false);
+  const [videoError, setVideoError] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+
+  useEffect(() => {
+    return () => {
+      if (videoSource) URL.revokeObjectURL(videoSource.previewUrl);
+      if (videoObject) URL.revokeObjectURL(videoObject.previewUrl);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleFile = useCallback(async (file: File) => {
     setError("");
     setResult("");
-
     const validationError = validateImageFile(file);
     if (validationError) {
       setError(validationError);
       return;
     }
-
     try {
       const img = await prepareImage(file);
       setPrepared(img);
@@ -260,11 +325,9 @@ export default function Home() {
       return;
     }
     const prompt = customPrompt.trim() || PRESETS[category].prompt;
-
     setLoading(true);
     setError("");
     setResult("");
-
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -275,9 +338,7 @@ export default function Home() {
           prompt,
         }),
       });
-
       const data = await res.json().catch(() => null);
-
       if (!res.ok || !data) {
         setError(
           (data && data.error) ||
@@ -285,15 +346,12 @@ export default function Home() {
         );
         return;
       }
-
       if (data.error) {
         setError(data.error);
         return;
       }
-
       if (data.imageBase64) {
-        const mime = data.mimeType || "image/png";
-        setResult(`data:${mime};base64,${data.imageBase64}`);
+        setResult(`data:${data.mimeType || "image/png"};base64,${data.imageBase64}`);
       } else {
         setError("Réponse inattendue du serveur. Réessayez.");
       }
@@ -350,25 +408,20 @@ export default function Home() {
       setVideoError("Veuillez saisir un prompt décrivant le remplacement d'objet.");
       return;
     }
-
     setVideoLoading(true);
     setVideoError("");
     setVideoUrl("");
-
     try {
       const sourceImageUrl = await fal.storage.upload(videoSource.file);
       const objectImageUrl = videoObject
         ? await fal.storage.upload(videoObject.file)
         : undefined;
-
       const res = await fetch("/api/generate-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sourceImageUrl, objectImageUrl, prompt }),
       });
-
       const data = await res.json().catch(() => null);
-
       if (!res.ok || !data) {
         setVideoError(
           (data && data.error) ||
@@ -376,17 +429,12 @@ export default function Home() {
         );
         return;
       }
-
       if (data.error) {
         setVideoError(data.error);
         return;
       }
-
-      if (data.videoUrl) {
-        setVideoUrl(data.videoUrl);
-      } else {
-        setVideoError("Réponse inattendue du serveur. Réessayez.");
-      }
+      if (data.videoUrl) setVideoUrl(data.videoUrl);
+      else setVideoError("Réponse inattendue du serveur. Réessayez.");
     } catch (err) {
       setVideoError(
         err instanceof Error
@@ -421,325 +469,378 @@ export default function Home() {
   }, [videoSource, videoObject]);
 
   return (
-    <main className="mx-auto min-h-screen max-w-5xl px-4 py-10 sm:px-6">
-      <header className="mb-8 text-center">
-        <h1 className="bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-200 bg-clip-text text-4xl font-black tracking-tight text-transparent sm:text-5xl">
-          FakeIt
-        </h1>
-        <p className="mt-3 text-sm text-neutral-400 sm:text-base">
-          Uploadez une photo et intégrez un élément de luxe ultra-réaliste — en
-          image ou en vidéo.
-        </p>
-      </header>
-
-      {/* Mode toggle */}
-      <div className="mb-6 flex justify-center">
-        <div className="inline-flex rounded-xl border border-neutral-700 bg-neutral-900/60 p-1">
-          <button
-            type="button"
-            onClick={() => setMode("image")}
-            className={`rounded-lg px-5 py-2 text-sm font-semibold transition ${
-              mode === "image"
-                ? "bg-amber-400 text-neutral-950"
-                : "text-neutral-300 hover:text-neutral-100"
-            }`}
-          >
-            Image
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("video")}
-            className={`rounded-lg px-5 py-2 text-sm font-semibold transition ${
-              mode === "video"
-                ? "bg-amber-400 text-neutral-950"
-                : "text-neutral-300 hover:text-neutral-100"
-            }`}
-          >
-            Vidéo
-          </button>
-        </div>
-      </div>
-
-      {mode === "image" ? (
-        <>
-          {/* Upload zone */}
-          <section
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragging(true);
-            }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={onDrop}
-            onClick={() => inputRef.current?.click()}
-            className={`cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition ${
-              isDragging
-                ? "border-amber-400 bg-amber-400/5"
-                : "border-neutral-700 bg-neutral-900/50 hover:border-neutral-500"
-            }`}
-          >
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={onInputChange}
-            />
-            {prepared ? (
-              <div className="flex flex-col items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={prepared.previewUrl}
-                  alt="Aperçu de l'original"
-                  className="max-h-64 rounded-lg object-contain shadow-lg"
-                />
-                <p className="text-xs text-neutral-400">
-                  {fileName || "Image sélectionnée"} — cliquez pour changer
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-2 py-6">
-                <span className="text-4xl">📷</span>
-                <p className="font-medium">
-                  Glissez-déposez une photo ou cliquez pour choisir
-                </p>
-                <p className="text-xs text-neutral-500">
-                  JPG, PNG, WebP… — max 10 Mo (compressée automatiquement au-delà de 2 Mo)
-                </p>
-              </div>
-            )}
-          </section>
-
-          {/* Categories */}
-          <section className="mt-6">
-            <p className="mb-2 text-sm font-medium text-neutral-300">Catégorie</p>
-            <div className="grid grid-cols-3 gap-3">
-              {(Object.keys(PRESETS) as CategoryId[]).map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setCategory(id)}
-                  className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${
-                    category === id
-                      ? "border-amber-400 bg-amber-400/10 text-amber-200"
-                      : "border-neutral-700 bg-neutral-900/50 text-neutral-300 hover:border-neutral-500"
-                  }`}
-                >
-                  <span className="mr-1">{PRESETS[id].emoji}</span>
-                  {PRESETS[id].label}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {/* Custom prompt */}
-          <section className="mt-6">
-            <label
-              htmlFor="custom-prompt"
-              className="mb-2 block text-sm font-medium text-neutral-300"
-            >
-              Prompt personnalisé{" "}
-              <span className="font-normal text-neutral-500">
-                (optionnel — remplace le preset choisi)
-              </span>
-            </label>
-            <textarea
-              id="custom-prompt"
-              value={customPrompt}
-              onChange={(e) => setCustomPrompt(e.target.value)}
-              rows={3}
-              placeholder="Ex : Replace the bag with a photorealistic luxury handbag, keep everything else identical…"
-              className="w-full resize-y rounded-xl border border-neutral-700 bg-neutral-900/50 p-3 text-sm text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-amber-400"
-            />
-          </section>
-
-          {/* Generate */}
-          <section className="mt-6 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={generate}
-              disabled={loading || !prepared}
-              className="rounded-xl bg-amber-400 px-6 py-3 text-sm font-bold text-neutral-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading ? "Génération en cours… (~15-30s)" : "Générer"}
-            </button>
-            {prepared && (
-              <button
-                type="button"
-                onClick={reset}
-                disabled={loading}
-                className="rounded-xl border border-neutral-700 px-4 py-3 text-sm font-medium text-neutral-300 transition hover:border-neutral-500 disabled:opacity-50"
-              >
-                Réinitialiser
-              </button>
-            )}
-          </section>
-
-          {error && (
-            <div className="mt-6 rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
-              <span className="font-semibold">Erreur : </span>
-              {error}
-            </div>
-          )}
-
-          {result && prepared && (
-            <section className="mt-8">
-              <h2 className="mb-3 text-lg font-bold">Avant / Après</h2>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <figure className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-3">
-                  <figcaption className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
-                    Original
-                  </figcaption>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={prepared.previewUrl}
-                    alt="Original"
-                    className="w-full rounded-lg object-contain"
-                  />
-                </figure>
-                <figure className="rounded-xl border border-amber-400/30 bg-neutral-900/50 p-3">
-                  <figcaption className="mb-2 text-xs font-medium uppercase tracking-wide text-amber-300">
-                    Résultat FakeIt
-                  </figcaption>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={result}
-                    alt="Résultat généré"
-                    className="w-full rounded-lg object-contain"
-                  />
-                </figure>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={download}
-                  className="rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-bold text-neutral-950 transition hover:bg-amber-300"
-                >
-                  Télécharger
-                </button>
-                <button
-                  type="button"
-                  onClick={generate}
-                  disabled={loading}
-                  className="rounded-xl border border-neutral-700 px-5 py-2.5 text-sm font-medium text-neutral-200 transition hover:border-neutral-500 disabled:opacity-50"
-                >
-                  {loading ? "Génération en cours…" : "Régénérer"}
-                </button>
-              </div>
-            </section>
-          )}
-        </>
-      ) : (
-        <>
-          <section className="mb-2 rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 text-sm text-neutral-400">
-            Mode <span className="font-semibold text-amber-200">Remplacer un Objet</span>{" "}
-            — uploadez votre scène, décrivez le remplacement, et générez une courte
-            vidéo réaliste (~5 s, génération ~90 s).
-          </section>
-
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <DropZone
-              label="Image source (requis)"
-              hint="Votre photo / scène de départ"
-              upload={videoSource}
-              onPick={(file) => void pickVideoUpload(file, "source")}
-              disabled={videoLoading}
-            />
-            <DropZone
-              label="Image de l'objet (optionnel)"
-              hint="Montre / voiture de luxe de référence"
-              upload={videoObject}
-              onPick={(file) => void pickVideoUpload(file, "object")}
-              disabled={videoLoading}
-            />
+    <div className="studio-shell min-h-screen">
+      {/* Top bar */}
+      <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-ink/80 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+          <div className="flex items-baseline gap-3">
+            <h1 className="font-display text-2xl font-extrabold tracking-tight text-white">
+              Fake<span className="text-amber-300">It</span>
+            </h1>
+            <span className="hidden text-xs font-medium uppercase tracking-[0.2em] text-neutral-600 sm:inline">
+              Studio
+            </span>
           </div>
 
-          <section className="mt-6">
-            <label
-              htmlFor="video-prompt"
-              className="mb-2 block text-sm font-medium text-neutral-300"
-            >
-              Prompt{" "}
-              <span className="font-normal text-neutral-500">(requis)</span>
-            </label>
-            <textarea
-              id="video-prompt"
-              value={videoPrompt}
-              onChange={(e) => setVideoPrompt(e.target.value)}
-              rows={4}
-              placeholder={VIDEO_PROMPT_PLACEHOLDER}
-              disabled={videoLoading}
-              className="w-full resize-y rounded-xl border border-neutral-700 bg-neutral-900/50 p-3 text-sm text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-amber-400 disabled:opacity-50"
-            />
-          </section>
-
-          <section className="mt-6 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={generateVideo}
-              disabled={videoLoading || !videoSource || !videoPrompt.trim()}
-              className="rounded-xl bg-amber-400 px-6 py-3 text-sm font-bold text-neutral-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {videoLoading
-                ? "Génération vidéo… (~90s+)"
-                : "Générer la vidéo"}
-            </button>
-            {(videoSource || videoObject || videoPrompt) && (
+          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
+            {(["image", "video"] as Mode[]).map((m) => (
               <button
+                key={m}
                 type="button"
-                onClick={resetVideo}
-                disabled={videoLoading}
-                className="rounded-xl border border-neutral-700 px-4 py-3 text-sm font-medium text-neutral-300 transition hover:border-neutral-500 disabled:opacity-50"
+                onClick={() => setMode(m)}
+                className={`rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition ${
+                  mode === m
+                    ? "bg-amber-400 text-neutral-950"
+                    : "text-neutral-400 hover:text-neutral-100"
+                }`}
               >
-                Réinitialiser
+                {m === "image" ? "Image" : "Vidéo"}
               </button>
-            )}
-          </section>
+            ))}
+          </div>
+        </div>
+      </header>
 
-          {videoError && (
-            <div className="mt-6 rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
-              <span className="font-semibold">Erreur : </span>
-              {videoError}
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
+        {mode === "image" ? (
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
+            {/* Left controls */}
+            <aside className="animate-fade-up lg:col-span-5">
+              <div className="panel rounded-3xl p-5 sm:p-6 lg:sticky lg:top-24">
+                <div className="mb-6">
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-amber-300/80">
+                    Génération image
+                  </p>
+                  <h2 className="font-display mt-2 text-2xl font-bold tracking-tight text-white">
+                    Intégrez le luxe.{" "}
+                    <span className="text-neutral-500">Gardez tout le reste.</span>
+                  </h2>
+                </div>
+
+                {/* Upload */}
+                <section
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={onDrop}
+                  onClick={() => inputRef.current?.click()}
+                  className={`mb-6 cursor-pointer overflow-hidden rounded-2xl border border-dashed transition ${
+                    isDragging
+                      ? "border-amber-400/70 bg-amber-400/[0.06]"
+                      : "border-white/10 bg-white/[0.02] hover:border-white/20"
+                  }`}
+                >
+                  <input
+                    ref={inputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={onInputChange}
+                  />
+                  {prepared ? (
+                    <div className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={prepared.previewUrl}
+                        alt="Aperçu"
+                        className="max-h-52 w-full object-cover"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
+                        <p className="truncate text-xs text-neutral-300">
+                          {fileName || "Image sélectionnée"} · cliquer pour changer
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
+                      <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-amber-300">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                          <path
+                            d="M12 16V8m0 0l-3 3m3-3l3 3M4 16.5V17a3 3 0 003 3h10a3 3 0 003-3v-.5"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-medium text-neutral-100">
+                        Déposez une photo ou cliquez
+                      </p>
+                      <p className="text-xs text-neutral-600">
+                        Max 10 Mo · compression auto au-delà de 2 Mo
+                      </p>
+                    </div>
+                  )}
+                </section>
+
+                {/* Categories */}
+                <section className="mb-6">
+                  <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-neutral-500">
+                    Preset
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(Object.keys(PRESETS) as CategoryId[]).map((id) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setCategory(id)}
+                        className={`rounded-xl px-2 py-3 text-left transition ${
+                          category === id
+                            ? "bg-amber-400 text-neutral-950"
+                            : "border border-white/10 bg-white/[0.02] text-neutral-300 hover:border-white/20"
+                        }`}
+                      >
+                        <span className="block text-sm font-semibold leading-none">
+                          {PRESETS[id].label}
+                        </span>
+                        <span
+                          className={`mt-1.5 block text-[10px] leading-none ${
+                            category === id ? "text-neutral-800" : "text-neutral-600"
+                          }`}
+                        >
+                          {PRESETS[id].subtitle}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                {/* Prompt */}
+                <section className="mb-6">
+                  <label
+                    htmlFor="custom-prompt"
+                    className="mb-3 block text-xs font-medium uppercase tracking-[0.16em] text-neutral-500"
+                  >
+                    Prompt libre{" "}
+                    <span className="normal-case tracking-normal text-neutral-600">
+                      (optionnel)
+                    </span>
+                  </label>
+                  <textarea
+                    id="custom-prompt"
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    rows={4}
+                    placeholder="Remplace le preset si rempli…"
+                    className="w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none placeholder:text-neutral-700 focus:border-amber-400/50"
+                  />
+                </section>
+
+                {error && (
+                  <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
+                    {error}
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={generate}
+                    disabled={loading || !prepared}
+                    className="btn-generate flex-1 rounded-2xl bg-amber-400 px-5 py-3.5 text-sm font-bold text-neutral-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+                  >
+                    {loading ? "Génération… (~15-30s)" : "Générer"}
+                  </button>
+                  {prepared && (
+                    <button
+                      type="button"
+                      onClick={reset}
+                      disabled={loading}
+                      className="rounded-2xl border border-white/10 px-4 py-3.5 text-sm font-medium text-neutral-400 transition hover:border-white/20 hover:text-neutral-200 disabled:opacity-40"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+              </div>
+            </aside>
+
+            {/* Right stage */}
+            <section className="animate-fade-up-delay lg:col-span-7">
+              <div className="panel relative min-h-[420px] overflow-hidden rounded-3xl p-4 sm:p-6 lg:min-h-[640px]">
+                <div className="mb-4 flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-[0.16em] text-neutral-500">
+                      Canvas
+                    </p>
+                    <h3 className="font-display mt-1 text-xl font-bold text-white">
+                      {result ? "Avant / Après" : "Aperçu"}
+                    </h3>
+                  </div>
+                  {result && (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={download}
+                        className="rounded-xl bg-amber-400 px-3.5 py-2 text-xs font-bold text-neutral-950 transition hover:bg-amber-300"
+                      >
+                        Télécharger
+                      </button>
+                      <button
+                        type="button"
+                        onClick={generate}
+                        disabled={loading}
+                        className="rounded-xl border border-white/10 px-3.5 py-2 text-xs font-medium text-neutral-300 transition hover:border-white/20 disabled:opacity-40"
+                      >
+                        {loading ? "…" : "Régénérer"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {loading ? (
+                  <div className="flex min-h-[360px] flex-col items-center justify-center gap-4 lg:min-h-[520px]">
+                    <div className="h-14 w-14 animate-spin rounded-full border-2 border-amber-400/20 border-t-amber-400" />
+                    <p className="text-sm text-neutral-400">
+                      Rendu photoréaliste en cours…
+                    </p>
+                  </div>
+                ) : result && prepared ? (
+                  <div className="animate-fade-up">
+                    <BeforeAfterSlider before={prepared.previewUrl} after={result} />
+                    <p className="mt-3 text-center text-xs text-neutral-600">
+                      Glissez pour comparer
+                    </p>
+                  </div>
+                ) : prepared ? (
+                  <div className="flex min-h-[360px] items-center justify-center lg:min-h-[520px]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={prepared.previewUrl}
+                      alt="Original"
+                      className="max-h-[520px] w-full rounded-2xl object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex min-h-[360px] flex-col items-center justify-center gap-3 text-center lg:min-h-[520px]">
+                    <div className="h-px w-16 bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
+                    <p className="font-display text-lg font-semibold text-neutral-300">
+                      Votre rendu apparaîtra ici
+                    </p>
+                    <p className="max-w-sm text-sm text-neutral-600">
+                      Uploadez une photo, choisissez un preset, générez. Le slider
+                      avant/après s’affiche dès que le résultat est prêt.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+        ) : (
+          <div className="animate-fade-up mx-auto max-w-4xl">
+            <div className="panel mb-6 rounded-3xl p-5 sm:p-6">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-amber-300/80">
+                Remplacer un objet
+              </p>
+              <h2 className="font-display mt-2 text-2xl font-bold text-white">
+                Vidéo courte, intégration réaliste
+              </h2>
+              <p className="mt-2 text-sm text-neutral-500">
+                ~5 s de vidéo · génération ~90 s · Kling O3 via fal.ai
+              </p>
             </div>
-          )}
 
-          {videoUrl && (
-            <section className="mt-8">
-              <h2 className="mb-3 text-lg font-bold">Résultat vidéo</h2>
-              <div className="overflow-hidden rounded-xl border border-amber-400/30 bg-neutral-900/50 p-3">
-                <video
-                  src={videoUrl}
-                  controls
-                  playsInline
-                  className="w-full rounded-lg"
+            <div className="panel rounded-3xl p-5 sm:p-6">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <DropZone
+                  label="Image source (requis)"
+                  hint="Votre photo / scène"
+                  upload={videoSource}
+                  onPick={(file) => void pickVideoUpload(file, "source")}
+                  disabled={videoLoading}
+                />
+                <DropZone
+                  label="Objet (optionnel)"
+                  hint="Référence luxe"
+                  upload={videoObject}
+                  onPick={(file) => void pickVideoUpload(file, "object")}
+                  disabled={videoLoading}
                 />
               </div>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={downloadVideo}
-                  className="rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-bold text-neutral-950 transition hover:bg-amber-300"
+
+              <section className="mt-6">
+                <label
+                  htmlFor="video-prompt"
+                  className="mb-3 block text-xs font-medium uppercase tracking-[0.16em] text-neutral-500"
                 >
-                  Télécharger
-                </button>
+                  Prompt
+                </label>
+                <textarea
+                  id="video-prompt"
+                  value={videoPrompt}
+                  onChange={(e) => setVideoPrompt(e.target.value)}
+                  rows={4}
+                  placeholder={VIDEO_PROMPT_PLACEHOLDER}
+                  disabled={videoLoading}
+                  className="w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none placeholder:text-neutral-700 focus:border-amber-400/50 disabled:opacity-50"
+                />
+              </section>
+
+              <section className="mt-6 flex flex-wrap gap-3">
                 <button
                   type="button"
                   onClick={generateVideo}
-                  disabled={videoLoading}
-                  className="rounded-xl border border-neutral-700 px-5 py-2.5 text-sm font-medium text-neutral-200 transition hover:border-neutral-500 disabled:opacity-50"
+                  disabled={videoLoading || !videoSource || !videoPrompt.trim()}
+                  className="btn-generate rounded-2xl bg-amber-400 px-6 py-3.5 text-sm font-bold text-neutral-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {videoLoading ? "Génération vidéo…" : "Régénérer"}
+                  {videoLoading ? "Génération vidéo… (~90s+)" : "Générer la vidéo"}
                 </button>
-              </div>
-            </section>
-          )}
-        </>
-      )}
+                {(videoSource || videoObject || videoPrompt) && (
+                  <button
+                    type="button"
+                    onClick={resetVideo}
+                    disabled={videoLoading}
+                    className="rounded-2xl border border-white/10 px-4 py-3.5 text-sm font-medium text-neutral-400 transition hover:border-white/20 disabled:opacity-40"
+                  >
+                    Reset
+                  </button>
+                )}
+              </section>
 
-      <footer className="mt-12 text-center text-xs text-neutral-600">
-        Image : Google Gemini 2.5 Flash · Vidéo : fal.ai Kling O3. Utilisez de façon
-        responsable.
-      </footer>
-    </main>
+              {videoError && (
+                <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
+                  {videoError}
+                </div>
+              )}
+
+              {videoUrl && (
+                <section className="mt-8 animate-fade-up">
+                  <video
+                    src={videoUrl}
+                    controls
+                    playsInline
+                    className="w-full rounded-2xl border border-white/10"
+                  />
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={downloadVideo}
+                      className="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-neutral-950 transition hover:bg-amber-300"
+                    >
+                      Télécharger
+                    </button>
+                    <button
+                      type="button"
+                      onClick={generateVideo}
+                      disabled={videoLoading}
+                      className="rounded-xl border border-white/10 px-4 py-2.5 text-sm font-medium text-neutral-300 transition hover:border-white/20 disabled:opacity-40"
+                    >
+                      {videoLoading ? "…" : "Régénérer"}
+                    </button>
+                  </div>
+                </section>
+              )}
+            </div>
+          </div>
+        )}
+
+        <footer className="mt-12 text-center text-[11px] uppercase tracking-[0.18em] text-neutral-700">
+          Gemini Flash Image · Kling O3
+        </footer>
+      </main>
+    </div>
   );
 }
