@@ -1,7 +1,20 @@
 "use client";
 
 import { fal } from "@fal-ai/client";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
+import BlurText from "@/components/react-bits/BlurText";
+import ClickSpark from "@/components/react-bits/ClickSpark";
+import GlareHover from "@/components/react-bits/GlareHover";
+import GradientText from "@/components/react-bits/GradientText";
+import Magnet from "@/components/react-bits/Magnet";
+import SpotlightCard from "@/components/react-bits/SpotlightCard";
+import StarBorder from "@/components/react-bits/StarBorder";
+
+const SoftAurora = dynamic(
+  () => import("@/components/react-bits/SoftAurora"),
+  { ssr: false },
+);
 
 fal.config({
   proxyUrl: "/api/fal/proxy",
@@ -54,7 +67,10 @@ type VideoUpload = {
   name: string;
 };
 
-function stripDataUrlPrefix(dataUrl: string): { base64: string; mimeType: string } {
+function stripDataUrlPrefix(dataUrl: string): {
+  base64: string;
+  mimeType: string;
+} {
   const match = /^data:(.*?);base64,(.*)$/.exec(dataUrl);
   if (match) {
     return { mimeType: match[1] || "image/jpeg", base64: match[2] };
@@ -129,13 +145,9 @@ function BeforeAfterSlider({
   after: string;
 }) {
   const [pos, setPos] = useState(50);
-  const ref = useRef<HTMLDivElement>(null);
 
   return (
-    <div
-      ref={ref}
-      className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-black sm:aspect-[3/4] lg:aspect-square"
-    >
+    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-black sm:aspect-[3/4] lg:aspect-square">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={before}
@@ -154,17 +166,17 @@ function BeforeAfterSlider({
         />
       </div>
       <div
-        className="pointer-events-none absolute inset-y-0 w-px bg-amber-300/90"
+        className="pointer-events-none absolute inset-y-0 w-px bg-champagne/90"
         style={{ left: `${pos}%` }}
       >
-        <div className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-amber-300/40 bg-neutral-950/90 text-[10px] font-semibold tracking-wide text-amber-200">
+        <div className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-champagne/40 bg-ink/90 text-[10px] font-semibold tracking-wide text-champagne-soft">
           ↔
         </div>
       </div>
       <div className="pointer-events-none absolute left-3 top-3 rounded-md bg-black/55 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-white/80 backdrop-blur-sm">
         Avant
       </div>
-      <div className="pointer-events-none absolute right-3 top-3 rounded-md bg-amber-400/15 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-amber-200 backdrop-blur-sm">
+      <div className="pointer-events-none absolute right-3 top-3 rounded-md bg-champagne/15 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-champagne-soft backdrop-blur-sm">
         Après
       </div>
       <input
@@ -219,7 +231,7 @@ function DropZone({
         }}
         className={`cursor-pointer rounded-2xl border border-dashed p-5 text-center transition ${
           dragging
-            ? "border-amber-400/70 bg-amber-400/5"
+            ? "border-champagne/70 bg-champagne/5"
             : "border-white/10 bg-white/[0.02] hover:border-white/20"
         } ${disabled ? "pointer-events-none opacity-50" : ""}`}
       >
@@ -296,7 +308,9 @@ export default function Home() {
       setFileName(file.name);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Préparation de l'image impossible.",
+        err instanceof Error
+          ? err.message
+          : "Préparation de l'image impossible.",
       );
     }
   }, []);
@@ -351,12 +365,16 @@ export default function Home() {
         return;
       }
       if (data.imageBase64) {
-        setResult(`data:${data.mimeType || "image/png"};base64,${data.imageBase64}`);
+        setResult(
+          `data:${data.mimeType || "image/png"};base64,${data.imageBase64}`,
+        );
       } else {
         setError("Réponse inattendue du serveur. Réessayez.");
       }
     } catch {
-      setError("Erreur réseau lors de la génération. Vérifiez votre connexion.");
+      setError(
+        "Erreur réseau lors de la génération. Vérifiez votre connexion.",
+      );
     } finally {
       setLoading(false);
     }
@@ -405,7 +423,9 @@ export default function Home() {
     }
     const prompt = videoPrompt.trim();
     if (!prompt) {
-      setVideoError("Veuillez saisir un prompt décrivant le remplacement d'objet.");
+      setVideoError(
+        "Veuillez saisir un prompt décrivant le remplacement d'objet.",
+      );
       return;
     }
     setVideoLoading(true);
@@ -470,377 +490,424 @@ export default function Home() {
 
   return (
     <div className="studio-shell min-h-screen">
-      {/* Top bar */}
-      <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-ink/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-baseline gap-3">
-            <h1 className="font-display text-2xl font-extrabold tracking-tight text-white">
-              Fake<span className="text-amber-300">It</span>
-            </h1>
-            <span className="hidden text-xs font-medium uppercase tracking-[0.2em] text-neutral-600 sm:inline">
-              Studio
-            </span>
-          </div>
+      <div className="studio-aurora" aria-hidden>
+        <SoftAurora />
+      </div>
+      <div className="studio-vignette" aria-hidden />
 
-          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
-            {(["image", "video"] as Mode[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMode(m)}
-                className={`rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition ${
-                  mode === m
-                    ? "bg-amber-400 text-neutral-950"
-                    : "text-neutral-400 hover:text-neutral-100"
-                }`}
-              >
-                {m === "image" ? "Image" : "Vidéo"}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
+      <ClickSpark className="studio-content min-h-screen">
+        <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-ink/55 backdrop-blur-2xl">
+          <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+            <div className="flex items-baseline gap-3">
+              <h1 className="font-display text-3xl font-semibold tracking-tight text-white">
+                Fake
+                <GradientText className="font-display text-3xl font-semibold">
+                  It
+                </GradientText>
+              </h1>
+              <span className="hidden text-[10px] font-medium uppercase tracking-[0.22em] text-neutral-500 sm:inline">
+                Studio
+              </span>
+            </div>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
-        {mode === "image" ? (
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
-            {/* Left controls */}
-            <aside className="animate-fade-up lg:col-span-5">
-              <div className="panel rounded-3xl p-5 sm:p-6 lg:sticky lg:top-24">
-                <div className="mb-6">
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-amber-300/80">
-                    Génération image
-                  </p>
-                  <h2 className="font-display mt-2 text-2xl font-bold tracking-tight text-white">
-                    Intégrez le luxe.{" "}
-                    <span className="text-neutral-500">Gardez tout le reste.</span>
-                  </h2>
-                </div>
-
-                {/* Upload */}
-                <section
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={onDrop}
-                  onClick={() => inputRef.current?.click()}
-                  className={`mb-6 cursor-pointer overflow-hidden rounded-2xl border border-dashed transition ${
-                    isDragging
-                      ? "border-amber-400/70 bg-amber-400/[0.06]"
-                      : "border-white/10 bg-white/[0.02] hover:border-white/20"
+            <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
+              {(["image", "video"] as Mode[]).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMode(m)}
+                  className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition duration-200 ${
+                    mode === m
+                      ? "bg-champagne text-ink"
+                      : "text-neutral-400 hover:text-neutral-100"
                   }`}
                 >
-                  <input
-                    ref={inputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={onInputChange}
-                  />
-                  {prepared ? (
-                    <div className="relative">
+                  {m === "image" ? "Image" : "Vidéo"}
+                </button>
+              ))}
+            </div>
+          </div>
+        </header>
+
+        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
+          {mode === "image" ? (
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
+              <aside className="animate-fade-up lg:col-span-5">
+                <SpotlightCard className="p-5 sm:p-6 lg:sticky lg:top-24">
+                  <div className="mb-6">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-champagne">
+                      Génération image
+                    </p>
+                    <BlurText
+                      as="h2"
+                      text="Intégrez le luxe. Gardez tout le reste."
+                      className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white"
+                      delay={80}
+                    />
+                    <p className="mt-3 text-sm leading-relaxed text-neutral-500">
+                      Une photo. Un preset. Un rendu champagne — photoréaliste,
+                      sans trahir le cadre d&apos;origine.
+                    </p>
+                  </div>
+
+                  <GlareHover className="mb-6 rounded-2xl border border-dashed border-white/10">
+                    <section
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setIsDragging(true);
+                      }}
+                      onDragLeave={() => setIsDragging(false)}
+                      onDrop={onDrop}
+                      onClick={() => inputRef.current?.click()}
+                      className={`cursor-pointer overflow-hidden rounded-2xl transition ${
+                        isDragging
+                          ? "bg-champagne/[0.08]"
+                          : "bg-white/[0.02] hover:bg-white/[0.035]"
+                      }`}
+                    >
+                      <input
+                        ref={inputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={onInputChange}
+                      />
+                      {prepared ? (
+                        <div className="relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={prepared.previewUrl}
+                            alt="Aperçu"
+                            className="max-h-52 w-full object-cover"
+                          />
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
+                            <p className="truncate text-xs text-neutral-300">
+                              {fileName || "Image sélectionnée"} · cliquer pour
+                              changer
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
+                          <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full border border-champagne/25 bg-champagne/10 text-champagne">
+                            <svg
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              aria-hidden
+                            >
+                              <path
+                                d="M12 16V8m0 0l-3 3m3-3l3 3M4 16.5V17a3 3 0 003 3h10a3 3 0 003-3v-.5"
+                                stroke="currentColor"
+                                strokeWidth="1.6"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          </div>
+                          <p className="text-sm font-medium text-neutral-100">
+                            Déposez une photo ou cliquez
+                          </p>
+                          <p className="text-xs text-neutral-600">
+                            Max 10 Mo · compression auto au-delà de 2 Mo
+                          </p>
+                        </div>
+                      )}
+                    </section>
+                  </GlareHover>
+
+                  <section className="mb-6">
+                    <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">
+                      Preset
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(Object.keys(PRESETS) as CategoryId[]).map((id) => (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => setCategory(id)}
+                          className={`cursor-pointer rounded-xl px-2 py-3 text-left transition duration-200 ${
+                            category === id
+                              ? "bg-champagne text-ink"
+                              : "border border-white/10 bg-white/[0.02] text-neutral-300 hover:border-champagne/30"
+                          }`}
+                        >
+                          <span className="block text-sm font-semibold leading-none">
+                            {PRESETS[id].label}
+                          </span>
+                          <span
+                            className={`mt-1.5 block text-[10px] leading-none ${
+                              category === id
+                                ? "text-ink/70"
+                                : "text-neutral-600"
+                            }`}
+                          >
+                            {PRESETS[id].subtitle}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className="mb-6">
+                    <label
+                      htmlFor="custom-prompt"
+                      className="mb-3 block text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500"
+                    >
+                      Prompt libre{" "}
+                      <span className="normal-case tracking-normal text-neutral-600">
+                        (optionnel)
+                      </span>
+                    </label>
+                    <textarea
+                      id="custom-prompt"
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      rows={4}
+                      placeholder="Remplace le preset si rempli…"
+                      className="w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-700 focus:border-champagne/50"
+                    />
+                  </section>
+
+                  {error && (
+                    <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
+                      {error}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <Magnet
+                      padding={60}
+                      magnetStrength={3.5}
+                      wrapperClassName="w-full flex-1"
+                      innerClassName="w-full"
+                    >
+                      <StarBorder
+                        as="button"
+                        type="button"
+                        onClick={generate}
+                        disabled={loading || !prepared}
+                        color="#d4af77"
+                        speed="4.5s"
+                        thickness={1}
+                        className="w-full cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+                        contentClassName="bg-gradient-to-b from-[#1a1612] to-[#0e0c0a] px-5 py-3.5 text-sm font-bold text-champagne-soft"
+                      >
+                        {loading ? "Génération… (~15-30s)" : "Générer"}
+                      </StarBorder>
+                    </Magnet>
+                    {prepared && (
+                      <button
+                        type="button"
+                        onClick={reset}
+                        disabled={loading}
+                        className="cursor-pointer rounded-2xl border border-white/10 px-4 py-3.5 text-sm font-medium text-neutral-400 transition hover:border-white/20 hover:text-neutral-200 disabled:opacity-40"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </SpotlightCard>
+              </aside>
+
+              <section className="animate-fade-up-delay lg:col-span-7">
+                <SpotlightCard
+                  className="relative min-h-[420px] p-4 sm:p-6 lg:min-h-[640px]"
+                  spotlightColor="rgba(245, 230, 200, 0.12)"
+                >
+                  <div className="mb-4 flex items-end justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">
+                        Canvas
+                      </p>
+                      <h3 className="font-display mt-1 text-2xl font-semibold text-white">
+                        {result ? "Avant / Après" : "Aperçu"}
+                      </h3>
+                    </div>
+                    {result && (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={download}
+                          className="cursor-pointer rounded-xl bg-champagne px-3.5 py-2 text-xs font-bold text-ink transition duration-200 hover:bg-champagne-soft"
+                        >
+                          Télécharger
+                        </button>
+                        <button
+                          type="button"
+                          onClick={generate}
+                          disabled={loading}
+                          className="cursor-pointer rounded-xl border border-white/10 px-3.5 py-2 text-xs font-medium text-neutral-300 transition hover:border-white/20 disabled:opacity-40"
+                        >
+                          {loading ? "…" : "Régénérer"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {loading ? (
+                    <div className="flex min-h-[360px] flex-col items-center justify-center gap-4 lg:min-h-[520px]">
+                      <div className="h-14 w-14 animate-spin rounded-full border-2 border-champagne/20 border-t-champagne" />
+                      <p className="text-sm text-neutral-400">
+                        Rendu photoréaliste en cours…
+                      </p>
+                    </div>
+                  ) : result && prepared ? (
+                    <div className="animate-fade-up">
+                      <BeforeAfterSlider
+                        before={prepared.previewUrl}
+                        after={result}
+                      />
+                      <p className="mt-3 text-center text-xs text-neutral-600">
+                        Glissez pour comparer
+                      </p>
+                    </div>
+                  ) : prepared ? (
+                    <div className="flex min-h-[360px] items-center justify-center lg:min-h-[520px]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={prepared.previewUrl}
-                        alt="Aperçu"
-                        className="max-h-52 w-full object-cover"
+                        alt="Original"
+                        className="max-h-[520px] w-full rounded-2xl object-contain"
                       />
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
-                        <p className="truncate text-xs text-neutral-300">
-                          {fileName || "Image sélectionnée"} · cliquer pour changer
-                        </p>
-                      </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
-                      <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-amber-300">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-                          <path
-                            d="M12 16V8m0 0l-3 3m3-3l3 3M4 16.5V17a3 3 0 003 3h10a3 3 0 003-3v-.5"
-                            stroke="currentColor"
-                            strokeWidth="1.6"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </div>
-                      <p className="text-sm font-medium text-neutral-100">
-                        Déposez une photo ou cliquez
-                      </p>
-                      <p className="text-xs text-neutral-600">
-                        Max 10 Mo · compression auto au-delà de 2 Mo
+                    <div className="flex min-h-[360px] flex-col items-center justify-center gap-3 text-center lg:min-h-[520px]">
+                      <div className="h-px w-16 bg-gradient-to-r from-transparent via-champagne/50 to-transparent" />
+                      <BlurText
+                        as="p"
+                        text="Votre rendu apparaîtra ici"
+                        className="font-display justify-center text-xl font-semibold text-neutral-300"
+                        delay={60}
+                      />
+                      <p className="max-w-sm text-sm text-neutral-600">
+                        Uploadez une photo, choisissez un preset, générez. Le
+                        slider avant/après s&apos;affiche dès que le résultat
+                        est prêt.
                       </p>
                     </div>
                   )}
-                </section>
+                </SpotlightCard>
+              </section>
+            </div>
+          ) : (
+            <div className="animate-fade-up mx-auto max-w-4xl">
+              <SpotlightCard className="mb-6 p-5 sm:p-6">
+                <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-champagne">
+                  Remplacer un objet
+                </p>
+                <h2 className="font-display mt-2 text-3xl font-semibold text-white">
+                  Vidéo courte, intégration réaliste
+                </h2>
+                <p className="mt-2 text-sm text-neutral-500">
+                  ~5 s de vidéo · génération ~90 s · Kling O3 via fal.ai
+                </p>
+              </SpotlightCard>
 
-                {/* Categories */}
-                <section className="mb-6">
-                  <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-neutral-500">
-                    Preset
-                  </p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(Object.keys(PRESETS) as CategoryId[]).map((id) => (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => setCategory(id)}
-                        className={`rounded-xl px-2 py-3 text-left transition ${
-                          category === id
-                            ? "bg-amber-400 text-neutral-950"
-                            : "border border-white/10 bg-white/[0.02] text-neutral-300 hover:border-white/20"
-                        }`}
-                      >
-                        <span className="block text-sm font-semibold leading-none">
-                          {PRESETS[id].label}
-                        </span>
-                        <span
-                          className={`mt-1.5 block text-[10px] leading-none ${
-                            category === id ? "text-neutral-800" : "text-neutral-600"
-                          }`}
-                        >
-                          {PRESETS[id].subtitle}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </section>
+              <SpotlightCard className="p-5 sm:p-6">
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <DropZone
+                    label="Image source (requis)"
+                    hint="Votre photo / scène"
+                    upload={videoSource}
+                    onPick={(file) => void pickVideoUpload(file, "source")}
+                    disabled={videoLoading}
+                  />
+                  <DropZone
+                    label="Objet (optionnel)"
+                    hint="Référence luxe"
+                    upload={videoObject}
+                    onPick={(file) => void pickVideoUpload(file, "object")}
+                    disabled={videoLoading}
+                  />
+                </div>
 
-                {/* Prompt */}
-                <section className="mb-6">
+                <section className="mt-6">
                   <label
-                    htmlFor="custom-prompt"
-                    className="mb-3 block text-xs font-medium uppercase tracking-[0.16em] text-neutral-500"
+                    htmlFor="video-prompt"
+                    className="mb-3 block text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500"
                   >
-                    Prompt libre{" "}
-                    <span className="normal-case tracking-normal text-neutral-600">
-                      (optionnel)
-                    </span>
+                    Prompt
                   </label>
                   <textarea
-                    id="custom-prompt"
-                    value={customPrompt}
-                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    id="video-prompt"
+                    value={videoPrompt}
+                    onChange={(e) => setVideoPrompt(e.target.value)}
                     rows={4}
-                    placeholder="Remplace le preset si rempli…"
-                    className="w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none placeholder:text-neutral-700 focus:border-amber-400/50"
+                    placeholder={VIDEO_PROMPT_PLACEHOLDER}
+                    disabled={videoLoading}
+                    className="w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none placeholder:text-neutral-700 focus:border-champagne/50 disabled:opacity-50"
                   />
                 </section>
 
-                {error && (
-                  <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
-                    {error}
-                  </div>
-                )}
-
-                <div className="flex flex-col gap-3 sm:flex-row">
+                <section className="mt-6 flex flex-wrap gap-3">
                   <button
                     type="button"
-                    onClick={generate}
-                    disabled={loading || !prepared}
-                    className="btn-generate flex-1 rounded-2xl bg-amber-400 px-5 py-3.5 text-sm font-bold text-neutral-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+                    onClick={generateVideo}
+                    disabled={
+                      videoLoading || !videoSource || !videoPrompt.trim()
+                    }
+                    className="cursor-pointer rounded-2xl bg-champagne px-6 py-3.5 text-sm font-bold text-ink transition hover:bg-champagne-soft disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    {loading ? "Génération… (~15-30s)" : "Générer"}
+                    {videoLoading
+                      ? "Génération vidéo… (~90s+)"
+                      : "Générer la vidéo"}
                   </button>
-                  {prepared && (
+                  {(videoSource || videoObject || videoPrompt) && (
                     <button
                       type="button"
-                      onClick={reset}
-                      disabled={loading}
-                      className="rounded-2xl border border-white/10 px-4 py-3.5 text-sm font-medium text-neutral-400 transition hover:border-white/20 hover:text-neutral-200 disabled:opacity-40"
+                      onClick={resetVideo}
+                      disabled={videoLoading}
+                      className="cursor-pointer rounded-2xl border border-white/10 px-4 py-3.5 text-sm font-medium text-neutral-400 transition hover:border-white/20 disabled:opacity-40"
                     >
                       Reset
                     </button>
                   )}
-                </div>
-              </div>
-            </aside>
+                </section>
 
-            {/* Right stage */}
-            <section className="animate-fade-up-delay lg:col-span-7">
-              <div className="panel relative min-h-[420px] overflow-hidden rounded-3xl p-4 sm:p-6 lg:min-h-[640px]">
-                <div className="mb-4 flex items-end justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-[0.16em] text-neutral-500">
-                      Canvas
-                    </p>
-                    <h3 className="font-display mt-1 text-xl font-bold text-white">
-                      {result ? "Avant / Après" : "Aperçu"}
-                    </h3>
+                {videoError && (
+                  <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
+                    {videoError}
                   </div>
-                  {result && (
-                    <div className="flex gap-2">
+                )}
+
+                {videoUrl && (
+                  <section className="mt-8 animate-fade-up">
+                    <video
+                      src={videoUrl}
+                      controls
+                      playsInline
+                      className="w-full rounded-2xl border border-white/10"
+                    />
+                    <div className="mt-4 flex flex-wrap gap-3">
                       <button
                         type="button"
-                        onClick={download}
-                        className="rounded-xl bg-amber-400 px-3.5 py-2 text-xs font-bold text-neutral-950 transition hover:bg-amber-300"
+                        onClick={downloadVideo}
+                        className="cursor-pointer rounded-xl bg-champagne px-4 py-2.5 text-sm font-bold text-ink transition hover:bg-champagne-soft"
                       >
                         Télécharger
                       </button>
                       <button
                         type="button"
-                        onClick={generate}
-                        disabled={loading}
-                        className="rounded-xl border border-white/10 px-3.5 py-2 text-xs font-medium text-neutral-300 transition hover:border-white/20 disabled:opacity-40"
+                        onClick={generateVideo}
+                        disabled={videoLoading}
+                        className="cursor-pointer rounded-xl border border-white/10 px-4 py-2.5 text-sm font-medium text-neutral-300 transition hover:border-white/20 disabled:opacity-40"
                       >
-                        {loading ? "…" : "Régénérer"}
+                        {videoLoading ? "…" : "Régénérer"}
                       </button>
                     </div>
-                  )}
-                </div>
-
-                {loading ? (
-                  <div className="flex min-h-[360px] flex-col items-center justify-center gap-4 lg:min-h-[520px]">
-                    <div className="h-14 w-14 animate-spin rounded-full border-2 border-amber-400/20 border-t-amber-400" />
-                    <p className="text-sm text-neutral-400">
-                      Rendu photoréaliste en cours…
-                    </p>
-                  </div>
-                ) : result && prepared ? (
-                  <div className="animate-fade-up">
-                    <BeforeAfterSlider before={prepared.previewUrl} after={result} />
-                    <p className="mt-3 text-center text-xs text-neutral-600">
-                      Glissez pour comparer
-                    </p>
-                  </div>
-                ) : prepared ? (
-                  <div className="flex min-h-[360px] items-center justify-center lg:min-h-[520px]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={prepared.previewUrl}
-                      alt="Original"
-                      className="max-h-[520px] w-full rounded-2xl object-contain"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex min-h-[360px] flex-col items-center justify-center gap-3 text-center lg:min-h-[520px]">
-                    <div className="h-px w-16 bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
-                    <p className="font-display text-lg font-semibold text-neutral-300">
-                      Votre rendu apparaîtra ici
-                    </p>
-                    <p className="max-w-sm text-sm text-neutral-600">
-                      Uploadez une photo, choisissez un preset, générez. Le slider
-                      avant/après s’affiche dès que le résultat est prêt.
-                    </p>
-                  </div>
+                  </section>
                 )}
-              </div>
-            </section>
-          </div>
-        ) : (
-          <div className="animate-fade-up mx-auto max-w-4xl">
-            <div className="panel mb-6 rounded-3xl p-5 sm:p-6">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-amber-300/80">
-                Remplacer un objet
-              </p>
-              <h2 className="font-display mt-2 text-2xl font-bold text-white">
-                Vidéo courte, intégration réaliste
-              </h2>
-              <p className="mt-2 text-sm text-neutral-500">
-                ~5 s de vidéo · génération ~90 s · Kling O3 via fal.ai
-              </p>
+              </SpotlightCard>
             </div>
+          )}
 
-            <div className="panel rounded-3xl p-5 sm:p-6">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <DropZone
-                  label="Image source (requis)"
-                  hint="Votre photo / scène"
-                  upload={videoSource}
-                  onPick={(file) => void pickVideoUpload(file, "source")}
-                  disabled={videoLoading}
-                />
-                <DropZone
-                  label="Objet (optionnel)"
-                  hint="Référence luxe"
-                  upload={videoObject}
-                  onPick={(file) => void pickVideoUpload(file, "object")}
-                  disabled={videoLoading}
-                />
-              </div>
-
-              <section className="mt-6">
-                <label
-                  htmlFor="video-prompt"
-                  className="mb-3 block text-xs font-medium uppercase tracking-[0.16em] text-neutral-500"
-                >
-                  Prompt
-                </label>
-                <textarea
-                  id="video-prompt"
-                  value={videoPrompt}
-                  onChange={(e) => setVideoPrompt(e.target.value)}
-                  rows={4}
-                  placeholder={VIDEO_PROMPT_PLACEHOLDER}
-                  disabled={videoLoading}
-                  className="w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none placeholder:text-neutral-700 focus:border-amber-400/50 disabled:opacity-50"
-                />
-              </section>
-
-              <section className="mt-6 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={generateVideo}
-                  disabled={videoLoading || !videoSource || !videoPrompt.trim()}
-                  className="btn-generate rounded-2xl bg-amber-400 px-6 py-3.5 text-sm font-bold text-neutral-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {videoLoading ? "Génération vidéo… (~90s+)" : "Générer la vidéo"}
-                </button>
-                {(videoSource || videoObject || videoPrompt) && (
-                  <button
-                    type="button"
-                    onClick={resetVideo}
-                    disabled={videoLoading}
-                    className="rounded-2xl border border-white/10 px-4 py-3.5 text-sm font-medium text-neutral-400 transition hover:border-white/20 disabled:opacity-40"
-                  >
-                    Reset
-                  </button>
-                )}
-              </section>
-
-              {videoError && (
-                <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
-                  {videoError}
-                </div>
-              )}
-
-              {videoUrl && (
-                <section className="mt-8 animate-fade-up">
-                  <video
-                    src={videoUrl}
-                    controls
-                    playsInline
-                    className="w-full rounded-2xl border border-white/10"
-                  />
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      onClick={downloadVideo}
-                      className="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-neutral-950 transition hover:bg-amber-300"
-                    >
-                      Télécharger
-                    </button>
-                    <button
-                      type="button"
-                      onClick={generateVideo}
-                      disabled={videoLoading}
-                      className="rounded-xl border border-white/10 px-4 py-2.5 text-sm font-medium text-neutral-300 transition hover:border-white/20 disabled:opacity-40"
-                    >
-                      {videoLoading ? "…" : "Régénérer"}
-                    </button>
-                  </div>
-                </section>
-              )}
-            </div>
-          </div>
-        )}
-
-        <footer className="mt-12 text-center text-[11px] uppercase tracking-[0.18em] text-neutral-700">
-          Gemini Flash Image · Kling O3
-        </footer>
-      </main>
+          <footer className="mt-12 text-center text-[11px] uppercase tracking-[0.18em] text-neutral-700">
+            Gemini Flash Image · Kling O3 · React Bits
+          </footer>
+        </main>
+      </ClickSpark>
     </div>
   );
 }
