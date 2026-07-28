@@ -4,16 +4,10 @@ import { fal } from "@fal-ai/client";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Panel from "@/components/Panel";
-import BlurText from "@/components/react-bits/BlurText";
-import GlareHover from "@/components/react-bits/GlareHover";
-import GradientText from "@/components/react-bits/GradientText";
-import Magnet from "@/components/react-bits/Magnet";
-import StarBorder from "@/components/react-bits/StarBorder";
 
-const SoftAurora = dynamic(
-  () => import("@/components/react-bits/SoftAurora"),
-  { ssr: false },
-);
+const DotField = dynamic(() => import("@/components/react-bits/DotField"), {
+  ssr: false,
+});
 
 fal.config({
   proxyUrl: "/api/fal/proxy",
@@ -165,17 +159,17 @@ function BeforeAfterSlider({
         />
       </div>
       <div
-        className="pointer-events-none absolute inset-y-0 w-px bg-champagne/90"
+        className="pointer-events-none absolute inset-y-0 w-px bg-primary/90"
         style={{ left: `${pos}%` }}
       >
-        <div className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-champagne/40 bg-ink/90 text-[10px] font-semibold tracking-wide text-champagne-soft">
+        <div className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-primary/40 bg-ink/90 text-[10px] font-semibold tracking-wide text-primary-soft">
           ↔
         </div>
       </div>
       <div className="pointer-events-none absolute left-3 top-3 rounded-md bg-black/55 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-white/80 backdrop-blur-sm">
         Avant
       </div>
-      <div className="pointer-events-none absolute right-3 top-3 rounded-md bg-champagne/15 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-champagne-soft backdrop-blur-sm">
+      <div className="pointer-events-none absolute right-3 top-3 rounded-md bg-primary/15 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-primary-soft backdrop-blur-sm">
         Après
       </div>
       <input
@@ -239,9 +233,9 @@ function DropZone({
             inputRef.current?.click();
           }
         }}
-        className={`cursor-pointer rounded-2xl border border-dashed p-5 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/60 ${
+        className={`cursor-pointer rounded-2xl border border-dashed p-5 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
           dragging
-            ? "border-champagne/70 bg-champagne/5"
+            ? "border-primary/70 bg-primary/5"
             : "border-white/10 bg-white/[0.02] hover:border-white/20"
         } ${disabled ? "pointer-events-none opacity-50" : ""}`}
       >
@@ -405,7 +399,7 @@ export default function Home() {
     if (!result) return;
     const a = document.createElement("a");
     a.href = result;
-    a.download = "fakeit-result.png";
+    a.download = "bluminoo-result.png";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -491,7 +485,7 @@ export default function Home() {
     if (!videoUrl) return;
     const a = document.createElement("a");
     a.href = videoUrl;
-    a.download = "fakeit-result.mp4";
+    a.download = "bluminoo-result.mp4";
     a.target = "_blank";
     a.rel = "noopener noreferrer";
     document.body.appendChild(a);
@@ -509,8 +503,15 @@ export default function Home() {
 
   return (
     <div className="studio-shell min-h-screen">
-      <div className="studio-aurora" aria-hidden>
-        <SoftAurora />
+      <div className="studio-backdrop" aria-hidden>
+        <DotField
+          dotRadius={1.5}
+          dotSpacing={14}
+          bulgeStrength={67}
+          glowRadius={160}
+          sparkle={false}
+          waveAmplitude={0}
+        />
       </div>
       <div className="studio-vignette" aria-hidden />
 
@@ -519,10 +520,7 @@ export default function Home() {
           <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
             <div className="flex items-baseline gap-3">
               <h1 className="font-display text-3xl font-semibold tracking-tight text-white">
-                Fake
-                <GradientText className="font-display text-3xl font-semibold">
-                  It
-                </GradientText>
+                Blumin<span className="text-primary">oo</span>
               </h1>
               <span className="hidden text-[10px] font-medium uppercase tracking-[0.22em] text-neutral-500 sm:inline">
                 Studio
@@ -537,7 +535,7 @@ export default function Home() {
                   onClick={() => setMode(m)}
                   className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition duration-200 ${
                     mode === m
-                      ? "bg-champagne text-ink"
+                      ? "bg-primary text-ink"
                       : "text-neutral-400 hover:text-neutral-100"
                   }`}
                 >
@@ -554,22 +552,19 @@ export default function Home() {
               <aside className="animate-fade-up lg:col-span-5">
                 <Panel className="p-5 sm:p-6 lg:sticky lg:top-24">
                   <div className="mb-6">
-                    <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-champagne">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
                       Génération image
                     </p>
-                    <BlurText
-                      as="h2"
-                      text="Intégrez le luxe. Gardez tout le reste."
-                      className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white"
-                      delay={80}
-                    />
+                    <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
+                      Intégrez le luxe. Gardez tout le reste.
+                    </h2>
                     <p className="mt-3 text-sm leading-relaxed text-neutral-500">
-                      Une photo. Un preset. Un rendu champagne — photoréaliste,
-                      sans trahir le cadre d&apos;origine.
+                      Une photo. Un preset. Un rendu photoréaliste, sans trahir
+                      le cadre d&apos;origine.
                     </p>
                   </div>
 
-                  <GlareHover className="mb-6 rounded-2xl border border-dashed border-white/10">
+                  <div className="mb-6 rounded-2xl border border-dashed border-white/10">
                     <div
                       role="button"
                       tabIndex={0}
@@ -587,9 +582,9 @@ export default function Home() {
                           inputRef.current?.click();
                         }
                       }}
-                      className={`cursor-pointer overflow-hidden rounded-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-champagne/60 ${
+                      className={`cursor-pointer overflow-hidden rounded-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
                         isDragging
-                          ? "bg-champagne/[0.08]"
+                          ? "bg-primary/[0.08]"
                           : "bg-white/[0.02] hover:bg-white/[0.035]"
                       }`}
                     >
@@ -617,7 +612,7 @@ export default function Home() {
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
-                          <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full border border-champagne/25 bg-champagne/10 text-champagne">
+                          <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary">
                             <svg
                               width="20"
                               height="20"
@@ -643,7 +638,7 @@ export default function Home() {
                         </div>
                       )}
                     </div>
-                  </GlareHover>
+                  </div>
 
                   <section className="mb-6">
                     <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">
@@ -657,8 +652,8 @@ export default function Home() {
                           onClick={() => setCategory(id)}
                           className={`cursor-pointer rounded-xl px-2 py-3 text-left transition duration-200 ${
                             category === id
-                              ? "bg-champagne text-ink"
-                              : "border border-white/10 bg-white/[0.02] text-neutral-300 hover:border-champagne/30"
+                              ? "bg-primary text-ink"
+                              : "border border-white/10 bg-white/[0.02] text-neutral-300 hover:border-primary/30"
                           }`}
                         >
                           <span className="block text-sm font-semibold leading-none">
@@ -694,7 +689,7 @@ export default function Home() {
                       onChange={(e) => setCustomPrompt(e.target.value)}
                       rows={4}
                       placeholder="Remplace le preset si rempli…"
-                      className="w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-700 focus:border-champagne/50"
+                      className="w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-700 focus:border-primary/50"
                     />
                   </section>
 
@@ -705,26 +700,14 @@ export default function Home() {
                   )}
 
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <Magnet
-                      padding={60}
-                      magnetStrength={3.5}
-                      wrapperClassName="w-full flex-1"
-                      innerClassName="w-full"
+                    <button
+                      type="button"
+                      onClick={generate}
+                      disabled={loading || !prepared}
+                      className="flex-1 cursor-pointer rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      <StarBorder
-                        as="button"
-                        type="button"
-                        onClick={generate}
-                        disabled={loading || !prepared}
-                        color="#d4af77"
-                        speed="4.5s"
-                        thickness={1}
-                        className="w-full cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
-                        contentClassName="bg-gradient-to-b from-[#1a1612] to-[#0e0c0a] px-5 py-3.5 text-sm font-bold text-champagne-soft"
-                      >
-                        {loading ? "Génération… (~15-30s)" : "Générer"}
-                      </StarBorder>
-                    </Magnet>
+                      {loading ? "Génération… (~15-30s)" : "Générer"}
+                    </button>
                     {prepared && (
                       <button
                         type="button"
@@ -755,7 +738,7 @@ export default function Home() {
                         <button
                           type="button"
                           onClick={download}
-                          className="cursor-pointer rounded-xl bg-champagne px-3.5 py-2 text-xs font-bold text-ink transition duration-200 hover:bg-champagne-soft"
+                          className="cursor-pointer rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-ink transition duration-200 hover:bg-primary-soft"
                         >
                           Télécharger
                         </button>
@@ -773,7 +756,7 @@ export default function Home() {
 
                   {loading ? (
                     <div className="flex min-h-[360px] flex-col items-center justify-center gap-4 lg:min-h-[520px]">
-                      <div className="h-14 w-14 animate-spin rounded-full border-2 border-champagne/20 border-t-champagne" />
+                      <div className="h-14 w-14 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
                       <p className="text-sm text-neutral-400">
                         Rendu photoréaliste en cours…
                       </p>
@@ -799,13 +782,10 @@ export default function Home() {
                     </div>
                   ) : (
                     <div className="flex min-h-[360px] flex-col items-center justify-center gap-3 text-center lg:min-h-[520px]">
-                      <div className="h-px w-16 bg-gradient-to-r from-transparent via-champagne/50 to-transparent" />
-                      <BlurText
-                        as="p"
-                        text="Votre rendu apparaîtra ici"
-                        className="font-display justify-center text-xl font-semibold text-neutral-300"
-                        delay={60}
-                      />
+                      <div className="h-px w-16 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+                      <p className="font-display text-xl font-semibold text-neutral-300">
+                        Votre rendu apparaîtra ici
+                      </p>
                       <p className="max-w-sm text-sm text-neutral-600">
                         Uploadez une photo, choisissez un preset, générez. Le
                         slider avant/après s&apos;affiche dès que le résultat
@@ -819,7 +799,7 @@ export default function Home() {
           ) : (
             <div className="animate-fade-up mx-auto max-w-4xl">
               <Panel className="mb-6 p-5 sm:p-6">
-                <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-champagne">
+                <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
                   Remplacer un objet
                 </p>
                 <h2 className="font-display mt-2 text-3xl font-semibold text-white">
@@ -862,7 +842,7 @@ export default function Home() {
                     rows={4}
                     placeholder={VIDEO_PROMPT_PLACEHOLDER}
                     disabled={videoLoading}
-                    className="w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none placeholder:text-neutral-700 focus:border-champagne/50 disabled:opacity-50"
+                    className="w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none placeholder:text-neutral-700 focus:border-primary/50 disabled:opacity-50"
                   />
                 </section>
 
@@ -873,7 +853,7 @@ export default function Home() {
                     disabled={
                       videoLoading || !videoSource || !videoPrompt.trim()
                     }
-                    className="cursor-pointer rounded-2xl bg-champagne px-6 py-3.5 text-sm font-bold text-ink transition hover:bg-champagne-soft disabled:cursor-not-allowed disabled:opacity-40"
+                    className="cursor-pointer rounded-2xl bg-primary px-6 py-3.5 text-sm font-bold text-ink transition hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {videoLoading
                       ? "Génération vidéo… (~90s+)"
@@ -909,7 +889,7 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={downloadVideo}
-                        className="cursor-pointer rounded-xl bg-champagne px-4 py-2.5 text-sm font-bold text-ink transition hover:bg-champagne-soft"
+                        className="cursor-pointer rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-ink transition hover:bg-primary-soft"
                       >
                         Télécharger
                       </button>

@@ -1,4 +1,4 @@
-# FakeIt
+# Bluminoo Studio
 
 Application web qui transforme une photo (visage, poignet ou scène) en une version
 ultra-réaliste avec un élément de luxe intégré (montre, voiture, décor haut de gamme),
@@ -6,7 +6,10 @@ en préservant la personne, la pose, la lumière et le cadrage d'origine — en 
 ou en **vidéo**.
 
 Propulsée par **Google Gemini 2.5 Flash Image**, **fal.ai Kling O3**, Next.js 14
-(App Router), TypeScript et Tailwind CSS.
+(App Router), TypeScript et Tailwind CSS. Fond animé **DotField** (React Bits).
+
+> Le projet Vercel et le dépôt s'appellent toujours `fakeit` : seule l'interface
+> a été rebaptisée.
 
 ## Fonctionnalités
 
@@ -15,7 +18,7 @@ Propulsée par **Google Gemini 2.5 Flash Image**, **fal.ai Kling O3**, Next.js 1
 - 3 presets : **Montre**, **Voiture**, **Lieu**
 - Champ de prompt personnalisé (remplace le preset s'il est rempli)
 - Compression/redimensionnement automatique côté client (> 2 Mo → max 1536 px, JPEG 0.9)
-- Comparaison Avant / Après, téléchargement (`fakeit-result.png`) et régénération
+- Comparaison Avant / Après, téléchargement (`bluminoo-result.png`) et régénération
 
 ### Vidéo — Remplacer un Objet (fal.ai)
 - Upload image source (requis) + image objet de remplacement (optionnel)

@@ -4,12 +4,12 @@
 
 :root {
   color-scheme: dark;
-  --ink: #0a0908;
-  --panel: #12100e;
+  --ink: #0a0810;
+  --panel: #13101b;
   --line: rgba(255, 255, 255, 0.08);
-  --champagne: #d4af77;
-  --champagne-soft: #f5e6c8;
-  --champagne-deep: #c9a227;
+  --primary: #a855f7;
+  --primary-soft: #d8b4fe;
+  --primary-deep: #7e22ce;
 }
 
 html,
@@ -35,12 +35,11 @@ body {
   background: var(--ink);
 }
 
-.studio-aurora {
+.studio-backdrop {
   pointer-events: none;
   position: fixed;
   inset: 0;
   z-index: 0;
-  opacity: 0.85;
 }
 
 .studio-vignette {
@@ -49,9 +48,8 @@ body {
   inset: 0;
   z-index: 0;
   background:
-    radial-gradient(ellipse 70% 45% at 50% -10%, rgba(212, 175, 119, 0.12), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 100% 100%, rgba(201, 162, 39, 0.06), transparent 50%),
-    linear-gradient(180deg, rgba(10, 9, 8, 0.35), rgba(10, 9, 8, 0.92));
+    radial-gradient(ellipse 70% 45% at 50% -10%, rgba(168, 85, 247, 0.14), transparent 55%),
+    linear-gradient(180deg, rgba(10, 8, 16, 0.2), rgba(10, 8, 16, 0.75));
 }
 
 .studio-content {
@@ -60,8 +58,6 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-star-movement-bottom,
-  .animate-star-movement-top,
   .animate-fade-up,
   .animate-fade-up-delay {
     animation: none !important;
@@ -81,15 +77,15 @@ body {
   width: 18px;
   height: 18px;
   border-radius: 9999px;
-  background: var(--champagne);
-  border: 2px solid #111;
-  box-shadow: 0 0 0 1px rgba(212, 175, 119, 0.45);
+  background: var(--primary);
+  border: 2px solid #120f17;
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.45);
 }
 
 .compare-range::-moz-range-thumb {
   width: 18px;
   height: 18px;
   border-radius: 9999px;
-  background: var(--champagne);
-  border: 2px solid #111;
+  background: var(--primary);
+  border: 2px solid #120f17;
 }

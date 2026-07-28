@@ -15,7 +15,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "FakeIt — Luxe instantané",
+  title: "Bluminoo Studio",
   description:
     "Uploadez une photo et générez une version ultra-réaliste avec un élément de luxe intégré.",
 };
