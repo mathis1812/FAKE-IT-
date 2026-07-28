@@ -14,10 +14,7 @@ const ColorBends = dynamic(
   { ssr: false },
 );
 
-// Palette dérivée de la couleur principale #A855F7. Volontairement sans teinte
-// quasi blanche : les couleurs s'additionnent dans le shader et saturaient vers
-// le blanc là où les bandes se recouvrent.
-const BEND_COLORS = ["#a855f7", "#6d28d9", "#8b5cf6"];
+const BEND_COLOR = "#A855F7";
 
 fal.config({
   proxyUrl: "/api/fal/proxy",
@@ -515,30 +512,33 @@ export default function Home() {
     <div className="studio-shell min-h-screen">
       <div className="studio-backdrop" aria-hidden>
         <div className="absolute inset-0">
+          <DotField
+            dotRadius={1.5}
+            dotSpacing={14}
+            cursorRadius={500}
+            cursorForce={0.1}
+            bulgeOnly
+            bulgeStrength={67}
+            glowRadius={160}
+            sparkle={false}
+            waveAmplitude={0}
+          />
+        </div>
+        <div className="absolute inset-0">
           <ColorBends
-            colors={BEND_COLORS}
+            color={BEND_COLOR}
             rotation={90}
             speed={0.2}
             scale={1}
             frequency={1}
             warpStrength={1}
-            mouseInfluence={1}
+            yOffset={0.3}
+            mouseInfluence={0.3}
             noise={0.15}
-            parallax={0.5}
             iterations={1}
-            intensity={1.5}
-            bandWidth={6}
-            transparent
-          />
-        </div>
-        <div className="absolute inset-0">
-          <DotField
-            dotRadius={1.5}
-            dotSpacing={14}
-            bulgeStrength={67}
-            glowRadius={160}
-            sparkle={false}
-            waveAmplitude={0}
+            intensity={1.3}
+            bandWidth={0.14}
+            fadeTop={0.75}
           />
         </div>
       </div>

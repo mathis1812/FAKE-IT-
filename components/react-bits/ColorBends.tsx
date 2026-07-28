@@ -3,100 +3,58 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 import * as THREE from "three";
 
-const MAX_COLORS = 8;
-
 const frag = `
-#define MAX_COLORS ${MAX_COLORS}
+precision mediump float;
 uniform vec2 uCanvas;
 uniform float uTime;
 uniform float uSpeed;
 uniform vec2 uRot;
-uniform int uColorCount;
-uniform vec3 uColors[MAX_COLORS];
-uniform int uTransparent;
+uniform vec3 uColor;
 uniform float uScale;
 uniform float uFrequency;
 uniform float uWarpStrength;
-uniform vec2 uPointer; // in NDC [-1,1]
-uniform float uMouseInfluence;
-uniform float uParallax;
 uniform float uNoise;
+uniform float uBandWidth;
+uniform float uYOffset;
+uniform float uFadeTop;
+uniform vec2 uPointer;
+uniform float uMouseInfluence;
 uniform int uIterations;
 uniform float uIntensity;
-uniform float uBandWidth;
 varying vec2 vUv;
 
 void main() {
   float t = uTime * uSpeed;
-  vec2 p = vUv * 2.0 - 1.0;
-  p += uPointer * uParallax * 0.1;
+  vec2 uv = vUv;
+  uv.y += uYOffset;
+  vec2 p = uv * 2.0 - 1.0;
   vec2 rp = vec2(p.x * uRot.x - p.y * uRot.y, p.x * uRot.y + p.y * uRot.x);
-  vec2 q = vec2(rp.x * (uCanvas.x / uCanvas.y), rp.y);
-  q /= max(uScale, 0.0001);
+  float aspect = uCanvas.x / uCanvas.y;
+  vec2 q = vec2(rp.x * aspect, rp.y);
+  float invScale = 1.0 / max(uScale, 0.0001);
+  q *= invScale;
   q /= 0.5 + 0.2 * dot(q, q);
+  q += (uPointer - rp) * uMouseInfluence * 0.2;
   q += 0.2 * cos(t) - 7.56;
-  vec2 toward = (uPointer - rp);
-  q += toward * uMouseInfluence * 0.2;
 
-    for (int j = 0; j < 5; j++) {
-      if (j >= uIterations - 1) break;
-      vec2 rr = sin(1.5 * (q.yx * uFrequency) + 2.0 * cos(q * uFrequency));
-      q += (rr - q) * 0.15;
-    }
+  for (int i = 0; i < 5; i++) {
+    if (i >= uIterations) break;
+    vec2 r = sin(1.5 * (q.yx * uFrequency) + 2.0 * cos(q * uFrequency));
+    q = q + (r - q) * uWarpStrength;
+  }
 
-    vec3 col = vec3(0.0);
-    float a = 1.0;
+  float m = length(q + sin(5.0 * q.y * uFrequency - 3.0 * t) * 0.25);
 
-    if (uColorCount > 0) {
-      vec2 s = q;
-      vec3 sumCol = vec3(0.0);
-      float cover = 0.0;
-      for (int i = 0; i < MAX_COLORS; ++i) {
-            if (i >= uColorCount) break;
-            s -= 0.01;
-            vec2 r = sin(1.5 * (s.yx * uFrequency) + 2.0 * cos(s * uFrequency));
-            float m0 = length(r + sin(5.0 * r.y * uFrequency - 3.0 * t + float(i)) / 4.0);
-            float kBelow = clamp(uWarpStrength, 0.0, 1.0);
-            float kMix = pow(kBelow, 0.3); // strong response across 0..1
-            float gain = 1.0 + max(uWarpStrength - 1.0, 0.0); // allow >1 to amplify displacement
-            vec2 disp = (r - s) * kBelow;
-            vec2 warped = s + disp * gain;
-            float m1 = length(warped + sin(5.0 * warped.y * uFrequency - 3.0 * t + float(i)) / 4.0);
-            float m = mix(m0, m1, kMix);
-            float w = 1.0 - exp(-uBandWidth / exp(uBandWidth * m));
-            sumCol += uColors[i] * w;
-            cover = max(cover, w);
-      }
-      col = clamp(sumCol, 0.0, 1.0);
-      a = uTransparent > 0 ? cover : 1.0;
-    } else {
-        vec2 s = q;
-        for (int k = 0; k < 3; ++k) {
-            s -= 0.01;
-            vec2 r = sin(1.5 * (s.yx * uFrequency) + 2.0 * cos(s * uFrequency));
-            float m0 = length(r + sin(5.0 * r.y * uFrequency - 3.0 * t + float(k)) / 4.0);
-            float kBelow = clamp(uWarpStrength, 0.0, 1.0);
-            float kMix = pow(kBelow, 0.3);
-            float gain = 1.0 + max(uWarpStrength - 1.0, 0.0);
-            vec2 disp = (r - s) * kBelow;
-            vec2 warped = s + disp * gain;
-            float m1 = length(warped + sin(5.0 * warped.y * uFrequency - 3.0 * t + float(k)) / 4.0);
-            float m = mix(m0, m1, kMix);
-            col[k] = 1.0 - exp(-uBandWidth / exp(uBandWidth * m));
-        }
-        a = uTransparent > 0 ? max(max(col.r, col.g), col.b) : 1.0;
-    }
+  float w = 1.0 - exp(-6.0 / exp(6.0 * m));
+  w = pow(clamp(w, 0.0, 1.0), uBandWidth);
+  w *= smoothstep(uFadeTop, 0.0, vUv.y);
+  w *= uIntensity;
 
-    col *= uIntensity;
+  vec3 col = uColor * w;
+  col += (fract(sin(dot(gl_FragCoord.xy + vec2(uTime), vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * uNoise;
+  col = clamp(col, 0.0, 1.0) * w;
 
-    if (uNoise > 0.0001) {
-      float n = fract(sin(dot(gl_FragCoord.xy + vec2(uTime), vec2(12.9898, 78.233))) * 43758.5453123);
-      col += (n - 0.5) * uNoise;
-      col = clamp(col, 0.0, 1.0);
-    }
-
-    vec3 rgb = (uTransparent > 0) ? col * a : col;
-    gl_FragColor = vec4(rgb, a);
+  gl_FragColor = vec4(col, w);
 }
 `;
 
@@ -111,20 +69,20 @@ void main() {
 type ColorBendsProps = {
   className?: string;
   style?: CSSProperties;
+  color?: string;
   rotation?: number;
   speed?: number;
-  colors?: string[];
-  transparent?: boolean;
-  autoRotate?: number;
   scale?: number;
   frequency?: number;
   warpStrength?: number;
-  mouseInfluence?: number;
-  parallax?: number;
   noise?: number;
+  bandWidth?: number;
+  yOffset?: number;
+  /** Hauteur (0-1, en UV) au-delà de laquelle le fond est masqué vers le haut. */
+  fadeTop?: number;
+  mouseInfluence?: number;
   iterations?: number;
   intensity?: number;
-  bandWidth?: number;
 };
 
 function hexToVector3(hex: string): THREE.Vector3 {
@@ -145,16 +103,18 @@ function hexToVector3(hex: string): THREE.Vector3 {
 }
 
 /**
- * ColorBends (React Bits) — bandes de couleur animées en WebGL.
+ * ColorBends (React Bits) — bande de couleur unique animée en WebGL.
+ *
+ * Port fidèle du shader utilisé sur le hero de reactbits.dev (variante à
+ * couleur unique + `fadeTop`, distincte de l'ancien composant multi-couleurs).
  *
  * Écarts assumés par rapport à la source d'origine :
  * - le pointeur est écouté sur `window` et non sur le conteneur : celui-ci sert
  *   de fond en `pointer-events: none`, il ne recevrait donc jamais d'événement
- *   et `mouseInfluence` comme `parallax` resteraient sans effet ;
- * - l'effet de mise en place ne dépend plus des props. La source listait
- *   `speed`, `scale`, `frequency`… dans ses dépendances, ce qui détruisait et
- *   recréait tout le contexte WebGL au moindre changement, alors qu'un second
- *   effet met déjà simplement les uniformes à jour ;
+ *   et `mouseInfluence` resterait sans effet ;
+ * - l'effet de mise en place ne dépend plus des props : un second effet met
+ *   déjà à jour les uniformes à chaque changement, sans détruire le contexte
+ *   WebGL ;
  * - la boucle s'arrête quand l'onglet est masqué et sous prefers-reduced-motion ;
  * - création du renderer protégée : sans WebGL on abandonne au lieu de lever ;
  * - `className` a une valeur par défaut, sinon la classe rendue contenait
@@ -163,52 +123,48 @@ function hexToVector3(hex: string): THREE.Vector3 {
 export default function ColorBends({
   className = "",
   style,
-  rotation = 90,
+  color = "#A855F7",
+  rotation = 0,
   speed = 0.2,
-  colors = [],
-  transparent = true,
-  autoRotate = 0,
   scale = 1,
   frequency = 1,
-  warpStrength = 1,
-  mouseInfluence = 1,
-  parallax = 0.5,
-  noise = 0.15,
+  warpStrength = 11,
+  noise = 0.05,
+  bandWidth = 1.4,
+  yOffset = 0,
+  fadeTop = 0.3,
+  mouseInfluence = 0.3,
   iterations = 1,
-  intensity = 1.5,
-  bandWidth = 6,
+  intensity = 1,
 }: ColorBendsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const materialRef = useRef<THREE.ShaderMaterial | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const rotationRef = useRef(rotation);
-  const autoRotateRef = useRef(autoRotate);
 
   const initRef = useRef({
     speed,
-    transparent,
     scale,
     frequency,
     warpStrength,
-    mouseInfluence,
-    parallax,
     noise,
+    bandWidth,
+    yOffset,
+    fadeTop,
+    mouseInfluence,
     iterations,
     intensity,
-    bandWidth,
   });
   initRef.current = {
     speed,
-    transparent,
     scale,
     frequency,
     warpStrength,
-    mouseInfluence,
-    parallax,
     noise,
+    bandWidth,
+    yOffset,
+    fadeTop,
+    mouseInfluence,
     iterations,
     intensity,
-    bandWidth,
   };
 
   useEffect(() => {
@@ -241,30 +197,23 @@ export default function ColorBends({
         uTime: { value: 0 },
         uSpeed: { value: init.speed },
         uRot: { value: new THREE.Vector2(1, 0) },
-        uColorCount: { value: 0 },
-        uColors: {
-          value: Array.from(
-            { length: MAX_COLORS },
-            () => new THREE.Vector3(0, 0, 0),
-          ),
-        },
-        uTransparent: { value: init.transparent ? 1 : 0 },
+        uColor: { value: hexToVector3(color) },
         uScale: { value: init.scale },
         uFrequency: { value: init.frequency },
         uWarpStrength: { value: init.warpStrength },
+        uNoise: { value: init.noise },
+        uBandWidth: { value: init.bandWidth },
+        uYOffset: { value: init.yOffset },
+        uFadeTop: { value: init.fadeTop },
         uPointer: { value: new THREE.Vector2(0, 0) },
         uMouseInfluence: { value: init.mouseInfluence },
-        uParallax: { value: init.parallax },
-        uNoise: { value: init.noise },
         uIterations: { value: init.iterations },
         uIntensity: { value: init.intensity },
-        uBandWidth: { value: init.bandWidth },
       },
       premultipliedAlpha: true,
       transparent: true,
     });
     materialRef.current = material;
-    rendererRef.current = renderer;
 
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
@@ -273,7 +222,7 @@ export default function ColorBends({
     // Deux couches animées cohabitent dans le fond : on plafonne le ratio de
     // pixels pour ne pas quadrupler le coût du fragment shader sur écran retina.
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-    renderer.setClearColor(0x000000, init.transparent ? 0 : 1);
+    renderer.setClearColor(0x000000, 0);
     renderer.domElement.style.width = "100%";
     renderer.domElement.style.height = "100%";
     renderer.domElement.style.display = "block";
@@ -282,7 +231,7 @@ export default function ColorBends({
     const clock = new THREE.Clock();
     const pointerTarget = new THREE.Vector2(0, 0);
     const pointerCurrent = new THREE.Vector2(0, 0);
-    const pointerSmooth = 8;
+    const pointerSmooth = 4;
     const rect = { left: 0, top: 0, width: 1, height: 1 };
 
     const handleResize = () => {
@@ -304,12 +253,7 @@ export default function ColorBends({
     const loop = () => {
       frame = requestAnimationFrame(loop);
       const dt = clock.getDelta();
-      const elapsed = clock.elapsedTime;
-      material.uniforms.uTime.value = elapsed;
-
-      const deg = (rotationRef.current % 360) + autoRotateRef.current * elapsed;
-      const rad = (deg * Math.PI) / 180;
-      material.uniforms.uRot.value.set(Math.cos(rad), Math.sin(rad));
+      material.uniforms.uTime.value = clock.elapsedTime;
 
       pointerCurrent.lerp(pointerTarget, Math.min(1, dt * pointerSmooth));
       material.uniforms.uPointer.value.copy(pointerCurrent);
@@ -353,6 +297,9 @@ export default function ColorBends({
     resizeObserver.observe(container);
     handleResize();
 
+    const rad = (rotation * Math.PI) / 180;
+    material.uniforms.uRot.value.set(Math.cos(rad), Math.sin(rad));
+
     renderFrame();
     start();
 
@@ -376,64 +323,50 @@ export default function ColorBends({
         container.removeChild(renderer.domElement);
       }
       materialRef.current = null;
-      rendererRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     const material = materialRef.current;
-    const renderer = rendererRef.current;
     if (!material) return;
 
-    rotationRef.current = rotation;
-    autoRotateRef.current = autoRotate;
     material.uniforms.uSpeed.value = speed;
     material.uniforms.uScale.value = scale;
     material.uniforms.uFrequency.value = frequency;
     material.uniforms.uWarpStrength.value = warpStrength;
-    material.uniforms.uMouseInfluence.value = mouseInfluence;
-    material.uniforms.uParallax.value = parallax;
     material.uniforms.uNoise.value = noise;
+    material.uniforms.uBandWidth.value = bandWidth;
+    material.uniforms.uYOffset.value = yOffset;
+    material.uniforms.uFadeTop.value = fadeTop;
+    material.uniforms.uMouseInfluence.value = mouseInfluence;
     material.uniforms.uIterations.value = iterations;
     material.uniforms.uIntensity.value = intensity;
-    material.uniforms.uBandWidth.value = bandWidth;
+    material.uniforms.uColor.value.copy(hexToVector3(color));
 
-    const parsed = (colors || [])
-      .filter(Boolean)
-      .slice(0, MAX_COLORS)
-      .map(hexToVector3);
-
-    const slots = material.uniforms.uColors.value as THREE.Vector3[];
-    for (let i = 0; i < MAX_COLORS; i++) {
-      if (i < parsed.length) slots[i].copy(parsed[i]);
-      else slots[i].set(0, 0, 0);
-    }
-    material.uniforms.uColorCount.value = parsed.length;
-    material.uniforms.uTransparent.value = transparent ? 1 : 0;
-
-    if (renderer) renderer.setClearColor(0x000000, transparent ? 0 : 1);
+    const rad = (rotation * Math.PI) / 180;
+    material.uniforms.uRot.value.set(Math.cos(rad), Math.sin(rad));
   }, [
+    color,
     rotation,
-    autoRotate,
     speed,
     scale,
     frequency,
     warpStrength,
-    mouseInfluence,
-    parallax,
     noise,
+    bandWidth,
+    yOffset,
+    fadeTop,
+    mouseInfluence,
     iterations,
     intensity,
-    bandWidth,
-    colors,
-    transparent,
   ]);
 
   return (
     <div
       ref={containerRef}
       className={`relative h-full w-full overflow-hidden ${className}`}
-      style={style}
+      style={{ mixBlendMode: "screen", ...style }}
     />
   );
 }
