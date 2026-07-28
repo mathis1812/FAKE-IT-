@@ -51,13 +51,37 @@ Ouvrez [http://localhost:3000](http://localhost:3000).
 
 ## 3. Déployer sur Vercel
 
+Le projet Vercel existe déjà (`fakeit`, team `mathisvrg's projects`) et sert
+https://fakeit-delta.vercel.app. Ses identifiants sont codés en dur dans
+`scripts/deploy.sh` — il ne manque qu'un token.
+
+### Créer le token
+
+1. Ouvrez [vercel.com/account/tokens](https://vercel.com/account/tokens)
+2. **Create Token** → scope `mathisvrg's projects` → copiez la valeur
+   (elle n'est affichée qu'une seule fois)
+
+### Où le coller
+
+| Usage | Emplacement | Nom |
+| --- | --- | --- |
+| Déploiement auto à chaque push sur `main` | GitHub → Settings → Secrets and variables → Actions | `VERCEL_TOKEN` |
+| Agents Cursor Cloud | Cursor Dashboard → Cloud Agents → Secrets | `VERCEL_TOKEN` |
+| Machine locale | `export VERCEL_TOKEN=…` | `VERCEL_TOKEN` |
+
+### Déployer
+
 ```bash
-npm i -g vercel   # si nécessaire
-vercel --prod
+npm run deploy           # production
+npm run deploy:preview    # preview
 ```
 
-Ajoutez ensuite les variables d'environnement dans le dashboard Vercel
-(**Project → Settings → Environment Variables**) :
+Le workflow `.github/workflows/deploy.yml` fait la même chose automatiquement à
+chaque push sur `main`. Sans le secret, il émet un avertissement et n'échoue pas.
+
+### Variables d'environnement de l'app
+
+Déjà configurées côté Vercel (**Project → Settings → Environment Variables**) :
 
 ```
 GEMINI_API_KEY = votre_cle_gemini

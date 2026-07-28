@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "deploy": "bash scripts/deploy.sh production",
+    "deploy:preview": "bash scripts/deploy.sh preview"
   },
   "dependencies": {
     "@fal-ai/client": "^1.10.1",
