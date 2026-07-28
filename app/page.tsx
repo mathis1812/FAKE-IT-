@@ -9,6 +9,16 @@ const DotField = dynamic(() => import("@/components/react-bits/DotField"), {
   ssr: false,
 });
 
+const ColorBends = dynamic(
+  () => import("@/components/react-bits/ColorBends"),
+  { ssr: false },
+);
+
+// Palette dérivée de la couleur principale #A855F7. Volontairement sans teinte
+// quasi blanche : les couleurs s'additionnent dans le shader et saturaient vers
+// le blanc là où les bandes se recouvrent.
+const BEND_COLORS = ["#a855f7", "#6d28d9", "#8b5cf6"];
+
 fal.config({
   proxyUrl: "/api/fal/proxy",
 });
@@ -504,14 +514,33 @@ export default function Home() {
   return (
     <div className="studio-shell min-h-screen">
       <div className="studio-backdrop" aria-hidden>
-        <DotField
-          dotRadius={1.5}
-          dotSpacing={14}
-          bulgeStrength={67}
-          glowRadius={160}
-          sparkle={false}
-          waveAmplitude={0}
-        />
+        <div className="absolute inset-0">
+          <ColorBends
+            colors={BEND_COLORS}
+            rotation={90}
+            speed={0.2}
+            scale={1}
+            frequency={1}
+            warpStrength={1}
+            mouseInfluence={1}
+            noise={0.15}
+            parallax={0.5}
+            iterations={1}
+            intensity={1.5}
+            bandWidth={6}
+            transparent
+          />
+        </div>
+        <div className="absolute inset-0">
+          <DotField
+            dotRadius={1.5}
+            dotSpacing={14}
+            bulgeStrength={67}
+            glowRadius={160}
+            sparkle={false}
+            waveAmplitude={0}
+          />
+        </div>
       </div>
       <div className="studio-vignette" aria-hidden />
 
