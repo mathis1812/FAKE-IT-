@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Cormorant, Montserrat } from "next/font/google";
 import "./globals.css";
+import StudioBackdrop from "@/components/StudioBackdrop";
+import SiteHeader from "@/components/SiteHeader";
 
 const cormorant = Cormorant({
   subsets: ["latin"],
@@ -28,7 +30,18 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`}>
       <body className="bg-ink font-body text-neutral-100 antialiased">
-        {children}
+        <div className="studio-shell min-h-screen">
+          <StudioBackdrop />
+          <div className="studio-content min-h-screen">
+            <SiteHeader />
+            <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
+              {children}
+              <footer className="mt-12 text-center text-[11px] uppercase tracking-[0.18em] text-neutral-700">
+                Gemini Flash Image · Kling O3 · React Bits
+              </footer>
+            </main>
+          </div>
+        </div>
       </body>
     </html>
   );
