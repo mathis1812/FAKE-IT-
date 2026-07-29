@@ -3,6 +3,7 @@
 import { fal } from "@fal-ai/client";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
+import AuthControls from "@/components/AuthControls";
 import Panel from "@/components/Panel";
 
 const DotField = dynamic(() => import("@/components/react-bits/DotField"), {
@@ -556,21 +557,24 @@ export default function Home() {
               </span>
             </div>
 
-            <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
-              {(["image", "video"] as Mode[]).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setMode(m)}
-                  className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition duration-200 ${
-                    mode === m
-                      ? "bg-primary text-ink"
-                      : "text-neutral-400 hover:text-neutral-100"
-                  }`}
-                >
-                  {m === "image" ? "Image" : "Vidéo"}
-                </button>
-              ))}
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
+                {(["image", "video"] as Mode[]).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMode(m)}
+                    className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition duration-200 ${
+                      mode === m
+                        ? "bg-primary text-ink"
+                        : "text-neutral-400 hover:text-neutral-100"
+                    }`}
+                  >
+                    {m === "image" ? "Image" : "Vidéo"}
+                  </button>
+                ))}
+              </div>
+              <AuthControls />
             </div>
           </div>
         </header>

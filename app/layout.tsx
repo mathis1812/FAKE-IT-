@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
+import { frFR } from "@clerk/localizations";
 import { Cormorant, Montserrat } from "next/font/google";
+import { clerkAppearance } from "@/lib/clerk-appearance";
 import "./globals.css";
 
 const cormorant = Cormorant({
@@ -26,10 +29,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`}>
-      <body className="bg-ink font-body text-neutral-100 antialiased">
-        {children}
-      </body>
-    </html>
+    <ClerkProvider localization={frFR} appearance={clerkAppearance}>
+      <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`}>
+        <body className="bg-ink font-body text-neutral-100 antialiased">
+          {children}
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
