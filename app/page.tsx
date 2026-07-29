@@ -780,6 +780,41 @@ export default function Home() {
             </p>
           </Panel>
 
+          <Panel className="mb-6 p-5 sm:p-6">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/10" />
+              <p className="shrink-0 text-[10px] font-medium uppercase tracking-[0.22em] text-neutral-500">
+                Exemple de résultat
+              </p>
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/10" />
+            </div>
+            <div className="mx-auto max-w-sm overflow-hidden rounded-2xl border border-white/10 bg-black">
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video
+                src="/exemple-resultat.mp4"
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <p className="mt-3 text-center text-xs text-neutral-600">
+              Remplacement d&apos;objet par IA
+            </p>
+            <div className="mt-4 flex justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-neutral-300">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor" />
+                </svg>
+                Tes crédits
+                <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-ink">
+                  0
+                </span>
+              </div>
+            </div>
+          </Panel>
+
           <Panel className="p-5 sm:p-6">
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <DropZone
