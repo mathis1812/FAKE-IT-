@@ -267,6 +267,13 @@ function DropZone({
   );
 }
 
+const GENERATION_LOADING_MESSAGES = [
+  "Analyse de la lumière…",
+  "Ajustement des reflets…",
+  "Intégration du luxe…",
+  "Finalisation du rendu…",
+];
+
 export default function Home() {
   const [mode, setMode] = useState<Mode>("image");
 
@@ -286,6 +293,7 @@ export default function Home() {
   const [videoLoading, setVideoLoading] = useState(false);
   const [videoError, setVideoError] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
   // Un effet par upload : l'URL est libérée quand l'upload change ou que la
   // page est démontée. L'ancienne version dépendait d'un tableau de deps vide
@@ -301,6 +309,19 @@ export default function Home() {
     if (!url) return;
     return () => URL.revokeObjectURL(url);
   }, [videoObject]);
+
+  useEffect(() => {
+    if (!loading && !videoLoading) {
+      setLoadingMessageIndex(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setLoadingMessageIndex(
+        (i) => (i + 1) % GENERATION_LOADING_MESSAGES.length,
+      );
+    }, 1800);
+    return () => clearInterval(interval);
+  }, [loading, videoLoading]);
 
   const handleFile = useCallback(async (file: File) => {
     setError("");
@@ -752,11 +773,11 @@ export default function Home() {
                 <div className="flex min-h-[360px] flex-col items-center justify-center gap-4 lg:min-h-[520px]">
                   <div className="h-14 w-14 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
                   <p className="text-sm text-neutral-400">
-                    Rendu photoréaliste en cours…
+                    {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
                   </p>
                 </div>
               ) : result && prepared ? (
-                <div className="animate-fade-up">
+                <div className="animate-reveal">
                   <BeforeAfterSlider
                     before={prepared.previewUrl}
                     after={result}
@@ -906,8 +927,17 @@ export default function Home() {
               </div>
             )}
 
+            {videoLoading && (
+              <div className="mt-8 flex min-h-[200px] flex-col items-center justify-center gap-4">
+                <div className="h-14 w-14 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+                <p className="text-sm text-neutral-400">
+                  {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
+                </p>
+              </div>
+            )}
+
             {videoUrl && (
-              <section className="mt-8 animate-fade-up">
+              <section className="mt-8 animate-reveal">
                 <video
                   src={videoUrl}
                   controls

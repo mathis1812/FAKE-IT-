@@ -59,7 +59,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
-  .animate-fade-up-delay {
+  .animate-fade-up-delay,
+  .animate-reveal {
     animation: none !important;
   }
 }

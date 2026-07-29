@@ -23,11 +23,16 @@ const config: Config = {
         "fade-up": "fade-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) both",
         "fade-up-delay":
           "fade-up 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both",
+        reveal: "reveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) both",
       },
       keyframes: {
         "fade-up": {
           from: { opacity: "0", transform: "translateY(14px)" },
           to: { opacity: "1", transform: "translateY(0)" },
+        },
+        reveal: {
+          from: { opacity: "0", transform: "translateY(18px) scale(0.97)" },
+          to: { opacity: "1", transform: "translateY(0) scale(1)" },
         },
       },
     },
