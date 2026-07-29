@@ -11,14 +11,6 @@ export default function AuthShell({
 }) {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center px-4 py-12">
-      <div
-        className="pointer-events-none absolute inset-0"
-        aria-hidden
-        style={{
-          background:
-            "radial-gradient(ellipse 60% 40% at 50% 0%, rgba(168,85,247,0.22), transparent 55%), radial-gradient(ellipse 50% 35% at 80% 80%, rgba(126,34,206,0.12), transparent 50%), #0a0810",
-        }}
-      />
       <div className="relative z-10 mb-8 text-center">
         <Link href="/" className="inline-block">
           <h1 className="font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl">

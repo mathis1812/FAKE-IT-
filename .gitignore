@@ -32,3 +32,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# worktrees (superpowers subagent-driven-development)
+/.worktrees
+/.superpowers

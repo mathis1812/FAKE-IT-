@@ -1,5 +1,4 @@
 import Link from "next/link";
-import StudioHeader from "@/components/StudioHeader";
 
 const STEPS = [
   {
@@ -22,63 +21,49 @@ const STEPS = [
 
 export default function AidePage() {
   return (
-    <div className="studio-shell min-h-screen">
-      <div
-        className="pointer-events-none fixed inset-0"
-        aria-hidden
-        style={{
-          background:
-            "radial-gradient(ellipse 55% 35% at 50% 0%, rgba(168,85,247,0.16), transparent 55%), #0a0810",
-        }}
-      />
-      <div className="relative z-10">
-        <StudioHeader />
-        <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:py-16">
-          <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
-            Aide
-          </p>
-          <h1 className="font-display mt-3 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-            Comment utiliser Bluminoo
-          </h1>
-          <p className="mt-4 max-w-xl text-sm leading-relaxed text-neutral-400">
-            Transformez une photo en scène de luxe photoréaliste. Connectez-vous
-            pour générer ; vos rendus récents restent sur cet appareil dans
-            Galerie.
-          </p>
+    <div className="mx-auto max-w-3xl">
+      <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
+        Aide
+      </p>
+      <h1 className="font-display mt-3 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+        Comment utiliser Bluminoo
+      </h1>
+      <p className="mt-4 max-w-xl text-sm leading-relaxed text-neutral-400">
+        Transformez une photo en scène de luxe photoréaliste. Connectez-vous
+        pour générer ; vos rendus récents restent sur cet appareil dans Galerie.
+      </p>
 
-          <ol className="mt-12 space-y-8">
-            {STEPS.map((step, i) => (
-              <li key={step.title} className="flex gap-5">
-                <span className="font-display text-2xl font-semibold text-primary/80">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div>
-                  <h2 className="font-display text-xl font-medium text-white">
-                    {step.title}
-                  </h2>
-                  <p className="mt-2 text-sm leading-relaxed text-neutral-400">
-                    {step.body}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
+      <ol className="mt-12 space-y-8">
+        {STEPS.map((step, i) => (
+          <li key={step.title} className="flex gap-5">
+            <span className="font-display text-2xl font-semibold text-primary/80">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <div>
+              <h2 className="font-display text-xl font-medium text-white">
+                {step.title}
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-400">
+                {step.body}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ol>
 
-          <div className="mt-14 flex flex-wrap gap-3">
-            <Link
-              href="/"
-              className="rounded-full bg-primary px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.14em] text-ink transition hover:bg-primary-soft"
-            >
-              Ouvrir le studio
-            </Link>
-            <Link
-              href="/account"
-              className="rounded-full border border-white/10 px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-200 transition hover:border-primary/40 hover:text-white"
-            >
-              Mon compte
-            </Link>
-          </div>
-        </main>
+      <div className="mt-14 flex flex-wrap gap-3">
+        <Link
+          href="/"
+          className="rounded-full bg-primary px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.14em] text-ink transition hover:bg-primary-soft"
+        >
+          Ouvrir le studio
+        </Link>
+        <Link
+          href="/account"
+          className="rounded-full border border-white/10 px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-200 transition hover:border-primary/40 hover:text-white"
+        >
+          Mon compte
+        </Link>
       </div>
     </div>
   );

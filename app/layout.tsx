@@ -3,6 +3,8 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { frFR } from "@clerk/localizations";
 import { Cormorant, Montserrat } from "next/font/google";
 import { clerkAppearance } from "@/lib/clerk-appearance";
+import StudioBackdrop from "@/components/StudioBackdrop";
+import SiteChrome from "@/components/SiteChrome";
 import "./globals.css";
 
 const cormorant = Cormorant({
@@ -32,7 +34,10 @@ export default function RootLayout({
     <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`}>
       <body className="bg-ink font-body text-neutral-100 antialiased">
         <ClerkProvider localization={frFR} appearance={clerkAppearance}>
-          {children}
+          <div className="studio-shell min-h-screen">
+            <StudioBackdrop />
+            <SiteChrome>{children}</SiteChrome>
+          </div>
         </ClerkProvider>
       </body>
     </html>
