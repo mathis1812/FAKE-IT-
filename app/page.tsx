@@ -3,8 +3,9 @@
 import { fal } from "@fal-ai/client";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
-import AuthControls from "@/components/AuthControls";
 import Panel from "@/components/Panel";
+import StudioHeader from "@/components/StudioHeader";
+import { saveGalleryItem } from "@/lib/gallery";
 
 const DotField = dynamic(() => import("@/components/react-bits/DotField"), {
   ssr: false,
@@ -391,9 +392,13 @@ export default function Home() {
         return;
       }
       if (data.imageBase64) {
-        setResult(
-          `data:${data.mimeType || "image/png"};base64,${data.imageBase64}`,
-        );
+        const dataUrl = `data:${data.mimeType || "image/png"};base64,${data.imageBase64}`;
+        setResult(dataUrl);
+        saveGalleryItem({
+          type: "image",
+          url: dataUrl,
+          label: PRESETS[category].label,
+        });
       } else {
         setError("Réponse inattendue du serveur. Réessayez.");
       }
@@ -479,8 +484,14 @@ export default function Home() {
         setVideoError(data.error);
         return;
       }
-      if (data.videoUrl) setVideoUrl(data.videoUrl);
-      else setVideoError("Réponse inattendue du serveur. Réessayez.");
+      if (data.videoUrl) {
+        setVideoUrl(data.videoUrl);
+        saveGalleryItem({
+          type: "video",
+          url: data.videoUrl,
+          label: "Vidéo",
+        });
+      } else setVideoError("Réponse inattendue du serveur. Réessayez.");
     } catch (err) {
       setVideoError(
         err instanceof Error
@@ -546,38 +557,11 @@ export default function Home() {
       <div className="studio-vignette" aria-hidden />
 
       <div className="studio-content min-h-screen">
-        <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-ink/55 backdrop-blur-2xl">
-          <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-            <div className="flex items-baseline gap-3">
-              <h1 className="font-display text-3xl font-semibold tracking-tight text-white">
-                Blumin<span className="text-primary">oo</span>
-              </h1>
-              <span className="hidden text-[10px] font-medium uppercase tracking-[0.22em] text-neutral-500 sm:inline">
-                Studio
-              </span>
-            </div>
-
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
-                {(["image", "video"] as Mode[]).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setMode(m)}
-                    className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition duration-200 ${
-                      mode === m
-                        ? "bg-primary text-ink"
-                        : "text-neutral-400 hover:text-neutral-100"
-                    }`}
-                  >
-                    {m === "image" ? "Image" : "Vidéo"}
-                  </button>
-                ))}
-              </div>
-              <AuthControls />
-            </div>
-          </div>
-        </header>
+        <StudioHeader
+          mode={mode}
+          onModeChange={setMode}
+          showModeSwitch
+        />
 
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
           {mode === "image" ? (
