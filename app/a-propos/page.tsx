@@ -42,7 +42,7 @@ export default function AProposPage() {
         </p>
         <p className="mt-3 text-sm leading-relaxed text-neutral-400">
           Propulsé par Google Gemini 2.5 Flash Image pour l&apos;image, et
-          Kling (via fal.ai) pour la vidéo.
+          Kling O3 (via fal.ai) pour la vidéo.
         </p>
       </Panel>
 
