@@ -1,4 +1,5 @@
 import { fal } from "@fal-ai/client";
+import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -22,6 +23,11 @@ function extractVideoUrl(result: FalVideoResult): string | null {
 }
 
 export async function POST(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
+  }
+
   const falKey = process.env.FAL_KEY;
   if (!falKey) {
     return NextResponse.json(

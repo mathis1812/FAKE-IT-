@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
+import { frFR } from "@clerk/localizations";
 import { Cormorant, Montserrat } from "next/font/google";
-import "./globals.css";
+import { clerkAppearance } from "@/lib/clerk-appearance";
 import StudioBackdrop from "@/components/StudioBackdrop";
-import SiteHeader from "@/components/SiteHeader";
+import SiteChrome from "@/components/SiteChrome";
+import "./globals.css";
 
 const cormorant = Cormorant({
   subsets: ["latin"],
@@ -30,18 +33,12 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`}>
       <body className="bg-ink font-body text-neutral-100 antialiased">
-        <div className="studio-shell min-h-screen">
-          <StudioBackdrop />
-          <div className="studio-content min-h-screen">
-            <SiteHeader />
-            <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
-              {children}
-              <footer className="mt-12 text-center text-[11px] uppercase tracking-[0.18em] text-neutral-700">
-                Gemini Flash Image · Kling O3 · React Bits
-              </footer>
-            </main>
+        <ClerkProvider localization={frFR} appearance={clerkAppearance}>
+          <div className="studio-shell min-h-screen">
+            <StudioBackdrop />
+            <SiteChrome>{children}</SiteChrome>
           </div>
-        </div>
+        </ClerkProvider>
       </body>
     </html>
   );

@@ -3,6 +3,7 @@
 import { fal } from "@fal-ai/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Panel from "@/components/Panel";
+import { saveGalleryItem } from "@/lib/gallery";
 
 fal.config({
   proxyUrl: "/api/fal/proxy",
@@ -375,9 +376,13 @@ export default function Home() {
         return;
       }
       if (data.imageBase64) {
-        setResult(
-          `data:${data.mimeType || "image/png"};base64,${data.imageBase64}`,
-        );
+        const dataUrl = `data:${data.mimeType || "image/png"};base64,${data.imageBase64}`;
+        setResult(dataUrl);
+        saveGalleryItem({
+          type: "image",
+          url: dataUrl,
+          label: PRESETS[category].label,
+        });
       } else {
         setError("Réponse inattendue du serveur. Réessayez.");
       }
@@ -463,8 +468,14 @@ export default function Home() {
         setVideoError(data.error);
         return;
       }
-      if (data.videoUrl) setVideoUrl(data.videoUrl);
-      else setVideoError("Réponse inattendue du serveur. Réessayez.");
+      if (data.videoUrl) {
+        setVideoUrl(data.videoUrl);
+        saveGalleryItem({
+          type: "video",
+          url: data.videoUrl,
+          label: "Vidéo",
+        });
+      } else setVideoError("Réponse inattendue du serveur. Réessayez.");
     } catch (err) {
       setVideoError(
         err instanceof Error

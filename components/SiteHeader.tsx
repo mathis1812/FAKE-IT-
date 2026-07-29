@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
+import AuthControls from "@/components/AuthControls";
 
 const MOBILE_BREAKPOINT_QUERY = "(min-width: 768px)";
 
@@ -11,22 +12,20 @@ const NAV_ITEMS = [
   { href: "/galerie", label: "Galerie" },
   { href: "/tarifs", label: "Tarifs" },
   { href: "/a-propos", label: "À propos" },
+  { href: "/aide", label: "Aide" },
 ] as const;
 
 /**
- * Header partagé par toutes les pages : logo, nav desktop, et bouton
- * hamburger qui ouvre un panneau de navigation en overlay sur mobile.
+ * Header partagé : logo, nav desktop, auth, panneau mobile.
  */
 export default function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  // Ferme le panneau mobile à chaque changement de route.
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
-  // Verrouille le scroll du body tant que le panneau mobile est ouvert.
   useEffect(() => {
     if (!open) return;
     document.body.style.overflow = "hidden";
@@ -35,7 +34,6 @@ export default function SiteHeader() {
     };
   }, [open]);
 
-  // Échap ferme le panneau mobile.
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -45,9 +43,6 @@ export default function SiteHeader() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
-  // Ferme le panneau mobile si le viewport franchit le breakpoint `md`
-  // (≥768px) pendant qu'il est ouvert, pour éviter un scroll verrouillé
-  // sans moyen visible de fermer le panneau (bouton et scrim masqués).
   useEffect(() => {
     if (!open) return;
     const mql = window.matchMedia(MOBILE_BREAKPOINT_QUERY);
@@ -55,7 +50,6 @@ export default function SiteHeader() {
       if (e.matches) setOpen(false);
     };
     onChange(mql);
-    // Safari < 14 n'a que l'API dépréciée addListener/removeListener.
     if (typeof mql.addEventListener === "function") {
       mql.addEventListener("change", onChange);
       return () => mql.removeEventListener("change", onChange);
@@ -67,8 +61,8 @@ export default function SiteHeader() {
   return (
     <Fragment>
       <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-ink/55 backdrop-blur-2xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="flex items-baseline gap-3">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
+          <Link href="/" className="flex shrink-0 items-baseline gap-3">
             <h1 className="font-display text-3xl font-semibold tracking-tight text-white">
               Blumin<span className="text-primary">oo</span>
             </h1>
@@ -77,7 +71,7 @@ export default function SiteHeader() {
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="hidden items-center gap-1 lg:flex">
             {NAV_ITEMS.map((item) => {
               const active = pathname === item.href;
               return (
@@ -97,36 +91,48 @@ export default function SiteHeader() {
             })}
           </nav>
 
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            aria-controls="mobile-nav-panel"
-            aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
-            className="cursor-pointer rounded-xl border border-white/10 p-2 text-neutral-300 transition hover:border-white/20 hover:text-white md:hidden"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-              {open ? (
-                <path
-                  d="M6 6l12 12M18 6L6 18"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-              ) : (
-                <path
-                  d="M4 7h16M4 12h16M4 17h16"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-              )}
-            </svg>
-          </button>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="hidden sm:block">
+              <AuthControls />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-controls="mobile-nav-panel"
+              aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
+              className="cursor-pointer rounded-xl border border-white/10 p-2 text-neutral-300 transition hover:border-white/20 hover:text-white lg:hidden"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden
+              >
+                {open ? (
+                  <path
+                    d="M6 6l12 12M18 6L6 18"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                ) : (
+                  <path
+                    d="M4 7h16M4 12h16M4 17h16"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
 
         {open && (
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <div
               id="mobile-nav-panel"
               className="absolute inset-x-0 top-full z-30 border-b border-white/[0.06] bg-ink/95 backdrop-blur-2xl"
@@ -150,6 +156,9 @@ export default function SiteHeader() {
                     </Link>
                   );
                 })}
+                <div className="mt-3 border-t border-white/[0.06] pt-4 sm:hidden">
+                  <AuthControls />
+                </div>
               </nav>
             </div>
           </div>
@@ -162,7 +171,7 @@ export default function SiteHeader() {
           aria-hidden="true"
           tabIndex={-1}
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-20 bg-black/60 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-20 bg-black/60 backdrop-blur-sm lg:hidden"
         />
       )}
     </Fragment>
