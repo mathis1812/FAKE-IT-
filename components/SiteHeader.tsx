@@ -55,8 +55,13 @@ export default function SiteHeader() {
       if (e.matches) setOpen(false);
     };
     onChange(mql);
-    mql.addEventListener("change", onChange);
-    return () => mql.removeEventListener("change", onChange);
+    // Safari < 14 n'a que l'API dépréciée addListener/removeListener.
+    if (typeof mql.addEventListener === "function") {
+      mql.addEventListener("change", onChange);
+      return () => mql.removeEventListener("change", onChange);
+    }
+    mql.addListener(onChange);
+    return () => mql.removeListener(onChange);
   }, [open]);
 
   return (
