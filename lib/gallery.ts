@@ -8,7 +8,6 @@ export type GalleryEntry = {
   mode: "image" | "video";
   createdAt: number;
   resultUrl: string;
-  beforeUrl?: string;
   label: string;
 };
 

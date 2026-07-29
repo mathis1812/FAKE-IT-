@@ -47,6 +47,7 @@ export default function GaleriePage() {
             {entry.mode === "video" ? (
               <video
                 src={entry.resultUrl}
+                controls
                 muted
                 loop
                 playsInline

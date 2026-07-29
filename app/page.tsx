@@ -402,7 +402,6 @@ export default function Home() {
         addGalleryEntry({
           mode: "image",
           resultUrl: resultDataUrl,
-          beforeUrl: prepared.previewUrl,
           label: PRESETS[category].label,
         }).catch((err) => {
           console.error(
