@@ -3,6 +3,7 @@
 import { fal } from "@fal-ai/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Panel from "@/components/Panel";
+import { addGalleryEntry } from "@/lib/gallery";
 
 fal.config({
   proxyUrl: "/api/fal/proxy",
@@ -375,9 +376,19 @@ export default function Home() {
         return;
       }
       if (data.imageBase64) {
-        setResult(
-          `data:${data.mimeType || "image/png"};base64,${data.imageBase64}`,
-        );
+        const resultDataUrl = `data:${data.mimeType || "image/png"};base64,${data.imageBase64}`;
+        setResult(resultDataUrl);
+        addGalleryEntry({
+          mode: "image",
+          resultUrl: resultDataUrl,
+          beforeUrl: prepared.previewUrl,
+          label: PRESETS[category].label,
+        }).catch((err) => {
+          console.error(
+            "Impossible de sauvegarder la génération dans la galerie locale.",
+            err,
+          );
+        });
       } else {
         setError("Réponse inattendue du serveur. Réessayez.");
       }
@@ -463,8 +474,21 @@ export default function Home() {
         setVideoError(data.error);
         return;
       }
-      if (data.videoUrl) setVideoUrl(data.videoUrl);
-      else setVideoError("Réponse inattendue du serveur. Réessayez.");
+      if (data.videoUrl) {
+        setVideoUrl(data.videoUrl);
+        addGalleryEntry({
+          mode: "video",
+          resultUrl: data.videoUrl,
+          label: "Remplacement d'objet",
+        }).catch((err) => {
+          console.error(
+            "Impossible de sauvegarder la génération dans la galerie locale.",
+            err,
+          );
+        });
+      } else {
+        setVideoError("Réponse inattendue du serveur. Réessayez.");
+      }
     } catch (err) {
       setVideoError(
         err instanceof Error
