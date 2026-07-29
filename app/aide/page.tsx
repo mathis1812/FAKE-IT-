@@ -41,7 +41,7 @@ export default function AidePage() {
             Comment utiliser Bluminoo
           </h1>
           <p className="mt-4 max-w-xl text-sm leading-relaxed text-neutral-400">
-            Transformez une photo en scène de luxe photoréaliste. Compte requis
+            Transformez une photo en scène de luxe photoréaliste. Connectez-vous
             pour générer ; vos rendus récents restent sur cet appareil dans
             Galerie.
           </p>
