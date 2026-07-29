@@ -29,12 +29,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider localization={frFR} appearance={clerkAppearance}>
-      <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`}>
-        <body className="bg-ink font-body text-neutral-100 antialiased">
+    <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`}>
+      <body className="bg-ink font-body text-neutral-100 antialiased">
+        <ClerkProvider localization={frFR} appearance={clerkAppearance}>
           {children}
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }
