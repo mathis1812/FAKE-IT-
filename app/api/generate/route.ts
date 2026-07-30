@@ -159,6 +159,20 @@ export async function POST(req: NextRequest) {
       } catch {
         detail = await res.text().catch(() => "");
       }
+
+      // Gemini 2.5 Flash Image has no free tier (quota often shows limit: 0).
+      if (res.status === 429) {
+        return NextResponse.json(
+          {
+            error:
+              "Quota Gemini dépassé ou indisponible. La génération d'images (Gemini 2.5 Flash Image) n'est pas incluse dans le free tier — activez la facturation / un plan payant sur Google AI Studio (aistudio.google.com → Billing / Plan), puis réessayez. " +
+              "Détail : " +
+              (detail || "HTTP 429"),
+          },
+          { status: 429 },
+        );
+      }
+
       return NextResponse.json(
         {
           error: `Erreur du service de génération (${res.status}). ${detail || ""}`.trim(),
