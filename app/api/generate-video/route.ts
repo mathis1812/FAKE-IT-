@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const MODEL_ID = "fal-ai/kling-video/o3/standard/image-to-video";
+const MODEL_ID = "fal-ai/kling-video/v3/pro/image-to-video";
 
 type GenerateVideoBody = {
   sourceImageUrl?: string;
@@ -16,6 +16,8 @@ type FalVideoResult = {
   data?: { video?: { url?: string } };
   video?: { url?: string };
 };
+
+type KlingElement = { frontal_image_url: string };
 
 function extractVideoUrl(result: FalVideoResult): string | null {
   return result?.data?.video?.url ?? result?.video?.url ?? null;
@@ -63,10 +65,12 @@ export async function POST(req: NextRequest) {
   }
 
   let finalPrompt = prompt.trim();
+  const elements: KlingElement[] = [];
   if (objectImageUrl && typeof objectImageUrl === "string") {
+    elements.push({ frontal_image_url: objectImageUrl });
     finalPrompt +=
-      ` Use the luxury replacement object from this reference image as visual guidance: ${objectImageUrl}. ` +
-      "Integrate it photorealistically while preserving the subject, pose, lighting and background.";
+      " Integrate the luxury replacement object shown in @Element1 photorealistically, " +
+      "while preserving the subject, pose, lighting and background.";
   }
 
   try {
@@ -74,10 +78,11 @@ export async function POST(req: NextRequest) {
 
     const result = (await fal.subscribe(MODEL_ID, {
       input: {
-        image_url: sourceImageUrl,
+        start_image_url: sourceImageUrl,
         prompt: finalPrompt,
         duration: "5",
         generate_audio: false,
+        ...(elements.length > 0 ? { elements } : {}),
       },
       logs: true,
     })) as FalVideoResult;
