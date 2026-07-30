@@ -14,7 +14,10 @@ export default async function ComptePage() {
     redirect("/connexion");
   }
 
-  const { data: profile } = await supabase
+  const {
+    data: profile,
+    error: profileError,
+  } = await supabase
     .from("profiles")
     .select("credits")
     .eq("id", user.id)
@@ -43,7 +46,9 @@ export default async function ComptePage() {
             <dt className="text-xs uppercase tracking-[0.1em] text-neutral-500">
               Crédits disponibles
             </dt>
-            <dd className="mt-1 text-white">{profile?.credits ?? 0}</dd>
+            <dd className="mt-1 text-white">
+              {profileError ? "Impossible de charger ton solde pour le moment." : (profile?.credits ?? 0)}
+            </dd>
           </div>
         </dl>
 
