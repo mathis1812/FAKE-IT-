@@ -18,33 +18,37 @@ export default function InscriptionPage() {
     setError(null);
     setLoading(true);
 
-    const supabase = createClient();
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    try {
+      const supabase = createClient();
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-    setLoading(false);
-
-    if (signUpError) {
-      if (signUpError.message.toLowerCase().includes("password")) {
-        setError("Le mot de passe doit contenir au moins 6 caractères.");
-      } else {
-        setError("Une erreur est survenue, réessaie dans quelques instants.");
+      if (signUpError) {
+        if (signUpError.message.toLowerCase().includes("password")) {
+          setError("Le mot de passe doit contenir au moins 6 caractères.");
+        } else {
+          setError("Une erreur est survenue, réessaie dans quelques instants.");
+        }
+        return;
       }
-      return;
-    }
 
-    // Avec la confirmation email désactivée, Supabase renvoie un
-    // utilisateur "vide" (identities === []) si l'email existe déjà,
-    // plutôt qu'une erreur explicite.
-    if (data.user && data.user.identities && data.user.identities.length === 0) {
-      setError("Cette adresse est déjà associée à un compte.");
-      return;
-    }
+      // Avec la confirmation email désactivée, Supabase renvoie un
+      // utilisateur "vide" (identities === []) si l'email existe déjà,
+      // plutôt qu'une erreur explicite.
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        setError("Cette adresse est déjà associée à un compte.");
+        return;
+      }
 
-    router.push("/compte");
-    router.refresh();
+      router.push("/compte");
+      router.refresh();
+    } catch {
+      setError("Une erreur est survenue, réessaie dans quelques instants.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

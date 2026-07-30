@@ -20,7 +20,8 @@ begin
   insert into public.profiles (id, credits) values (new.id, 0);
   return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer
+set search_path = public, pg_temp;
 
 create trigger on_auth_user_created
   after insert on auth.users

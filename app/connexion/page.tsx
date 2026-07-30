@@ -18,21 +18,29 @@ export default function ConnexionPage() {
     setError(null);
     setLoading(true);
 
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    setLoading(false);
+      if (signInError) {
+        if (signInError.status === 400) {
+          setError("Email ou mot de passe incorrect.");
+        } else {
+          setError("Une erreur est survenue, réessaie dans quelques instants.");
+        }
+        return;
+      }
 
-    if (signInError) {
-      setError("Email ou mot de passe incorrect.");
-      return;
+      router.push("/compte");
+      router.refresh();
+    } catch {
+      setError("Une erreur est survenue, réessaie dans quelques instants.");
+    } finally {
+      setLoading(false);
     }
-
-    router.push("/compte");
-    router.refresh();
   }
 
   return (

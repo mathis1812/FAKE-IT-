@@ -31,6 +31,12 @@ export default function SiteHeader() {
   // Reflète l'état de session Supabase (null = pas encore su, évite un
   // flash "Connexion" pendant l'hydratation).
   useEffect(() => {
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ) {
+      return;
+    }
     const supabase = createClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsLoggedIn(!!session);
