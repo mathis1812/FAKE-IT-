@@ -107,7 +107,7 @@ export default function ConnexionPage() {
         <p className="mt-6 text-center text-sm text-neutral-400">
           Pas encore de compte ?{" "}
           <Link href="/inscription" className="text-primary-soft hover:underline">
-            S'inscrire
+            S&apos;inscrire
           </Link>
         </p>
       </Panel>
