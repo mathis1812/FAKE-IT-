@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 const MOBILE_BREAKPOINT_QUERY = "(min-width: 768px)";
 
@@ -20,11 +21,27 @@ const NAV_ITEMS = [
 export default function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
   // Ferme le panneau mobile à chaque changement de route.
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
+
+  // Reflète l'état de session Supabase (null = pas encore su, évite un
+  // flash "Connexion" pendant l'hydratation).
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+    });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Verrouille le scroll du body tant que le panneau mobile est ouvert.
   useEffect(() => {
@@ -77,25 +94,35 @@ export default function SiteHeader() {
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-1 md:flex">
-            {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={active ? "page" : undefined}
-                  className={`rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition duration-200 ${
-                    active
-                      ? "bg-primary text-ink"
-                      : "text-neutral-400 hover:text-neutral-100"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+          <div className="hidden items-center gap-4 md:flex">
+            <nav className="flex items-center gap-1">
+              {NAV_ITEMS.map((item) => {
+                const active = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    className={`rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition duration-200 ${
+                      active
+                        ? "bg-primary text-ink"
+                        : "text-neutral-400 hover:text-neutral-100"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+            {isLoggedIn !== null && (
+              <Link
+                href={isLoggedIn ? "/compte" : "/connexion"}
+                className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-neutral-300 transition hover:border-white/20 hover:text-white"
+              >
+                {isLoggedIn ? "Mon compte" : "Connexion"}
+              </Link>
+            )}
+          </div>
 
           <button
             type="button"
@@ -150,6 +177,15 @@ export default function SiteHeader() {
                     </Link>
                   );
                 })}
+                {isLoggedIn !== null && (
+                  <Link
+                    href={isLoggedIn ? "/compte" : "/connexion"}
+                    onClick={() => setOpen(false)}
+                    className="rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-neutral-300 transition hover:bg-white/[0.04] hover:text-white"
+                  >
+                    {isLoggedIn ? "Mon compte" : "Connexion"}
+                  </Link>
+                )}
               </nav>
             </div>
           </div>
