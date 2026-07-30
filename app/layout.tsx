@@ -36,9 +36,6 @@ export default function RootLayout({
             <SiteHeader />
             <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
               {children}
-              <footer className="mt-12 text-center text-[11px] uppercase tracking-[0.18em] text-neutral-700">
-                Gemini Flash Image · Kling O3 · React Bits
-              </footer>
             </main>
           </div>
         </div>
