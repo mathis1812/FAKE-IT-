@@ -5,7 +5,7 @@ ultra-réaliste avec un élément de luxe intégré (montre, voiture, décor hau
 en préservant la personne, la pose, la lumière et le cadrage d'origine — en **image**
 ou en **vidéo**.
 
-Propulsée par **Google Gemini 2.5 Flash Image**, **fal.ai Kling O3**, Next.js 14
+Propulsée par **Google Gemini 3 Pro Image**, **fal.ai Kling 3.0 Pro**, Next.js 14
 (App Router), TypeScript et Tailwind CSS. Fond animé **DotField** (React Bits).
 
 > Le projet Vercel et le dépôt s'appellent toujours `fakeit` : seule l'interface
@@ -23,7 +23,7 @@ Propulsée par **Google Gemini 2.5 Flash Image**, **fal.ai Kling O3**, Next.js 1
 ### Vidéo — Remplacer un Objet (fal.ai)
 - Upload image source (requis) + image objet de remplacement (optionnel)
 - Prompt libre décrivant le remplacement
-- Génération d'une courte vidéo (~5 s) via Kling O3 image-to-video
+- Génération d'une courte vidéo (~5 s) via Kling 3.0 Pro image-to-video
 - Upload sécurisé via proxy fal (`/api/fal/proxy`) — `FAL_KEY` jamais exposée au client
 
 ## 1. Obtenir les clés API
@@ -98,8 +98,10 @@ Redéployez pour que les variables soient prises en compte.
 
 ## Coût
 
-- Image Gemini Flash : environ **~0,04 $ / image**
-- Vidéo Kling O3 (fal) : environ **~0,084 $ / sec** (~0,42 $ pour 5 s)
+- Image Gemini 3 Pro Image : environ **~0,15 $ / image** (résolution standard)
+- Vidéo Kling 3.0 Pro (fal) : environ **~1,68 $ / 10 s avec audio**, soit
+  **~0,84 $ pour 5 s** (l'app génère sans audio par défaut, coût réel
+  probablement inférieur à cette estimation)
 
 ## Scripts
 
