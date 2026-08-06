@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createServiceClient();
+  let dbWriteFailed = false;
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
           : null;
       }
 
-      await supabase
+      const { error: updateError } = await supabase
         .from("profiles")
         .update({
           stripe_customer_id: customerId ?? null,
@@ -76,6 +77,14 @@ export async function POST(req: NextRequest) {
           current_period_end: currentPeriodEnd,
         })
         .eq("id", userId);
+
+      if (updateError) {
+        console.error(
+          `[stripe-webhook] échec update profiles pour ${event.type} (event ${event.id}):`,
+          updateError,
+        );
+        dbWriteFailed = true;
+      }
     }
   }
 
@@ -87,7 +96,10 @@ export async function POST(req: NextRequest) {
       // typings in favor of `invoice.parent.subscription_details.subscription`
       // (invoices can now have non-subscription parents too). Same value,
       // new path.
-      const subscriptionRef = invoice.parent?.subscription_details?.subscription;
+      const subscriptionRef =
+        invoice.parent?.subscription_details?.subscription ??
+        (invoice as unknown as { subscription?: string | Stripe.Subscription })
+          .subscription;
       const subscriptionId =
         typeof subscriptionRef === "string"
           ? subscriptionRef
@@ -100,7 +112,7 @@ export async function POST(req: NextRequest) {
         const periodEnd = currentPeriodEndOf(subscription);
 
         if (planId) {
-          await supabase
+          const { error: updateError } = await supabase
             .from("profiles")
             .update({
               credits: PLANS[planId].credits,
@@ -109,6 +121,18 @@ export async function POST(req: NextRequest) {
                 : null,
             })
             .eq("stripe_subscription_id", subscriptionId);
+
+          if (updateError) {
+            console.error(
+              `[stripe-webhook] échec update profiles pour ${event.type} (event ${event.id}):`,
+              updateError,
+            );
+            dbWriteFailed = true;
+          }
+        } else {
+          console.error(
+            `[stripe-webhook] planIdForPriceId introuvable pour priceId=${priceId} (subscriptionId=${subscriptionId}, event ${event.id})`,
+          );
         }
       }
     }
@@ -117,10 +141,25 @@ export async function POST(req: NextRequest) {
   if (event.type === "customer.subscription.deleted") {
     const subscription = event.data.object as Stripe.Subscription;
 
-    await supabase
+    const { error: updateError } = await supabase
       .from("profiles")
       .update({ plan: null, stripe_subscription_id: null })
       .eq("stripe_subscription_id", subscription.id);
+
+    if (updateError) {
+      console.error(
+        `[stripe-webhook] échec update profiles pour ${event.type} (event ${event.id}):`,
+        updateError,
+      );
+      dbWriteFailed = true;
+    }
+  }
+
+  if (dbWriteFailed) {
+    return NextResponse.json(
+      { error: "Échec de mise à jour du profil, réessaie." },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ received: true });
