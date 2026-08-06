@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
           : null;
       }
 
-      const { error: updateError } = await supabase
+      const { data: updateData, error: updateError } = await supabase
         .from("profiles")
         .update({
           stripe_customer_id: customerId ?? null,
@@ -76,7 +76,8 @@ export async function POST(req: NextRequest) {
           credits: PLANS[planId].credits,
           current_period_end: currentPeriodEnd,
         })
-        .eq("id", userId);
+        .eq("id", userId)
+        .select("id");
 
       if (updateError) {
         console.error(
@@ -84,7 +85,15 @@ export async function POST(req: NextRequest) {
           updateError,
         );
         dbWriteFailed = true;
+      } else if (!updateData || updateData.length === 0) {
+        console.error(
+          `[stripe-webhook] ${event.type} update matched no rows for event ${event.id} (userId=${userId} may be stale)`,
+        );
       }
+    } else {
+      console.error(
+        `[stripe-webhook] checkout.session.completed missing/invalid metadata for event ${event.id}: userId=${userId}, planId=${planId}`,
+      );
     }
   }
 
@@ -112,15 +121,17 @@ export async function POST(req: NextRequest) {
         const periodEnd = currentPeriodEndOf(subscription);
 
         if (planId) {
-          const { error: updateError } = await supabase
+          const { data: updateData, error: updateError } = await supabase
             .from("profiles")
             .update({
+              plan: planId,
               credits: PLANS[planId].credits,
               current_period_end: periodEnd
                 ? new Date(periodEnd * 1000).toISOString()
                 : null,
             })
-            .eq("stripe_subscription_id", subscriptionId);
+            .eq("stripe_subscription_id", subscriptionId)
+            .select("id");
 
           if (updateError) {
             console.error(
@@ -128,6 +139,10 @@ export async function POST(req: NextRequest) {
               updateError,
             );
             dbWriteFailed = true;
+          } else if (!updateData || updateData.length === 0) {
+            console.error(
+              `[stripe-webhook] ${event.type} update matched no rows for event ${event.id} (subscriptionId=${subscriptionId} may be stale)`,
+            );
           }
         } else {
           console.error(
@@ -141,10 +156,11 @@ export async function POST(req: NextRequest) {
   if (event.type === "customer.subscription.deleted") {
     const subscription = event.data.object as Stripe.Subscription;
 
-    const { error: updateError } = await supabase
+    const { data: updateData, error: updateError } = await supabase
       .from("profiles")
       .update({ plan: null, stripe_subscription_id: null })
-      .eq("stripe_subscription_id", subscription.id);
+      .eq("stripe_subscription_id", subscription.id)
+      .select("id");
 
     if (updateError) {
       console.error(
@@ -152,6 +168,10 @@ export async function POST(req: NextRequest) {
         updateError,
       );
       dbWriteFailed = true;
+    } else if (!updateData || updateData.length === 0) {
+      console.error(
+        `[stripe-webhook] ${event.type} update matched no rows for event ${event.id} (subscriptionId=${subscription.id} may be stale)`,
+      );
     }
   }
 

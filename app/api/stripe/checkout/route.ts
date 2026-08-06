@@ -36,9 +36,19 @@ export async function POST(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("stripe_customer_id")
+    .select("stripe_customer_id, plan")
     .eq("id", user.id)
     .single();
+
+  if (profile?.plan) {
+    return NextResponse.json(
+      {
+        error:
+          "Tu as déjà un abonnement actif. Gère ton palier depuis le portail d'abonnement.",
+      },
+      { status: 400 },
+    );
+  }
 
   let customerId = profile?.stripe_customer_id as string | null | undefined;
 

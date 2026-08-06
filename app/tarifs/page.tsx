@@ -100,6 +100,8 @@ export default async function TarifsPage() {
                 <div className="rounded-2xl border border-white/10 px-4 py-3 text-center text-sm font-medium text-neutral-500">
                   Ton palier actuel
                 </div>
+              ) : currentPlan ? (
+                <ManageSubscriptionButton />
               ) : (
                 <SubscribeButton plan={planId} isLoggedIn={!!user} />
               )}
