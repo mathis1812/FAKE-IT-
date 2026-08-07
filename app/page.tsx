@@ -1,13 +1,8 @@
 "use client";
 
-import { fal } from "@fal-ai/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Panel from "@/components/Panel";
 import { addGalleryEntry } from "@/lib/gallery";
-
-fal.config({
-  proxyUrl: "/api/fal/proxy",
-});
 
 type Mode = "image" | "video";
 type CategoryId = "montre" | "voiture" | "lieu";
@@ -124,6 +119,20 @@ function validateImageFile(file: File): string | null {
     return "Fichier trop volumineux (max 10 Mo).";
   }
   return null;
+}
+
+async function uploadImage(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch("/api/kie/upload", {
+    method: "POST",
+    body: formData,
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.fileUrl) {
+    throw new Error(data?.error || "Échec de l'upload de l'image.");
+  }
+  return data.fileUrl as string;
 }
 
 function BeforeAfterSlider({
@@ -473,9 +482,9 @@ export default function Home() {
     setVideoError("");
     setVideoUrl("");
     try {
-      const sourceImageUrl = await fal.storage.upload(videoSource.file);
+      const sourceImageUrl = await uploadImage(videoSource.file);
       const objectImageUrl = videoObject
-        ? await fal.storage.upload(videoObject.file)
+        ? await uploadImage(videoObject.file)
         : undefined;
       const res = await fetch("/api/generate-video", {
         method: "POST",
