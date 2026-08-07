@@ -829,7 +829,7 @@ export default function Home() {
               Vidéo courte, intégration réaliste
             </h2>
             <p className="mt-2 text-sm text-neutral-500">
-              ~5 s de vidéo · génération ~90 s · Kling 3.0 Pro via fal.ai
+              ~5 s de vidéo · génération ~90 s · Kling 3.0 Pro via kie.ai
             </p>
           </Panel>
 

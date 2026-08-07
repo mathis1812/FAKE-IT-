@@ -5,7 +5,7 @@ ultra-réaliste avec un élément de luxe intégré (montre, voiture, décor hau
 en préservant la personne, la pose, la lumière et le cadrage d'origine — en **image**
 ou en **vidéo**.
 
-Propulsée par **Google Gemini 3 Pro Image**, **fal.ai Kling 3.0 Pro**, Next.js 14
+Propulsée par **Google Gemini 3 Pro Image**, **kie.ai Kling 3.0 Pro**, Next.js 14
 (App Router), TypeScript et Tailwind CSS. Fond animé **DotField** (React Bits).
 
 > Le projet Vercel et le dépôt s'appellent toujours `fakeit` : seule l'interface
@@ -20,16 +20,16 @@ Propulsée par **Google Gemini 3 Pro Image**, **fal.ai Kling 3.0 Pro**, Next.js 
 - Compression/redimensionnement automatique côté client (> 2 Mo → max 1536 px, JPEG 0.9)
 - Comparaison Avant / Après, téléchargement (`bluminoo-result.png`) et régénération
 
-### Vidéo — Remplacer un Objet (fal.ai)
+### Vidéo — Remplacer un Objet (kie.ai)
 - Upload image source (requis) + image objet de remplacement (optionnel)
 - Prompt libre décrivant le remplacement
 - Génération d'une courte vidéo (~5 s) via Kling 3.0 Pro image-to-video
-- Upload sécurisé via proxy fal (`/api/fal/proxy`) — `FAL_KEY` jamais exposée au client
+- Upload sécurisé via `/api/kie/upload` — `KIE_API_KEY` jamais exposée au client
 
 ## 1. Obtenir les clés API
 
 - Gemini : [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
-- fal.ai : [fal.ai/dashboard/keys](https://fal.ai/dashboard/keys)
+- kie.ai : [kie.ai/api-key](https://kie.ai/api-key)
 
 ## 2. Lancer en local
 
@@ -41,7 +41,7 @@ Créez un fichier `.env.local` à la racine (basé sur `.env.example`) :
 
 ```bash
 GEMINI_API_KEY=votre_cle_gemini
-FAL_KEY=votre_cle_fal
+KIE_API_KEY=votre_cle_kie
 ```
 
 Puis démarrez le serveur de dev :
@@ -88,7 +88,7 @@ Déjà configurées côté Vercel (**Project → Settings → Environment Variab
 
 ```
 GEMINI_API_KEY = votre_cle_gemini
-FAL_KEY = votre_cle_fal
+KIE_API_KEY = votre_cle_kie
 ```
 
 Redéployez pour que les variables soient prises en compte.
@@ -99,9 +99,8 @@ Redéployez pour que les variables soient prises en compte.
 ## Coût
 
 - Image Gemini 3 Pro Image : environ **~0,15 $ / image** (résolution standard)
-- Vidéo Kling 3.0 Pro (fal) : environ **~1,68 $ / 10 s avec audio**, soit
-  **~0,84 $ pour 5 s** (l'app génère sans audio par défaut, coût réel
-  probablement inférieur à cette estimation)
+- Vidéo Kling 3.0 Pro (kie.ai, mode pro sans audio) : environ **~0,45 $
+  pour 5 s** (tarif kie.ai, ~20 % sous le prix officiel/fal.ai)
 
 ## Scripts
 
@@ -113,5 +112,6 @@ Redéployez pour que les variables soient prises en compte.
 ## Sécurité
 
 - `GEMINI_API_KEY` : utilisée uniquement côté serveur (`app/api/generate`)
-- `FAL_KEY` : utilisée côté serveur (`app/api/generate-video` + proxy
-  `app/api/fal/proxy`) — le client appelle fal via `proxyUrl: "/api/fal/proxy"`
+- `KIE_API_KEY` : utilisée côté serveur uniquement
+  (`app/api/generate-video`, `app/api/kie/upload`) — jamais exposée au
+  client
