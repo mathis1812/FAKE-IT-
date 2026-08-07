@@ -35,6 +35,7 @@ const VIDEO_PROMPT_PLACEHOLDER =
   "Ex : Remplace la montre au poignet par une Rolex Submariner en acier, mouvements naturels, conserve le visage, la pose et le fond…";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_VIDEO_FILE_BYTES = 4 * 1024 * 1024;
 const COMPRESS_THRESHOLD_BYTES = 2 * 1024 * 1024;
 const MAX_DIMENSION = 1536;
 const JPEG_QUALITY = 0.9;
@@ -456,6 +457,10 @@ export default function Home() {
       const validationError = validateImageFile(file);
       if (validationError) {
         setVideoError(validationError);
+        return;
+      }
+      if (file.size > MAX_VIDEO_FILE_BYTES) {
+        setVideoError("Fichier trop volumineux pour la vidéo (max 4 Mo).");
         return;
       }
       const previewUrl = URL.createObjectURL(file);
