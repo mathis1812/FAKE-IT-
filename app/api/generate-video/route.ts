@@ -1,10 +1,13 @@
-import { fal } from "@fal-ai/client";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const MODEL_ID = "fal-ai/kling-video/v3/pro/image-to-video";
+const KIE_API_BASE = "https://api.kie.ai/api/v1";
+const MODEL_ID = "kling-3.0/video";
+const OBJECT_ELEMENT_NAME = "element_1";
+const POLL_INTERVAL_MS = 4_000;
+const POLL_TIMEOUT_MS = 280_000;
 
 type GenerateVideoBody = {
   sourceImageUrl?: string;
@@ -12,24 +15,113 @@ type GenerateVideoBody = {
   prompt?: string;
 };
 
-type FalVideoResult = {
-  data?: { video?: { url?: string } };
-  video?: { url?: string };
+type KieKlingElement = {
+  name: string;
+  description: string;
+  element_input_urls: string[];
 };
 
-type KlingElement = { frontal_image_url: string };
+type KieCreateTaskResponse = {
+  code: number;
+  msg?: string;
+  data?: { taskId?: string };
+};
 
-function extractVideoUrl(result: FalVideoResult): string | null {
-  return result?.data?.video?.url ?? result?.video?.url ?? null;
+type KieTaskStatusResponse = {
+  code: number;
+  msg?: string;
+  data?: {
+    state?: "waiting" | "queuing" | "generating" | "success" | "fail";
+    resultJson?: string;
+    failMsg?: string;
+  };
+};
+
+type KieVideoResult = { resultUrls?: string[] };
+
+async function createKieTask(
+  apiKey: string,
+  prompt: string,
+  sourceImageUrl: string,
+  klingElements: KieKlingElement[],
+): Promise<string> {
+  const res = await fetch(`${KIE_API_BASE}/jobs/createTask`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: MODEL_ID,
+      input: {
+        prompt,
+        image_urls: [sourceImageUrl],
+        mode: "pro",
+        duration: "5",
+        sound: false,
+        ...(klingElements.length > 0 ? { kling_elements: klingElements } : {}),
+      },
+    }),
+  });
+
+  const json = (await res.json()) as KieCreateTaskResponse;
+  if (!res.ok || json.code !== 200 || !json.data?.taskId) {
+    throw new Error(
+      json.msg || `Erreur kie.ai (${res.status}) à la création de la tâche.`,
+    );
+  }
+  return json.data.taskId;
+}
+
+async function pollKieTask(apiKey: string, taskId: string): Promise<string> {
+  const deadline = Date.now() + POLL_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    const res = await fetch(
+      `${KIE_API_BASE}/jobs/recordInfo?taskId=${encodeURIComponent(taskId)}`,
+      { headers: { Authorization: `Bearer ${apiKey}` } },
+    );
+    const json = (await res.json()) as KieTaskStatusResponse;
+
+    if (!res.ok || json.code !== 200) {
+      throw new Error(
+        json.msg || `Erreur kie.ai (${res.status}) en interrogeant la tâche.`,
+      );
+    }
+
+    if (json.data?.state === "success") {
+      const result = JSON.parse(
+        json.data.resultJson ?? "{}",
+      ) as KieVideoResult;
+      const videoUrl = result.resultUrls?.[0];
+      if (!videoUrl) {
+        throw new Error(
+          "La tâche a réussi mais aucune vidéo n'a été renvoyée.",
+        );
+      }
+      return videoUrl;
+    }
+
+    if (json.data?.state === "fail") {
+      throw new Error(
+        json.data.failMsg || "La génération vidéo a échoué côté kie.ai.",
+      );
+    }
+
+    // "waiting" | "queuing" | "generating" (or any other in-progress state): keep polling.
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+  }
+
+  throw new Error("TIMEOUT");
 }
 
 export async function POST(req: NextRequest) {
-  const falKey = process.env.FAL_KEY;
-  if (!falKey) {
+  const apiKey = process.env.KIE_API_KEY;
+  if (!apiKey) {
     return NextResponse.json(
       {
         error:
-          "Clé FAL manquante. Définissez FAL_KEY dans vos variables d'environnement.",
+          "Clé API manquante. Définissez KIE_API_KEY dans vos variables d'environnement.",
       },
       { status: 500 },
     );
@@ -65,47 +157,43 @@ export async function POST(req: NextRequest) {
   }
 
   let finalPrompt = prompt.trim();
-  const elements: KlingElement[] = [];
+  const klingElements: KieKlingElement[] = [];
   if (objectImageUrl && typeof objectImageUrl === "string") {
-    elements.push({ frontal_image_url: objectImageUrl });
+    klingElements.push({
+      name: OBJECT_ELEMENT_NAME,
+      description: "Luxury replacement object to integrate into the scene.",
+      element_input_urls: [objectImageUrl],
+    });
     finalPrompt +=
-      " Integrate the luxury replacement object shown in @Element1 photorealistically, " +
+      ` Integrate the luxury replacement object shown in @${OBJECT_ELEMENT_NAME} photorealistically, ` +
       "while preserving the subject, pose, lighting and background.";
   }
 
   try {
-    fal.config({ credentials: falKey });
-
-    const result = (await fal.subscribe(MODEL_ID, {
-      input: {
-        start_image_url: sourceImageUrl,
-        prompt: finalPrompt,
-        duration: "5",
-        generate_audio: false,
-        ...(elements.length > 0 ? { elements } : {}),
-      },
-      logs: true,
-    })) as FalVideoResult;
-
-    const videoUrl = extractVideoUrl(result);
-    if (!videoUrl) {
+    const taskId = await createKieTask(
+      apiKey,
+      finalPrompt,
+      sourceImageUrl,
+      klingElements,
+    );
+    const videoUrl = await pollKieTask(apiKey, taskId);
+    return NextResponse.json({ videoUrl });
+  } catch (err) {
+    if (err instanceof Error && err.message === "TIMEOUT") {
       return NextResponse.json(
         {
           error:
-            "Le service vidéo n'a pas renvoyé d'URL. Réessayez dans quelques instants.",
+            "La génération a dépassé le délai imparti. Réessayez dans quelques instants.",
         },
-        { status: 502 },
+        { status: 504 },
       );
     }
-
-    return NextResponse.json({ videoUrl });
-  } catch (err) {
     const message =
-      err instanceof Error ? err.message : "Erreur inconnue lors de la génération vidéo.";
+      err instanceof Error
+        ? err.message
+        : "Erreur inconnue lors de la génération vidéo.";
     return NextResponse.json(
-      {
-        error: `Erreur du service vidéo fal.ai. ${message}`,
-      },
+      { error: `Erreur du service vidéo kie.ai. ${message}` },
       { status: 502 },
     );
   }
