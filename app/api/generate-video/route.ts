@@ -14,7 +14,9 @@ const KIE_API_BASE = "https://api.kie.ai/api/v1";
 const MODEL_ID = "kling-3.0/video";
 const OBJECT_ELEMENT_NAME = "element_1";
 const POLL_INTERVAL_MS = 4_000;
-const POLL_TIMEOUT_MS = 280_000;
+// Laisse une marge sous maxDuration=300s pour la réponse JSON (le
+// re-hébergement galerie est fire-and-forget et ne doit pas bloquer).
+const POLL_TIMEOUT_MS = 270_000;
 
 type GenerateVideoBody = {
   sourceImageUrl?: string;
@@ -219,7 +221,10 @@ export async function POST(req: NextRequest) {
       klingElements,
     );
     const videoUrl = await pollKieTask(apiKey, taskId);
-    await saveVideoGalleryEntry(
+    // Best-effort et non bloquant : un await ici risque de dépasser
+    // maxDuration après un long poll, et le client ne recevrait jamais
+    // { videoUrl } malgré une génération réussie (crédits déjà débités).
+    void saveVideoGalleryEntry(
       user.id,
       videoUrl,
       label?.trim() || "Remplacement d'objet",
