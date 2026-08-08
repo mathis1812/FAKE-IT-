@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import {
   VIDEO_GENERATION_COST,
   refundCredits,
   spendCredits,
 } from "@/lib/credits";
 import { saveVideoGalleryEntry } from "@/lib/gallery-server";
+import { requireUser } from "@/lib/supabase/require-user";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -118,17 +118,6 @@ async function pollKieTask(apiKey: string, taskId: string): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.KIE_API_KEY?.trim();
-  if (!apiKey) {
-    return NextResponse.json(
-      {
-        error:
-          "Clé API manquante. Définissez KIE_API_KEY dans vos variables d'environnement.",
-      },
-      { status: 500 },
-    );
-  }
-
   let body: GenerateVideoBody;
   try {
     body = (await req.json()) as GenerateVideoBody;
@@ -161,15 +150,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const auth = await requireUser("Connectez-vous pour générer une vidéo.");
+  if (auth.error) return auth.error;
+  const { user } = auth;
 
-  if (!user) {
+  const apiKey = process.env.KIE_API_KEY?.trim();
+  if (!apiKey) {
     return NextResponse.json(
-      { error: "Connectez-vous pour générer une vidéo." },
-      { status: 401 },
+      {
+        error:
+          "Clé API manquante. Définissez KIE_API_KEY dans vos variables d'environnement.",
+      },
+      { status: 500 },
     );
   }
 

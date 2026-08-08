@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/require-user";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
@@ -28,17 +28,9 @@ function sanitizeFilename(name: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json(
-      { error: "Connectez-vous pour uploader un fichier." },
-      { status: 401 },
-    );
-  }
+  const auth = await requireUser("Connectez-vous pour uploader un fichier.");
+  if (auth.error) return auth.error;
+  const { user } = auth;
 
   let body: SignBody;
   try {
