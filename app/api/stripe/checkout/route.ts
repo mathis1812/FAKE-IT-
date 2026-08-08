@@ -65,11 +65,28 @@ export async function POST(req: NextRequest) {
 
   if (!customerId) {
     try {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        metadata: { supabase_user_id: user.id },
-      });
-      customerId = customer.id;
+      // Réutilise un customer déjà créé pour cet utilisateur (ex. persist
+      // Supabase qui a échoué au précédent essai) pour éviter les orphelins.
+      if (user.email) {
+        const listed = await stripe.customers.list({
+          email: user.email,
+          limit: 10,
+        });
+        const match = listed.data.find(
+          (c) => c.metadata?.supabase_user_id === user.id,
+        );
+        if (match) {
+          customerId = match.id;
+        }
+      }
+
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          metadata: { supabase_user_id: user.id },
+        });
+        customerId = customer.id;
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erreur Stripe.";
       return NextResponse.json(

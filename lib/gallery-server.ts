@@ -1,8 +1,10 @@
 import { createServiceClient } from "@/lib/supabase/service";
 
 const BUCKET = "gallery";
-const VIDEO_REHOST_TIMEOUT_MS = 60_000;
-const VIDEO_REHOST_MAX_BYTES = 80 * 1024 * 1024;
+// Court : le re-hébergement tourne en fire-and-forget après la réponse
+// client ; au-delà, on tombe sur le fallback URL d'origine.
+const VIDEO_REHOST_TIMEOUT_MS = 20_000;
+const VIDEO_REHOST_MAX_BYTES = 40 * 1024 * 1024;
 
 function extensionForMimeType(mimeType: string): string {
   const subtype = mimeType.split("/")[1]?.split(";")[0]?.trim();
