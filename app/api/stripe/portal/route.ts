@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { stripe } from "@/lib/stripe";
+import { stripe, isStripeConfigured } from "@/lib/stripe";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  if (!isStripeConfigured()) {
+    return NextResponse.json(
+      {
+        error:
+          "Clé API manquante. Définissez STRIPE_SECRET_KEY dans vos variables d'environnement.",
+      },
+      { status: 500 },
+    );
+  }
+
   const supabase = createClient();
   const {
     data: { user },

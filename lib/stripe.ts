@@ -13,6 +13,14 @@ export const stripe = new Stripe(
   { apiVersion: "2026-07-29.dahlia" },
 );
 
+// Le SDK Stripe accepte silencieusement une clé absente/placeholder à la
+// construction ; chaque route doit vérifier explicitement avant d'appeler
+// l'API, pour renvoyer le même message clair que les autres clés (Gemini,
+// kie.ai) plutôt qu'une erreur Stripe "Invalid API Key" moins lisible.
+export function isStripeConfigured(): boolean {
+  return envValue("STRIPE_SECRET_KEY").length > 0;
+}
+
 export type PlanId = "decouverte" | "essentiel" | "ultimate";
 
 export const PLANS: Record<

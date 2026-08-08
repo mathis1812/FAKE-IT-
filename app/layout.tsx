@@ -3,6 +3,7 @@ import { Cormorant, Montserrat } from "next/font/google";
 import "./globals.css";
 import StudioBackdrop from "@/components/StudioBackdrop";
 import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
 
 const cormorant = Cormorant({
   subsets: ["latin"],
@@ -37,6 +38,7 @@ export default function RootLayout({
             <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
               {children}
             </main>
+            <SiteFooter />
           </div>
         </div>
       </body>

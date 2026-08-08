@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { stripe, PLANS, planIdForPriceId, envValue } from "@/lib/stripe";
+import {
+  stripe,
+  PLANS,
+  planIdForPriceId,
+  envValue,
+  isStripeConfigured,
+} from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
@@ -17,6 +23,16 @@ function currentPeriodEndOf(subscription: Stripe.Subscription): number | undefin
 }
 
 export async function POST(req: NextRequest) {
+  if (!isStripeConfigured()) {
+    return NextResponse.json(
+      {
+        error:
+          "Clé API manquante. Définissez STRIPE_SECRET_KEY dans vos variables d'environnement.",
+      },
+      { status: 500 },
+    );
+  }
+
   const signature = req.headers.get("stripe-signature");
   const webhookSecret = envValue("STRIPE_WEBHOOK_SECRET");
 
