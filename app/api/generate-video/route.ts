@@ -11,22 +11,15 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 const KIE_API_BASE = "https://api.kie.ai/api/v1";
-const MODEL_ID = "kling-3.0/video";
-const OBJECT_ELEMENT_NAME = "element_1";
+const MODEL_ID = "wan/2-7-videoedit";
 const POLL_INTERVAL_MS = 4_000;
 const POLL_TIMEOUT_MS = 280_000;
 
 type GenerateVideoBody = {
-  sourceImageUrl?: string;
+  sourceVideoUrl?: string;
   objectImageUrl?: string;
   prompt?: string;
   label?: string;
-};
-
-type KieKlingElement = {
-  name: string;
-  description: string;
-  element_input_urls: string[];
 };
 
 type KieCreateTaskResponse = {
@@ -50,8 +43,8 @@ type KieVideoResult = { resultUrls?: string[] };
 async function createKieTask(
   apiKey: string,
   prompt: string,
-  sourceImageUrl: string,
-  klingElements: KieKlingElement[],
+  sourceVideoUrl: string,
+  objectImageUrl?: string,
 ): Promise<string> {
   const res = await fetch(`${KIE_API_BASE}/jobs/createTask`, {
     method: "POST",
@@ -63,13 +56,13 @@ async function createKieTask(
       model: MODEL_ID,
       input: {
         prompt,
-        image_urls: [sourceImageUrl],
-        mode: "pro",
-        duration: "5",
-        sound: false,
-        multi_shots: false,
-        multi_prompt: [],
-        ...(klingElements.length > 0 ? { kling_elements: klingElements } : {}),
+        video_url: sourceVideoUrl,
+        ...(objectImageUrl ? { reference_image: objectImageUrl } : {}),
+        resolution: "1080p",
+        duration: 0,
+        audio_setting: "origin",
+        prompt_extend: true,
+        watermark: false,
       },
     }),
   });
@@ -118,7 +111,6 @@ async function pollKieTask(apiKey: string, taskId: string): Promise<string> {
       );
     }
 
-    // "waiting" | "queuing" | "generating" (or any other in-progress state): keep polling.
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
   }
 
@@ -147,11 +139,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { sourceImageUrl, objectImageUrl, prompt, label } = body;
+  const { sourceVideoUrl, objectImageUrl, prompt, label } = body;
 
-  if (!sourceImageUrl || typeof sourceImageUrl !== "string") {
+  if (!sourceVideoUrl || typeof sourceVideoUrl !== "string") {
     return NextResponse.json(
-      { error: "Image source manquante. Uploadez une image puis réessayez." },
+      {
+        error:
+          "Vidéo source manquante. Uploadez une vidéo puis réessayez.",
+      },
       { status: 400 },
     );
   }
@@ -199,24 +194,20 @@ export async function POST(req: NextRequest) {
   }
 
   let finalPrompt = prompt.trim();
-  const klingElements: KieKlingElement[] = [];
   if (objectImageUrl && typeof objectImageUrl === "string") {
-    klingElements.push({
-      name: OBJECT_ELEMENT_NAME,
-      description: "Luxury replacement object to integrate into the scene.",
-      element_input_urls: [objectImageUrl],
-    });
     finalPrompt +=
-      ` Integrate the luxury replacement object shown in @${OBJECT_ELEMENT_NAME} photorealistically, ` +
-      "while preserving the subject, pose, lighting and background.";
+      " Integrate the luxury replacement object shown in the reference image photorealistically, " +
+      "while preserving the subject, motion, camera movement, lighting and background.";
   }
 
   try {
     const taskId = await createKieTask(
       apiKey,
       finalPrompt,
-      sourceImageUrl,
-      klingElements,
+      sourceVideoUrl,
+      objectImageUrl && typeof objectImageUrl === "string"
+        ? objectImageUrl
+        : undefined,
     );
     const videoUrl = await pollKieTask(apiKey, taskId);
     await saveVideoGalleryEntry(

@@ -75,7 +75,7 @@ export default function MentionsLegalesPage() {
             <p>
               Les images et vidéos produites par le service sont générées
               automatiquement par des modèles d&apos;intelligence artificielle
-              tiers (Google Gemini pour l&apos;image, kie.ai/Kling pour la
+              tiers (Google Gemini pour l&apos;image, kie.ai/Wan pour la
               vidéo) à partir des photos et instructions fournies par
               l&apos;utilisateur. Bluminoo Studio ne garantit pas
               l&apos;exactitude, la conformité ou l&apos;absence
