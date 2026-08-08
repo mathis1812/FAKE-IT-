@@ -1,32 +1,39 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import { redirect } from "next/navigation";
 import Panel from "@/components/Panel";
 import PlaceholderSection from "@/components/PlaceholderSection";
-import { listGalleryEntries, type GalleryEntry } from "@/lib/gallery";
+import { createClient } from "@/lib/supabase/server";
 
-export default function GaleriePage() {
-  const [entries, setEntries] = useState<GalleryEntry[] | null>(null);
+type GalleryEntry = {
+  id: string;
+  mode: "image" | "video";
+  result_url: string;
+  label: string;
+  created_at: string;
+};
 
-  useEffect(() => {
-    listGalleryEntries()
-      .then(setEntries)
-      .catch((err) => {
-        console.error("Impossible de charger la galerie locale.", err);
-        setEntries([]);
-      });
-  }, []);
+export default async function GaleriePage() {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (entries === null) {
-    return null;
+  if (!user) {
+    redirect("/connexion");
   }
 
-  if (entries.length === 0) {
+  const { data: entries } = await supabase
+    .from("gallery_entries")
+    .select("id, mode, result_url, label, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .returns<GalleryEntry[]>();
+
+  if (!entries || entries.length === 0) {
     return (
       <PlaceholderSection
         eyebrow="Galerie"
         title="Vos prochaines générations apparaîtront ici."
-        description="Chaque génération réussie (image ou vidéo) est automatiquement sauvegardée dans ce navigateur — générez votre première photo ou vidéo pour la voir apparaître."
+        description="Chaque génération réussie (image ou vidéo) est automatiquement sauvegardée sur votre compte — générez votre première photo ou vidéo pour la voir apparaître."
       />
     );
   }
@@ -46,7 +53,7 @@ export default function GaleriePage() {
           <Panel key={entry.id} className="overflow-hidden">
             {entry.mode === "video" ? (
               <video
-                src={entry.resultUrl}
+                src={entry.result_url}
                 controls
                 muted
                 loop
@@ -56,7 +63,7 @@ export default function GaleriePage() {
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={entry.resultUrl}
+                src={entry.result_url}
                 alt={entry.label}
                 className="aspect-square w-full object-cover"
               />
@@ -66,7 +73,7 @@ export default function GaleriePage() {
                 {entry.label}
               </p>
               <p className="text-[11px] text-neutral-600">
-                {new Date(entry.createdAt).toLocaleDateString("fr-FR", {
+                {new Date(entry.created_at).toLocaleDateString("fr-FR", {
                   day: "2-digit",
                   month: "2-digit",
                   year: "numeric",

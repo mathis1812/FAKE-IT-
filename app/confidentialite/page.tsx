@@ -115,9 +115,10 @@ export default function ConfidentialitePage() {
               actif. Les photos uploadées pour une génération sont
               transmises aux prestataires d&apos;IA le temps du traitement et
               ne sont pas conservées durablement par Bluminoo Studio au-delà
-              de cette opération. Les résultats de génération affichés dans
-              la Galerie sont stockés uniquement dans le navigateur de
-              l&apos;utilisateur, pas sur nos serveurs.
+              de cette opération. Les résultats de génération réussis
+              (images et vidéos) sont conservés dans votre Galerie, associée
+              à votre compte, jusqu&apos;à suppression de votre compte ou
+              demande de votre part.
             </p>
           </section>
 

@@ -14,7 +14,7 @@ const FAQ_ITEMS = [
   {
     question: "Mes photos sont-elles conservées ?",
     answer:
-      "Vos rendus réussis sont sauvegardés uniquement dans ce navigateur (Galerie locale, 15 dernières générations) — rien n'est stocké sur un serveur qui nous appartient.",
+      "Vos rendus réussis sont sauvegardés dans votre Galerie, associée à votre compte — accessibles depuis n'importe quel appareil après connexion. La politique de confidentialité détaille les sous-traitants utilisés pour le traitement des photos.",
   },
   {
     question: "Comment fonctionne l'onglet Vidéo ?",

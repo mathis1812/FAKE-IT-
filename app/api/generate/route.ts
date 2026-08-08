@@ -5,6 +5,7 @@ import {
   refundCredits,
   spendCredits,
 } from "@/lib/credits";
+import { saveImageGalleryEntry } from "@/lib/gallery-server";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -24,6 +25,7 @@ type GenerateBody = {
   imageBase64?: string;
   mimeType?: string;
   prompt?: string;
+  label?: string;
 };
 
 type ExtractedImage = { data: string; mimeType: string };
@@ -112,7 +114,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { imageBase64, mimeType, prompt } = body;
+  const { imageBase64, mimeType, prompt, label } = body;
 
   if (!imageBase64 || !mimeType) {
     return NextResponse.json(
@@ -163,6 +165,17 @@ export async function POST(req: NextRequest) {
   const response = await generateImage(apiKey, prompt, imageBase64, mimeType);
   if (response.status >= 400) {
     await refundCredits(user.id, IMAGE_GENERATION_COST);
+  } else {
+    const result = (await response.clone().json()) as {
+      imageBase64: string;
+      mimeType: string;
+    };
+    await saveImageGalleryEntry(
+      user.id,
+      result.imageBase64,
+      result.mimeType,
+      label?.trim() || "Génération image",
+    );
   }
   return response;
 }

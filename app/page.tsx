@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Panel from "@/components/Panel";
-import { addGalleryEntry } from "@/lib/gallery";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "image" | "video";
@@ -417,6 +416,7 @@ export default function Home() {
           imageBase64: prepared.base64,
           mimeType: prepared.mimeType,
           prompt,
+          label: PRESETS[category].label,
         }),
       });
       const data = await res.json().catch(() => null);
@@ -435,16 +435,6 @@ export default function Home() {
         const resultDataUrl = `data:${data.mimeType || "image/png"};base64,${data.imageBase64}`;
         setResult(resultDataUrl);
         void refreshCredits();
-        addGalleryEntry({
-          mode: "image",
-          resultUrl: resultDataUrl,
-          label: PRESETS[category].label,
-        }).catch((err) => {
-          console.error(
-            "Impossible de sauvegarder la génération dans la galerie locale.",
-            err,
-          );
-        });
       } else {
         setError("Réponse inattendue du serveur. Réessayez.");
       }
@@ -520,7 +510,12 @@ export default function Home() {
       const res = await fetch("/api/generate-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sourceImageUrl, objectImageUrl, prompt }),
+        body: JSON.stringify({
+          sourceImageUrl,
+          objectImageUrl,
+          prompt,
+          label: "Remplacement d'objet",
+        }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data) {
@@ -537,16 +532,6 @@ export default function Home() {
       if (data.videoUrl) {
         setVideoUrl(data.videoUrl);
         void refreshCredits();
-        addGalleryEntry({
-          mode: "video",
-          resultUrl: data.videoUrl,
-          label: "Remplacement d'objet",
-        }).catch((err) => {
-          console.error(
-            "Impossible de sauvegarder la génération dans la galerie locale.",
-            err,
-          );
-        });
       } else {
         setVideoError("Réponse inattendue du serveur. Réessayez.");
       }

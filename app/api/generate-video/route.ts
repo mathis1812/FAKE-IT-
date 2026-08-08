@@ -5,6 +5,7 @@ import {
   refundCredits,
   spendCredits,
 } from "@/lib/credits";
+import { saveVideoGalleryEntry } from "@/lib/gallery-server";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -19,6 +20,7 @@ type GenerateVideoBody = {
   sourceImageUrl?: string;
   objectImageUrl?: string;
   prompt?: string;
+  label?: string;
 };
 
 type KieKlingElement = {
@@ -145,7 +147,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { sourceImageUrl, objectImageUrl, prompt } = body;
+  const { sourceImageUrl, objectImageUrl, prompt, label } = body;
 
   if (!sourceImageUrl || typeof sourceImageUrl !== "string") {
     return NextResponse.json(
@@ -217,6 +219,11 @@ export async function POST(req: NextRequest) {
       klingElements,
     );
     const videoUrl = await pollKieTask(apiKey, taskId);
+    await saveVideoGalleryEntry(
+      user.id,
+      videoUrl,
+      label?.trim() || "Remplacement d'objet",
+    );
     return NextResponse.json({ videoUrl });
   } catch (err) {
     await refundCredits(user.id, VIDEO_GENERATION_COST);
