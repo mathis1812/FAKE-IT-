@@ -59,6 +59,8 @@ async function createKieTask(
         mode: "pro",
         duration: "5",
         sound: false,
+        multi_shots: false,
+        multi_prompt: [],
         ...(klingElements.length > 0 ? { kling_elements: klingElements } : {}),
       },
     }),
