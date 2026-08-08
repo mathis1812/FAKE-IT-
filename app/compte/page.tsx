@@ -1,7 +1,10 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import Panel from "@/components/Panel";
 import SignOutButton from "@/components/SignOutButton";
+import ManageSubscriptionButton from "@/components/ManageSubscriptionButton";
 import { createClient } from "@/lib/supabase/server";
+import { PLANS, type PlanId } from "@/lib/stripe";
 
 export default async function ComptePage() {
   const supabase = createClient();
@@ -19,9 +22,19 @@ export default async function ComptePage() {
     error: profileError,
   } = await supabase
     .from("profiles")
-    .select("credits")
+    .select("credits, plan, current_period_end")
     .eq("id", user.id)
     .single();
+
+  const planId = profile?.plan as PlanId | null | undefined;
+  const planName = planId ? PLANS[planId]?.name : null;
+  const renewalDate = profile?.current_period_end
+    ? new Date(profile.current_period_end).toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+    : null;
 
   return (
     <div className="animate-fade-up mx-auto max-w-md py-8">
@@ -44,6 +57,22 @@ export default async function ComptePage() {
           </div>
           <div>
             <dt className="text-xs uppercase tracking-[0.1em] text-neutral-500">
+              Palier
+            </dt>
+            <dd className="mt-1 text-white">
+              {planName ?? "Aucun abonnement actif"}
+            </dd>
+          </div>
+          {renewalDate && (
+            <div>
+              <dt className="text-xs uppercase tracking-[0.1em] text-neutral-500">
+                Prochain renouvellement
+              </dt>
+              <dd className="mt-1 text-white">{renewalDate}</dd>
+            </div>
+          )}
+          <div>
+            <dt className="text-xs uppercase tracking-[0.1em] text-neutral-500">
               Crédits disponibles
             </dt>
             <dd className="mt-1 text-white">
@@ -52,7 +81,20 @@ export default async function ComptePage() {
           </div>
         </dl>
 
-        <div className="mt-6">
+        <div className="mt-6 space-y-3">
+          {planId ? (
+            <ManageSubscriptionButton />
+          ) : (
+            <p className="text-center text-sm text-neutral-500">
+              <Link
+                href="/tarifs"
+                className="font-medium text-primary-soft underline underline-offset-2 hover:text-primary"
+              >
+                Voir les paliers
+              </Link>{" "}
+              pour souscrire un abonnement.
+            </p>
+          )}
           <SignOutButton />
         </div>
       </Panel>
