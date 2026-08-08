@@ -1,4 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import {
+  IMAGE_GENERATION_COST,
+  refundCredits,
+  spendCredits,
+} from "@/lib/credits";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -122,6 +128,51 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "Connectez-vous pour générer une image." },
+      { status: 401 },
+    );
+  }
+
+  let hasCredits: boolean;
+  try {
+    hasCredits = await spendCredits(user.id, IMAGE_GENERATION_COST);
+  } catch (err) {
+    console.error("Échec de la vérification des crédits :", err);
+    return NextResponse.json(
+      { error: "Erreur interne lors de la vérification des crédits." },
+      { status: 500 },
+    );
+  }
+  if (!hasCredits) {
+    return NextResponse.json(
+      {
+        error:
+          "Crédits insuffisants. Rendez-vous sur la page Tarifs pour recharger votre compte.",
+      },
+      { status: 402 },
+    );
+  }
+
+  const response = await generateImage(apiKey, prompt, imageBase64, mimeType);
+  if (response.status >= 400) {
+    await refundCredits(user.id, IMAGE_GENERATION_COST);
+  }
+  return response;
+}
+
+async function generateImage(
+  apiKey: string,
+  prompt: string,
+  imageBase64: string,
+  mimeType: string,
+): Promise<NextResponse> {
   // Up to 2 attempts total: the model sometimes returns text (refusal/failure)
   // instead of an image, so we retry once.
   let lastText = "";

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Panel from "@/components/Panel";
 import { addGalleryEntry } from "@/lib/gallery";
+import { createClient } from "@/lib/supabase/client";
 
 type Mode = "image" | "video";
 type CategoryId = "montre" | "voiture" | "lieu";
@@ -304,6 +305,30 @@ export default function Home() {
   const [videoError, setVideoError] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const [credits, setCredits] = useState<number | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const refreshCredits = useCallback(async () => {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    setIsLoggedIn(!!user);
+    if (!user) {
+      setCredits(null);
+      return;
+    }
+    const { data } = await supabase
+      .from("profiles")
+      .select("credits")
+      .eq("id", user.id)
+      .single();
+    setCredits(data?.credits ?? 0);
+  }, []);
+
+  useEffect(() => {
+    void refreshCredits();
+  }, [refreshCredits]);
 
   // Un effet par upload : l'URL est libérée quand l'upload change ou que la
   // page est démontée. L'ancienne version dépendait d'un tableau de deps vide
@@ -409,6 +434,7 @@ export default function Home() {
       if (data.imageBase64) {
         const resultDataUrl = `data:${data.mimeType || "image/png"};base64,${data.imageBase64}`;
         setResult(resultDataUrl);
+        void refreshCredits();
         addGalleryEntry({
           mode: "image",
           resultUrl: resultDataUrl,
@@ -429,7 +455,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [prepared, customPrompt, category]);
+  }, [prepared, customPrompt, category, refreshCredits]);
 
   const download = useCallback(() => {
     if (!result) return;
@@ -510,6 +536,7 @@ export default function Home() {
       }
       if (data.videoUrl) {
         setVideoUrl(data.videoUrl);
+        void refreshCredits();
         addGalleryEntry({
           mode: "video",
           resultUrl: data.videoUrl,
@@ -532,7 +559,7 @@ export default function Home() {
     } finally {
       setVideoLoading(false);
     }
-  }, [videoSource, videoObject, videoPrompt]);
+  }, [videoSource, videoObject, videoPrompt, refreshCredits]);
 
   const downloadVideo = useCallback(() => {
     if (!videoUrl) return;
@@ -867,7 +894,7 @@ export default function Home() {
                 </svg>
                 Tes crédits
                 <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-ink">
-                  0
+                  {isLoggedIn ? (credits ?? "…") : "0"}
                 </span>
               </div>
             </div>
