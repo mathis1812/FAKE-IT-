@@ -6,7 +6,7 @@ const KIE_UPLOAD_URL =
   "https://kieai.redpandaai.co/api/file-stream-upload";
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.KIE_API_KEY;
+  const apiKey = process.env.KIE_API_KEY?.trim();
   if (!apiKey) {
     return NextResponse.json(
       {

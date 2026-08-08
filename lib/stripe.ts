@@ -1,8 +1,17 @@
 import Stripe from "stripe";
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "sk_placeholder_missing_key", {
-  apiVersion: "2026-07-29.dahlia",
-});
+// Toute valeur lue depuis l'environnement est nettoyée : un caractère invisible
+// collé par erreur (BOM, espace, retour ligne) rend la clé invalide, et Stripe
+// échoue alors sur une « erreur de connexion » impossible à diagnostiquer.
+// Le BOM comptant comme un espace en JS, `.trim()` le supprime également.
+export function envValue(name: string): string {
+  return (process.env[name] ?? "").trim();
+}
+
+export const stripe = new Stripe(
+  envValue("STRIPE_SECRET_KEY") || "sk_placeholder_missing_key",
+  { apiVersion: "2026-07-29.dahlia" },
+);
 
 export type PlanId = "decouverte" | "essentiel" | "ultimate";
 
@@ -12,19 +21,19 @@ export const PLANS: Record<
 > = {
   decouverte: {
     name: "Découverte",
-    priceId: process.env.STRIPE_PRICE_DECOUVERTE!,
+    priceId: envValue("STRIPE_PRICE_DECOUVERTE"),
     priceEur: 9.9,
     credits: 2000,
   },
   essentiel: {
     name: "Essentiel",
-    priceId: process.env.STRIPE_PRICE_ESSENTIEL!,
+    priceId: envValue("STRIPE_PRICE_ESSENTIEL"),
     priceEur: 19.9,
     credits: 5000,
   },
   ultimate: {
     name: "Ultimate",
-    priceId: process.env.STRIPE_PRICE_ULTIMATE!,
+    priceId: envValue("STRIPE_PRICE_ULTIMATE"),
     priceEur: 39.9,
     credits: 12000,
   },

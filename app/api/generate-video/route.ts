@@ -124,7 +124,7 @@ async function pollKieTask(apiKey: string, taskId: string): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.KIE_API_KEY;
+  const apiKey = process.env.KIE_API_KEY?.trim();
   if (!apiKey) {
     return NextResponse.json(
       {

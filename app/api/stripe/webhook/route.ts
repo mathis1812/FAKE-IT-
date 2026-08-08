@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { stripe, PLANS, planIdForPriceId } from "@/lib/stripe";
+import { stripe, PLANS, planIdForPriceId, envValue } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
@@ -18,7 +18,7 @@ function currentPeriodEndOf(subscription: Stripe.Subscription): number | undefin
 
 export async function POST(req: NextRequest) {
   const signature = req.headers.get("stripe-signature");
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = envValue("STRIPE_WEBHOOK_SECRET");
 
   if (!signature || !webhookSecret) {
     return NextResponse.json(
