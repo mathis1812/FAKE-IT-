@@ -469,10 +469,11 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, [refreshCredits]);
 
+  const creditsReady = credits !== null;
   const canSpendImage =
-    isLoggedIn && (credits === null || credits >= IMAGE_GENERATION_COST);
+    isLoggedIn && creditsReady && credits >= IMAGE_GENERATION_COST;
   const canSpendVideo =
-    isLoggedIn && (credits === null || credits >= VIDEO_GENERATION_COST);
+    isLoggedIn && creditsReady && credits >= VIDEO_GENERATION_COST;
 
   // Un effet par upload : l'URL est libérée quand l'upload change ou que la
   // page est démontée. L'ancienne version dépendait d'un tableau de deps vide
@@ -657,13 +658,37 @@ export default function Home() {
           setVideoError("Vidéo trop volumineuse (max 50 Mo).");
           return;
         }
+
         const previewUrl = URL.createObjectURL(file);
-        setVideoSource({
-          file,
-          previewUrl,
-          name: file.name,
-          kind: "video",
-        });
+        const probe = document.createElement("video");
+        probe.preload = "metadata";
+        probe.onloadedmetadata = () => {
+          const duration = probe.duration;
+          URL.revokeObjectURL(probe.src);
+          if (
+            !Number.isFinite(duration) ||
+            duration < 2 ||
+            duration > 10
+          ) {
+            URL.revokeObjectURL(previewUrl);
+            setVideoError(
+              "La vidéo source doit durer entre 2 et 10 secondes.",
+            );
+            return;
+          }
+          setVideoSource({
+            file,
+            previewUrl,
+            name: file.name,
+            kind: "video",
+          });
+        };
+        probe.onerror = () => {
+          URL.revokeObjectURL(probe.src);
+          URL.revokeObjectURL(previewUrl);
+          setVideoError("Impossible de lire la vidéo. Réessayez avec un autre fichier.");
+        };
+        probe.src = previewUrl;
         return;
       }
 
@@ -1008,9 +1033,11 @@ export default function Home() {
                     ? "Génération… (~15-30s)"
                     : !isLoggedIn
                       ? "Connectez-vous pour générer"
-                      : credits !== null && credits < IMAGE_GENERATION_COST
-                        ? "Crédits insuffisants"
-                        : `Générer · ${IMAGE_GENERATION_COST} crédits`}
+                      : !creditsReady
+                        ? "Chargement des crédits…"
+                        : credits < IMAGE_GENERATION_COST
+                          ? "Crédits insuffisants"
+                          : `Générer · ${IMAGE_GENERATION_COST} crédits`}
                 </button>
                 {prepared && (
                   <button
@@ -1199,9 +1226,11 @@ export default function Home() {
                   ? "Génération vidéo… (~90s+)"
                   : !isLoggedIn
                     ? "Connectez-vous pour générer"
-                    : credits !== null && credits < VIDEO_GENERATION_COST
-                      ? "Crédits insuffisants"
-                      : `Générer la vidéo · ${VIDEO_GENERATION_COST} crédits`}
+                    : !creditsReady
+                      ? "Chargement des crédits…"
+                      : credits < VIDEO_GENERATION_COST
+                        ? "Crédits insuffisants"
+                        : `Générer la vidéo · ${VIDEO_GENERATION_COST} crédits`}
               </button>
               {(videoSource || videoObject || videoPrompt) && (
                 <button

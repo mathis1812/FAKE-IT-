@@ -6,6 +6,7 @@ import {
 } from "@/lib/credits";
 import { saveVideoGalleryEntry } from "@/lib/gallery-server";
 import { requireUser } from "@/lib/supabase/require-user";
+import { isOwnedGalleryPublicUrl } from "@/lib/storage-urls";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -13,7 +14,8 @@ export const maxDuration = 300;
 const KIE_API_BASE = "https://api.kie.ai/api/v1";
 const MODEL_ID = "wan/2-7-videoedit";
 const POLL_INTERVAL_MS = 4_000;
-const POLL_TIMEOUT_MS = 280_000;
+// Marge sous maxDuration=300s : la galerie est fire-and-forget.
+const POLL_TIMEOUT_MS = 270_000;
 
 type GenerateVideoBody = {
   sourceVideoUrl?: string;
@@ -154,6 +156,30 @@ export async function POST(req: NextRequest) {
   if (auth.error) return auth.error;
   const { user } = auth;
 
+  if (!isOwnedGalleryPublicUrl(sourceVideoUrl, user.id)) {
+    return NextResponse.json(
+      {
+        error:
+          "Vidéo source invalide. Ré-uploadez le fichier depuis le Studio puis réessayez.",
+      },
+      { status: 400 },
+    );
+  }
+
+  if (
+    objectImageUrl &&
+    typeof objectImageUrl === "string" &&
+    !isOwnedGalleryPublicUrl(objectImageUrl, user.id)
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Image objet invalide. Ré-uploadez le fichier depuis le Studio puis réessayez.",
+      },
+      { status: 400 },
+    );
+  }
+
   const apiKey = process.env.KIE_API_KEY?.trim();
   if (!apiKey) {
     return NextResponse.json(
@@ -202,7 +228,7 @@ export async function POST(req: NextRequest) {
         : undefined,
     );
     const videoUrl = await pollKieTask(apiKey, taskId);
-    await saveVideoGalleryEntry(
+    void saveVideoGalleryEntry(
       user.id,
       videoUrl,
       label?.trim() || "Remplacement d'objet",

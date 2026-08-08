@@ -88,7 +88,10 @@ export async function POST(req: NextRequest) {
   }
 
   const safeName = sanitizeFilename(filename);
-  const path = `uploads/${user.id}/${Date.now()}-${safeName}`;
+  // Préfixe `{userId}/` : cohérent avec les résultats galerie et avec une
+  // éventuelle policy RLS par dossier. L'upload lui-même passe par une URL
+  // signée (service role) — pas besoin de policy INSERT authenticated.
+  const path = `${user.id}/uploads/${Date.now()}-${safeName}`;
 
   let service;
   try {
