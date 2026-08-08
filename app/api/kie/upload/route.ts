@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
   let json: {
     success?: boolean;
     msg?: string;
-    data?: { fileUrl?: string };
+    data?: { downloadUrl?: string };
   };
   try {
     json = await res.json();
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!res.ok || !json.success || !json.data?.fileUrl) {
+  if (!res.ok || !json.success || !json.data?.downloadUrl) {
     return NextResponse.json(
       {
         error: `Échec de l'upload (${res.status}). ${json.msg ?? ""}`.trim(),
@@ -79,5 +79,5 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ fileUrl: json.data.fileUrl });
+  return NextResponse.json({ fileUrl: json.data.downloadUrl });
 }
