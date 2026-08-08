@@ -1,32 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import {
   VIDEO_GENERATION_COST,
   refundCredits,
   spendCredits,
 } from "@/lib/credits";
 import { saveVideoGalleryEntry } from "@/lib/gallery-server";
+import { requireUser } from "@/lib/supabase/require-user";
+import { isOwnedGalleryPublicUrl } from "@/lib/storage-urls";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
 const KIE_API_BASE = "https://api.kie.ai/api/v1";
-const MODEL_ID = "kling-3.0/video";
-const OBJECT_ELEMENT_NAME = "element_1";
+const MODEL_ID = "wan/2-7-videoedit";
 const POLL_INTERVAL_MS = 4_000;
-const POLL_TIMEOUT_MS = 280_000;
+// Marge sous maxDuration=300s : la galerie est fire-and-forget.
+const POLL_TIMEOUT_MS = 270_000;
 
 type GenerateVideoBody = {
-  sourceImageUrl?: string;
+  sourceVideoUrl?: string;
   objectImageUrl?: string;
   prompt?: string;
   label?: string;
-};
-
-type KieKlingElement = {
-  name: string;
-  description: string;
-  element_input_urls: string[];
 };
 
 type KieCreateTaskResponse = {
@@ -50,8 +45,8 @@ type KieVideoResult = { resultUrls?: string[] };
 async function createKieTask(
   apiKey: string,
   prompt: string,
-  sourceImageUrl: string,
-  klingElements: KieKlingElement[],
+  sourceVideoUrl: string,
+  objectImageUrl?: string,
 ): Promise<string> {
   const res = await fetch(`${KIE_API_BASE}/jobs/createTask`, {
     method: "POST",
@@ -63,13 +58,13 @@ async function createKieTask(
       model: MODEL_ID,
       input: {
         prompt,
-        image_urls: [sourceImageUrl],
-        mode: "pro",
-        duration: "5",
-        sound: false,
-        multi_shots: false,
-        multi_prompt: [],
-        ...(klingElements.length > 0 ? { kling_elements: klingElements } : {}),
+        video_url: sourceVideoUrl,
+        ...(objectImageUrl ? { reference_image: objectImageUrl } : {}),
+        resolution: "1080p",
+        duration: 0,
+        audio_setting: "origin",
+        prompt_extend: true,
+        watermark: false,
       },
     }),
   });
@@ -118,7 +113,6 @@ async function pollKieTask(apiKey: string, taskId: string): Promise<string> {
       );
     }
 
-    // "waiting" | "queuing" | "generating" (or any other in-progress state): keep polling.
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
   }
 
@@ -126,17 +120,6 @@ async function pollKieTask(apiKey: string, taskId: string): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.KIE_API_KEY?.trim();
-  if (!apiKey) {
-    return NextResponse.json(
-      {
-        error:
-          "Clé API manquante. Définissez KIE_API_KEY dans vos variables d'environnement.",
-      },
-      { status: 500 },
-    );
-  }
-
   let body: GenerateVideoBody;
   try {
     body = (await req.json()) as GenerateVideoBody;
@@ -147,11 +130,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { sourceImageUrl, objectImageUrl, prompt, label } = body;
+  const { sourceVideoUrl, objectImageUrl, prompt, label } = body;
 
-  if (!sourceImageUrl || typeof sourceImageUrl !== "string") {
+  if (!sourceVideoUrl || typeof sourceVideoUrl !== "string") {
     return NextResponse.json(
-      { error: "Image source manquante. Uploadez une image puis réessayez." },
+      {
+        error:
+          "Vidéo source manquante. Uploadez une vidéo puis réessayez.",
+      },
       { status: 400 },
     );
   }
@@ -166,15 +152,42 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const auth = await requireUser("Connectez-vous pour générer une vidéo.");
+  if (auth.error) return auth.error;
+  const { user } = auth;
 
-  if (!user) {
+  if (!isOwnedGalleryPublicUrl(sourceVideoUrl, user.id)) {
     return NextResponse.json(
-      { error: "Connectez-vous pour générer une vidéo." },
-      { status: 401 },
+      {
+        error:
+          "Vidéo source invalide. Ré-uploadez le fichier depuis le Studio puis réessayez.",
+      },
+      { status: 400 },
+    );
+  }
+
+  if (
+    objectImageUrl &&
+    typeof objectImageUrl === "string" &&
+    !isOwnedGalleryPublicUrl(objectImageUrl, user.id)
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Image objet invalide. Ré-uploadez le fichier depuis le Studio puis réessayez.",
+      },
+      { status: 400 },
+    );
+  }
+
+  const apiKey = process.env.KIE_API_KEY?.trim();
+  if (!apiKey) {
+    return NextResponse.json(
+      {
+        error:
+          "Clé API manquante. Définissez KIE_API_KEY dans vos variables d'environnement.",
+      },
+      { status: 500 },
     );
   }
 
@@ -199,27 +212,23 @@ export async function POST(req: NextRequest) {
   }
 
   let finalPrompt = prompt.trim();
-  const klingElements: KieKlingElement[] = [];
   if (objectImageUrl && typeof objectImageUrl === "string") {
-    klingElements.push({
-      name: OBJECT_ELEMENT_NAME,
-      description: "Luxury replacement object to integrate into the scene.",
-      element_input_urls: [objectImageUrl],
-    });
     finalPrompt +=
-      ` Integrate the luxury replacement object shown in @${OBJECT_ELEMENT_NAME} photorealistically, ` +
-      "while preserving the subject, pose, lighting and background.";
+      " Integrate the luxury replacement object shown in the reference image photorealistically, " +
+      "while preserving the subject, motion, camera movement, lighting and background.";
   }
 
   try {
     const taskId = await createKieTask(
       apiKey,
       finalPrompt,
-      sourceImageUrl,
-      klingElements,
+      sourceVideoUrl,
+      objectImageUrl && typeof objectImageUrl === "string"
+        ? objectImageUrl
+        : undefined,
     );
     const videoUrl = await pollKieTask(apiKey, taskId);
-    await saveVideoGalleryEntry(
+    void saveVideoGalleryEntry(
       user.id,
       videoUrl,
       label?.trim() || "Remplacement d'objet",
