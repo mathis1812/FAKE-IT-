@@ -17,10 +17,31 @@ const montserrat = Montserrat({
   weight: ["300", "400", "500", "600", "700"],
 });
 
+const SITE_URL = "https://fakeit-delta.vercel.app";
+const SITE_TITLE = "Bluminoo Studio";
+const SITE_DESCRIPTION =
+  "Uploadez une photo et générez une version ultra-réaliste avec un élément de luxe intégré.";
+
 export const metadata: Metadata = {
-  title: "Bluminoo Studio",
-  description:
-    "Uploadez une photo et générez une version ultra-réaliste avec un élément de luxe intégré.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_TITLE,
+    template: `%s · ${SITE_TITLE}`,
+  },
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    siteName: SITE_TITLE,
+    locale: "fr_FR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({
