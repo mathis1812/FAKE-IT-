@@ -578,7 +578,7 @@ export default function Home() {
               </h2>
             </div>
 
-            <div className="mb-4 overflow-hidden rounded-2xl border border-dashed border-white/10">
+            <div className="mx-auto mb-4 h-80 w-80 max-w-full overflow-hidden rounded-2xl border border-dashed border-white/10">
               <div
                 role="button"
                 tabIndex={0}
@@ -599,7 +599,7 @@ export default function Home() {
                     inputRef.current?.click();
                   }
                 }}
-                className={`aspect-square max-h-80 cursor-pointer overflow-hidden rounded-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+                className={`h-full w-full cursor-pointer overflow-hidden rounded-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
                   isDragging
                     ? "bg-primary/[0.08]"
                     : "bg-white/[0.02] hover:bg-white/[0.035]"
