@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import Panel from "@/components/Panel";
+import GalleryGrid from "@/components/GalleryGrid";
 import PlaceholderSection from "@/components/PlaceholderSection";
 import { createClient } from "@/lib/supabase/server";
 
@@ -48,41 +48,7 @@ export default async function GaleriePage() {
           Vos dernières générations
         </h2>
       </div>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {entries.map((entry) => (
-          <Panel key={entry.id} className="overflow-hidden">
-            {entry.mode === "video" ? (
-              <video
-                src={entry.result_url}
-                controls
-                muted
-                loop
-                playsInline
-                className="aspect-square w-full object-cover"
-              />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={entry.result_url}
-                alt={entry.label}
-                className="aspect-square w-full object-cover"
-              />
-            )}
-            <div className="p-3">
-              <p className="text-xs font-medium text-neutral-200">
-                {entry.label}
-              </p>
-              <p className="text-[11px] text-neutral-600">
-                {new Date(entry.created_at).toLocaleDateString("fr-FR", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                })}
-              </p>
-            </div>
-          </Panel>
-        ))}
-      </div>
+      <GalleryGrid entries={entries} />
     </div>
   );
 }
