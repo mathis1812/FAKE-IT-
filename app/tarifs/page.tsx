@@ -7,20 +7,20 @@ const PLAN_ORDER: PlanId[] = ["decouverte", "essentiel", "ultimate"];
 const PLAN_FEATURES: Record<PlanId, PlanFeature[]> = {
   decouverte: [
     { text: "Génération photo & vidéo" },
-    { text: "Qualité 1K" },
+    { text: "Qualité photo 1K" },
     { text: "Photo de référence optionnelle" },
     { text: "Historique complet" },
   ],
   essentiel: [
     { text: "Génération photo & vidéo" },
-    { text: "Qualité 2K", bold: true },
+    { text: "Qualité photo 2K", bold: true },
     { text: "Photo de référence optionnelle" },
     { text: "Historique complet" },
     { text: "Support prioritaire" },
   ],
   ultimate: [
     { text: "Génération photo & vidéo" },
-    { text: "Qualité 4K Ultra-détails", bold: true },
+    { text: "Qualité photo 4K Ultra-détails", bold: true },
     { text: "Photo de référence optionnelle" },
     { text: "Historique complet" },
     { text: "Support prioritaire" },

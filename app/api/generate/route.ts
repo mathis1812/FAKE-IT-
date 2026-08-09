@@ -73,11 +73,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("plan")
     .eq("id", user.id)
     .single();
+  if (profileError) {
+    console.error(
+      `Échec de la lecture du palier pour l'utilisateur ${user.id} (repli sur 1K) :`,
+      profileError.message,
+    );
+  }
   const planId = profile?.plan as PlanId | null | undefined;
   const resolution = planId ? PLANS[planId]?.imageResolution ?? "1K" : "1K";
 
