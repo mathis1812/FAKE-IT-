@@ -23,6 +23,7 @@ export function isStripeConfigured(): boolean {
 
 export type PlanId = "decouverte" | "essentiel" | "ultimate";
 export type BillingPeriod = "monthly" | "annual";
+export type ImageResolution = "1K" | "2K" | "4K";
 
 type PriceInfo = { priceId: string; priceEur: number };
 
@@ -33,6 +34,7 @@ export const PLANS: Record<
     monthly: PriceInfo;
     annual: PriceInfo;
     creditsPerMonth: number;
+    imageResolution: ImageResolution;
   }
 > = {
   decouverte: {
@@ -43,6 +45,7 @@ export const PLANS: Record<
       priceEur: 94.9,
     },
     creditsPerMonth: 2000,
+    imageResolution: "1K",
   },
   essentiel: {
     name: "Essentiel",
@@ -52,6 +55,7 @@ export const PLANS: Record<
       priceEur: 190.9,
     },
     creditsPerMonth: 5000,
+    imageResolution: "2K",
   },
   ultimate: {
     name: "Ultimate",
@@ -61,6 +65,7 @@ export const PLANS: Record<
       priceEur: 382.9,
     },
     creditsPerMonth: 12000,
+    imageResolution: "4K",
   },
 };
 

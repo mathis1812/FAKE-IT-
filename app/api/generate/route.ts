@@ -7,6 +7,7 @@ import {
 } from "@/lib/credits";
 import { persistImageResult } from "@/lib/gallery-server";
 import { createKieTask, pollKieTask } from "@/lib/kie-jobs";
+import { PLANS, type PlanId } from "@/lib/stripe";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -72,6 +73,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("plan")
+    .eq("id", user.id)
+    .single();
+  const planId = profile?.plan as PlanId | null | undefined;
+  const resolution = planId ? PLANS[planId]?.imageResolution ?? "1K" : "1K";
+
   let hasCredits: boolean;
   try {
     hasCredits = await spendCredits(user.id, IMAGE_GENERATION_COST);
@@ -106,7 +115,7 @@ export async function POST(req: NextRequest) {
       prompt: finalPrompt,
       image_input: imageInput,
       aspect_ratio: "auto",
-      resolution: "1K",
+      resolution,
       output_format: "png",
     });
     const resultUrl = await pollKieTask(apiKey, taskId, {
