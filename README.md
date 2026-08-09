@@ -164,7 +164,7 @@ Ouvrez [http://localhost:3000](http://localhost:3000).
 ## 4. Déployer sur Vercel
 
 Le projet Vercel existe déjà (`fakeit`, team `mathisvrg's projects`) et sert
-https://fakeit-delta.vercel.app. Ses identifiants sont codés en dur dans
+https://bluminoo.vercel.app. Ses identifiants sont codés en dur dans
 `scripts/deploy.sh` — il ne manque qu'un token.
 
 ### Créer le token

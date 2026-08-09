@@ -17,7 +17,7 @@ const montserrat = Montserrat({
   weight: ["300", "400", "500", "600", "700"],
 });
 
-const SITE_URL = "https://fakeit-delta.vercel.app";
+const SITE_URL = "https://bluminoo.vercel.app";
 const SITE_TITLE = "Bluminoo Studio";
 const SITE_DESCRIPTION =
   "Uploadez une photo et générez une version ultra-réaliste avec un élément de luxe intégré.";
