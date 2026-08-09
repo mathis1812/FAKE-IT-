@@ -22,35 +22,70 @@ export function isStripeConfigured(): boolean {
 }
 
 export type PlanId = "decouverte" | "essentiel" | "ultimate";
+export type BillingPeriod = "monthly" | "annual";
+
+type PriceInfo = { priceId: string; priceEur: number };
 
 export const PLANS: Record<
   PlanId,
-  { name: string; priceId: string; priceEur: number; credits: number }
+  {
+    name: string;
+    monthly: PriceInfo;
+    annual: PriceInfo;
+    creditsPerMonth: number;
+  }
 > = {
   decouverte: {
     name: "Découverte",
-    priceId: envValue("STRIPE_PRICE_DECOUVERTE"),
-    priceEur: 9.9,
-    credits: 2000,
+    monthly: { priceId: envValue("STRIPE_PRICE_DECOUVERTE"), priceEur: 9.9 },
+    annual: {
+      priceId: envValue("STRIPE_PRICE_DECOUVERTE_ANNUEL"),
+      priceEur: 94.9,
+    },
+    creditsPerMonth: 2000,
   },
   essentiel: {
     name: "Essentiel",
-    priceId: envValue("STRIPE_PRICE_ESSENTIEL"),
-    priceEur: 19.9,
-    credits: 5000,
+    monthly: { priceId: envValue("STRIPE_PRICE_ESSENTIEL"), priceEur: 19.9 },
+    annual: {
+      priceId: envValue("STRIPE_PRICE_ESSENTIEL_ANNUEL"),
+      priceEur: 190.9,
+    },
+    creditsPerMonth: 5000,
   },
   ultimate: {
     name: "Ultimate",
-    priceId: envValue("STRIPE_PRICE_ULTIMATE"),
-    priceEur: 39.9,
-    credits: 12000,
+    monthly: { priceId: envValue("STRIPE_PRICE_ULTIMATE"), priceEur: 39.9 },
+    annual: {
+      priceId: envValue("STRIPE_PRICE_ULTIMATE_ANNUEL"),
+      priceEur: 382.9,
+    },
+    creditsPerMonth: 12000,
   },
 };
 
-export function planIdForPriceId(priceId: string | undefined): PlanId | null {
+export function priceIdFor(planId: PlanId, period: BillingPeriod): string {
+  return PLANS[planId][period].priceId;
+}
+
+// Facturation annuelle = un seul crédit d'un an d'un coup (le webhook ne
+// reçoit qu'un événement de renouvellement par an pour ces abonnements-là,
+// contre un par mois pour les abonnements mensuels).
+export function creditsFor(planId: PlanId, period: BillingPeriod): number {
+  const perMonth = PLANS[planId].creditsPerMonth;
+  return period === "annual" ? perMonth * 12 : perMonth;
+}
+
+export function resolvePriceId(
+  priceId: string | undefined,
+): { planId: PlanId; period: BillingPeriod } | null {
   if (!priceId) return null;
-  const entry = (Object.entries(PLANS) as [PlanId, (typeof PLANS)[PlanId]][]).find(
-    ([, plan]) => plan.priceId === priceId,
-  );
-  return entry ? entry[0] : null;
+  for (const [id, plan] of Object.entries(PLANS) as [
+    PlanId,
+    (typeof PLANS)[PlanId],
+  ][]) {
+    if (plan.monthly.priceId === priceId) return { planId: id, period: "monthly" };
+    if (plan.annual.priceId === priceId) return { planId: id, period: "annual" };
+  }
+  return null;
 }

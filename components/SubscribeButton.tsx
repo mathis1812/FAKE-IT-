@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { PlanId } from "@/lib/stripe";
+import type { BillingPeriod, PlanId } from "@/lib/stripe";
 
 export default function SubscribeButton({
   plan,
+  period,
   isLoggedIn,
 }: {
   plan: PlanId;
+  period: BillingPeriod;
   isLoggedIn: boolean;
 }) {
   const router = useRouter();
@@ -28,7 +30,7 @@ export default function SubscribeButton({
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, period }),
       });
       const data = await res.json();
 

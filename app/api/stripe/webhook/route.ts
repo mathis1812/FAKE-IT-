@@ -3,9 +3,11 @@ import Stripe from "stripe";
 import {
   stripe,
   PLANS,
-  planIdForPriceId,
+  resolvePriceId,
+  creditsFor,
   envValue,
   isStripeConfigured,
+  type BillingPeriod,
 } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -63,6 +65,8 @@ export async function POST(req: NextRequest) {
     const session = event.data.object as Stripe.Checkout.Session;
     const userId = session.metadata?.supabase_user_id;
     const planId = session.metadata?.plan as keyof typeof PLANS | undefined;
+    const period: BillingPeriod =
+      session.metadata?.period === "annual" ? "annual" : "monthly";
 
     if (userId && planId && PLANS[planId]) {
       const subscriptionId =
@@ -89,7 +93,7 @@ export async function POST(req: NextRequest) {
           stripe_customer_id: customerId ?? null,
           stripe_subscription_id: subscriptionId ?? null,
           plan: planId,
-          credits: PLANS[planId].credits,
+          credits: creditsFor(planId, period),
           current_period_end: currentPeriodEnd,
         })
         .eq("id", userId)
@@ -133,15 +137,16 @@ export async function POST(req: NextRequest) {
       if (subscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         const priceId = subscription.items.data[0]?.price.id;
-        const planId = planIdForPriceId(priceId);
+        const resolved = resolvePriceId(priceId);
         const periodEnd = currentPeriodEndOf(subscription);
 
-        if (planId) {
+        if (resolved) {
+          const { planId, period } = resolved;
           const { data: updateData, error: updateError } = await supabase
             .from("profiles")
             .update({
               plan: planId,
-              credits: PLANS[planId].credits,
+              credits: creditsFor(planId, period),
               current_period_end: periodEnd
                 ? new Date(periodEnd * 1000).toISOString()
                 : null,
@@ -162,7 +167,7 @@ export async function POST(req: NextRequest) {
           }
         } else {
           console.error(
-            `[stripe-webhook] planIdForPriceId introuvable pour priceId=${priceId} (subscriptionId=${subscriptionId}, event ${event.id})`,
+            `[stripe-webhook] resolvePriceId introuvable pour priceId=${priceId} (subscriptionId=${subscriptionId}, event ${event.id})`,
           );
         }
       }

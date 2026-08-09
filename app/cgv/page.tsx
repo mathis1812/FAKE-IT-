@@ -32,12 +32,32 @@ export default function CgvPage() {
             <h3 className="mb-2 text-base font-semibold text-neutral-100">
               2. Offres et tarifs
             </h3>
-            <p>Bluminoo Studio propose trois paliers d&apos;abonnement mensuel :</p>
+            <p>
+              Bluminoo Studio propose trois paliers d&apos;abonnement,
+              facturés au choix mensuellement ou annuellement (l&apos;offre
+              annuelle bénéficie d&apos;une réduction d&apos;environ 20% par
+              rapport au tarif mensuel, facturée en une fois) :
+            </p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
-              <li>Découverte : 9,90 € / mois — 2 000 crédits / mois</li>
-              <li>Essentiel : 19,90 € / mois — 5 000 crédits / mois</li>
-              <li>Ultimate : 39,90 € / mois — 12 000 crédits / mois</li>
+              <li>
+                Découverte : 9,90 € / mois ou 94,90 € / an — 2 000
+                crédits / mois
+              </li>
+              <li>
+                Essentiel : 19,90 € / mois ou 190,90 € / an — 5 000
+                crédits / mois
+              </li>
+              <li>
+                Ultimate : 39,90 € / mois ou 382,90 € / an — 12 000
+                crédits / mois
+              </li>
             </ul>
+            <p className="mt-2">
+              Pour un abonnement annuel, les crédits correspondant à
+              l&apos;année entière sont crédités en une seule fois au
+              paiement, puis rechargés à l&apos;identique lors du
+              renouvellement annuel suivant.
+            </p>
             <p className="mt-2">
               Les crédits sont consommés à chaque génération réussie (image
               ou vidéo) et sont remis à zéro puis rechargés à chaque

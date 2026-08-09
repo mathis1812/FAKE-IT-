@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { stripe, PLANS, isStripeConfigured, type PlanId } from "@/lib/stripe";
+import {
+  stripe,
+  PLANS,
+  priceIdFor,
+  isStripeConfigured,
+  type PlanId,
+  type BillingPeriod,
+} from "@/lib/stripe";
 
 export const runtime = "nodejs";
 
-type CheckoutBody = { plan?: string };
+type CheckoutBody = { plan?: string; period?: string };
 
 export async function POST(req: NextRequest) {
   if (!isStripeConfigured()) {
@@ -43,6 +50,8 @@ export async function POST(req: NextRequest) {
   if (!planId || !(planId in PLANS)) {
     return NextResponse.json({ error: "Palier inconnu." }, { status: 400 });
   }
+
+  const period: BillingPeriod = body.period === "annual" ? "annual" : "monthly";
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -84,10 +93,10 @@ export async function POST(req: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
-      line_items: [{ price: PLANS[planId].priceId, quantity: 1 }],
+      line_items: [{ price: priceIdFor(planId, period), quantity: 1 }],
       success_url: `${origin}/compte?checkout=success`,
       cancel_url: `${origin}/tarifs`,
-      metadata: { supabase_user_id: user.id, plan: planId },
+      metadata: { supabase_user_id: user.id, plan: planId, period },
     });
 
     return NextResponse.json({ url: session.url });
