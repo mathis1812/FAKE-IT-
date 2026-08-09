@@ -116,13 +116,17 @@ async function uploadImage(file: File): Promise<string> {
 
 function DropZone({
   label,
+  badge,
   hint,
+  subtext,
   upload,
   onPick,
   disabled,
 }: {
   label: string;
+  badge?: string;
   hint: string;
+  subtext: string;
   upload: VideoUpload | null;
   onPick: (file: File) => void;
   disabled?: boolean;
@@ -132,9 +136,16 @@ function DropZone({
 
   return (
     <div>
-      <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-neutral-500">
-        {label}
-      </p>
+      <div className="mb-2 flex items-center gap-2">
+        <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-neutral-500">
+          {label}
+        </p>
+        {badge && (
+          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary-soft">
+            {badge}
+          </span>
+        )}
+      </div>
       <div
         role="button"
         tabIndex={disabled ? -1 : 0}
@@ -162,7 +173,7 @@ function DropZone({
             inputRef.current?.click();
           }
         }}
-        className={`cursor-pointer rounded-2xl border border-dashed p-5 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+        className={`aspect-square cursor-pointer overflow-hidden rounded-2xl border border-dashed text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
           dragging
             ? "border-primary/70 bg-primary/5"
             : "border-white/10 bg-white/[0.02] hover:border-white/20"
@@ -180,19 +191,36 @@ function DropZone({
           }}
         />
         {upload ? (
-          <div className="flex flex-col items-center gap-3">
+          <div className="relative h-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={upload.previewUrl}
               alt={label}
-              className="max-h-40 rounded-lg object-contain"
+              className="h-full w-full object-cover"
             />
-            <p className="text-xs text-neutral-500">{upload.name}</p>
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2">
+              <p className="truncate text-[11px] text-neutral-300">
+                {upload.name}
+              </p>
+            </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2 py-6">
-            <p className="text-sm font-medium text-neutral-200">{hint}</p>
-            <p className="text-xs text-neutral-600">JPG, PNG, WebP — max 10 Mo</p>
+          <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center">
+            <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path
+                  d="M12 16V8m0 0l-3 3m3-3l3 3M4 16.5V17a3 3 0 003 3h10a3 3 0 003-3v-.5"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold uppercase tracking-[0.08em] text-neutral-200">
+              {hint}
+            </p>
+            <p className="text-xs text-neutral-600">{subtext}</p>
           </div>
         )}
       </div>
@@ -841,64 +869,104 @@ export default function Home() {
           </Panel>
 
           <Panel className="p-5 sm:p-6">
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <DropZone
-                label="Image source (requis)"
-                hint="Votre photo / scène"
-                upload={videoSource}
-                onPick={(file) => void pickVideoUpload(file, "source")}
-                disabled={videoLoading}
-              />
-              <DropZone
-                label="Objet (optionnel)"
-                hint="Référence luxe"
-                upload={videoObject}
-                onPick={(file) => void pickVideoUpload(file, "object")}
-                disabled={videoLoading}
-              />
+            <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
+              <div className="flex-1">
+                <DropZone
+                  label="Image source"
+                  badge="Requis"
+                  hint="Cliquez pour uploader"
+                  subtext="Votre photo / scène"
+                  upload={videoSource}
+                  onPick={(file) => void pickVideoUpload(file, "source")}
+                  disabled={videoLoading}
+                />
+              </div>
+              <div className="hidden shrink-0 items-center justify-center sm:flex">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-ink">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path
+                      d="M5 12h14m0 0-5-5m5 5-5 5"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex-1">
+                <DropZone
+                  label="Objet"
+                  badge="Optionnel"
+                  hint="Image de l'objet"
+                  subtext="JPG, PNG, WebP"
+                  upload={videoObject}
+                  onPick={(file) => void pickVideoUpload(file, "object")}
+                  disabled={videoLoading}
+                />
+              </div>
             </div>
 
             <section className="mt-6">
-              <label
-                htmlFor="video-prompt"
-                className="mb-3 block text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500"
-              >
-                Prompt
-              </label>
-              <textarea
-                id="video-prompt"
-                value={videoPrompt}
-                onChange={(e) => setVideoPrompt(e.target.value)}
-                rows={4}
-                placeholder={VIDEO_PROMPT_PLACEHOLDER}
-                disabled={videoLoading}
-                className="w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none placeholder:text-neutral-700 focus:border-primary/50 disabled:opacity-50"
-              />
-            </section>
-
-            <section className="mt-6 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={generateVideo}
-                disabled={
-                  videoLoading || !videoSource || !videoPrompt.trim()
-                }
-                className="cursor-pointer rounded-2xl bg-primary px-6 py-3.5 text-sm font-bold text-ink transition hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {videoLoading
-                  ? "Génération vidéo… (~90s+)"
-                  : "Générer la vidéo"}
-              </button>
-              {(videoSource || videoObject || videoPrompt) && (
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="flex flex-1 items-center gap-2.5 rounded-2xl border border-white/10 bg-black/40 px-3.5 py-3 focus-within:border-primary/50">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden
+                    className="shrink-0 text-neutral-600"
+                  >
+                    <path
+                      d="M4 6h16M4 12h10M4 18h7"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <input
+                    id="video-prompt"
+                    type="text"
+                    value={videoPrompt}
+                    onChange={(e) => setVideoPrompt(e.target.value)}
+                    placeholder={VIDEO_PROMPT_PLACEHOLDER}
+                    disabled={videoLoading}
+                    className="w-full bg-transparent text-sm text-neutral-100 outline-none placeholder:text-neutral-700 disabled:opacity-50"
+                  />
+                </div>
                 <button
                   type="button"
-                  onClick={resetVideo}
-                  disabled={videoLoading}
-                  className="cursor-pointer rounded-2xl border border-white/10 px-4 py-3.5 text-sm font-medium text-neutral-400 transition hover:border-white/20 disabled:opacity-40"
+                  onClick={generateVideo}
+                  disabled={
+                    videoLoading || !videoSource || !videoPrompt.trim()
+                  }
+                  className="shrink-0 cursor-pointer rounded-2xl bg-primary px-6 py-3.5 text-sm font-bold text-ink transition hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Reset
+                  {videoLoading
+                    ? "Génération vidéo… (~90s+)"
+                    : "Remplacer l'objet"}
                 </button>
-              )}
+              </div>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <p className="flex items-start gap-1.5 text-xs text-neutral-500">
+                  <span className="text-primary">✦</span>
+                  <span>
+                    Astuce : la photo de référence est automatiquement
+                    intégrée à la scène décrite dans le prompt.
+                  </span>
+                </p>
+                {(videoSource || videoObject || videoPrompt) && (
+                  <button
+                    type="button"
+                    onClick={resetVideo}
+                    disabled={videoLoading}
+                    className="shrink-0 cursor-pointer text-xs font-medium text-neutral-500 underline underline-offset-2 transition hover:text-neutral-300 disabled:opacity-40"
+                  >
+                    Réinitialiser
+                  </button>
+                )}
+              </div>
             </section>
 
             {videoError && (
