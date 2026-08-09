@@ -409,12 +409,23 @@ export default function Home() {
     setError("");
     setResult("");
     try {
+      const blob = await (await fetch(prepared.previewUrl)).blob();
+      if (blob.size > MAX_VIDEO_FILE_BYTES) {
+        setError(
+          "Image trop volumineuse après compression (max 4 Mo). Essayez une photo plus simple.",
+        );
+        return;
+      }
+      const file = new File([blob], fileName || "image.jpg", {
+        type: prepared.mimeType,
+      });
+      const sourceImageUrl = await uploadImage(file);
+
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imageBase64: prepared.base64,
-          mimeType: prepared.mimeType,
+          sourceImageUrl,
           prompt,
           label: PRESETS[category].label,
         }),
@@ -431,27 +442,30 @@ export default function Home() {
         setError(data.error);
         return;
       }
-      if (data.imageBase64) {
-        const resultDataUrl = `data:${data.mimeType || "image/png"};base64,${data.imageBase64}`;
-        setResult(resultDataUrl);
+      if (data.imageUrl) {
+        setResult(data.imageUrl);
         void refreshCredits();
       } else {
         setError("Réponse inattendue du serveur. Réessayez.");
       }
-    } catch {
+    } catch (err) {
       setError(
-        "Erreur réseau lors de la génération. Vérifiez votre connexion.",
+        err instanceof Error
+          ? err.message
+          : "Erreur réseau lors de la génération. Vérifiez votre connexion.",
       );
     } finally {
       setLoading(false);
     }
-  }, [prepared, customPrompt, category, refreshCredits]);
+  }, [prepared, customPrompt, category, fileName, refreshCredits]);
 
   const download = useCallback(() => {
     if (!result) return;
     const a = document.createElement("a");
     a.href = result;
     a.download = "bluminoo-result.png";
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

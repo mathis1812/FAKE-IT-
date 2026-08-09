@@ -89,12 +89,10 @@ export default function ConfidentialitePage() {
                 données bancaires.
               </li>
               <li>
-                <strong>Google (Gemini)</strong> — génération d&apos;images à
-                partir des photos fournies.
-              </li>
-              <li>
-                <strong>kie.ai</strong> — hébergement temporaire des images
-                et génération des vidéos.
+                <strong>kie.ai</strong> — génération des images (Nano Banana
+                Pro / Gemini 3 Pro Image) et des vidéos (Kling 3.0), et
+                hébergement temporaire des photos fournies le temps du
+                traitement.
               </li>
             </ul>
             <p className="mt-2">

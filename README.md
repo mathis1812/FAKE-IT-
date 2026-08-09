@@ -5,7 +5,7 @@ ultra-réaliste avec un élément de luxe intégré (montre, voiture, décor hau
 en préservant la personne, la pose, la lumière et le cadrage d'origine — en **image**
 ou en **vidéo**.
 
-Propulsée par **Google Gemini 3 Pro Image**, **kie.ai Kling 3.0 Pro**, Next.js 14
+Propulsée par **kie.ai** (Nano Banana Pro / Gemini 3 Pro Image et Kling 3.0 Pro), Next.js 14
 (App Router), TypeScript et Tailwind CSS. Fond animé **DotField** (React Bits).
 
 > Le projet Vercel et le dépôt s'appellent toujours `fakeit` : seule l'interface
@@ -13,11 +13,12 @@ Propulsée par **Google Gemini 3 Pro Image**, **kie.ai Kling 3.0 Pro**, Next.js 
 
 ## Fonctionnalités
 
-### Image (Gemini)
+### Image (Nano Banana Pro via kie.ai)
 - Upload par glisser-déposer ou clic, avec aperçu immédiat de l'original
 - 3 presets : **Montre**, **Voiture**, **Lieu**
 - Champ de prompt personnalisé (remplace le preset s'il est rempli)
 - Compression/redimensionnement automatique côté client (> 2 Mo → max 1536 px, JPEG 0.9)
+- Upload sécurisé via `/api/kie/upload`, génération via le modèle `nano-banana-pro`
 - Comparaison Avant / Après, téléchargement (`bluminoo-result.png`) et régénération
 
 ### Vidéo — Remplacer un Objet (kie.ai)
@@ -28,7 +29,6 @@ Propulsée par **Google Gemini 3 Pro Image**, **kie.ai Kling 3.0 Pro**, Next.js 
 
 ## 1. Obtenir les clés API
 
-- Gemini : [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
 - kie.ai : [kie.ai/api-key](https://kie.ai/api-key)
 
 ## 2. Lancer en local
@@ -40,7 +40,6 @@ npm install
 Créez un fichier `.env.local` à la racine (basé sur `.env.example`) :
 
 ```bash
-GEMINI_API_KEY=votre_cle_gemini
 KIE_API_KEY=votre_cle_kie
 ```
 
@@ -87,7 +86,6 @@ chaque push sur `main`. Sans le secret, il émet un avertissement et n'échoue p
 Déjà configurées côté Vercel (**Project → Settings → Environment Variables**) :
 
 ```
-GEMINI_API_KEY = votre_cle_gemini
 KIE_API_KEY = votre_cle_kie
 ```
 
@@ -98,9 +96,9 @@ Redéployez pour que les variables soient prises en compte.
 
 ## Coût
 
-- Image Gemini 3 Pro Image : environ **~0,15 $ / image** (résolution standard)
+- Image Nano Banana Pro (kie.ai, résolution 1K) : environ **~0,12 $ / image**
 - Vidéo Kling 3.0 Pro (kie.ai, mode pro sans audio) : environ **~0,45 $
-  pour 5 s** (tarif kie.ai, ~20 % sous le prix officiel/fal.ai)
+  pour 5 s**
 
 ## Scripts
 
@@ -111,7 +109,6 @@ Redéployez pour que les variables soient prises en compte.
 
 ## Sécurité
 
-- `GEMINI_API_KEY` : utilisée uniquement côté serveur (`app/api/generate`)
 - `KIE_API_KEY` : utilisée côté serveur uniquement
-  (`app/api/generate-video`, `app/api/kie/upload`) — jamais exposée au
-  client
+  (`app/api/generate`, `app/api/generate-video`, `app/api/kie/upload`) —
+  jamais exposée au client

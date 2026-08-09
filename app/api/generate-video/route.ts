@@ -6,11 +6,11 @@ import {
   spendCredits,
 } from "@/lib/credits";
 import { saveVideoGalleryEntry } from "@/lib/gallery-server";
+import { createKieTask, pollKieTask } from "@/lib/kie-jobs";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const KIE_API_BASE = "https://api.kie.ai/api/v1";
 const MODEL_ID = "kling-3.0/video";
 const OBJECT_ELEMENT_NAME = "element_1";
 const POLL_INTERVAL_MS = 4_000;
@@ -28,102 +28,6 @@ type KieKlingElement = {
   description: string;
   element_input_urls: string[];
 };
-
-type KieCreateTaskResponse = {
-  code: number;
-  msg?: string;
-  data?: { taskId?: string };
-};
-
-type KieTaskStatusResponse = {
-  code: number;
-  msg?: string;
-  data?: {
-    state?: "waiting" | "queuing" | "generating" | "success" | "fail";
-    resultJson?: string;
-    failMsg?: string;
-  };
-};
-
-type KieVideoResult = { resultUrls?: string[] };
-
-async function createKieTask(
-  apiKey: string,
-  prompt: string,
-  sourceImageUrl: string,
-  klingElements: KieKlingElement[],
-): Promise<string> {
-  const res = await fetch(`${KIE_API_BASE}/jobs/createTask`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: MODEL_ID,
-      input: {
-        prompt,
-        image_urls: [sourceImageUrl],
-        mode: "pro",
-        duration: "5",
-        sound: false,
-        multi_shots: false,
-        multi_prompt: [],
-        ...(klingElements.length > 0 ? { kling_elements: klingElements } : {}),
-      },
-    }),
-  });
-
-  const json = (await res.json()) as KieCreateTaskResponse;
-  if (!res.ok || json.code !== 200 || !json.data?.taskId) {
-    throw new Error(
-      json.msg || `Erreur kie.ai (${res.status}) à la création de la tâche.`,
-    );
-  }
-  return json.data.taskId;
-}
-
-async function pollKieTask(apiKey: string, taskId: string): Promise<string> {
-  const deadline = Date.now() + POLL_TIMEOUT_MS;
-
-  while (Date.now() < deadline) {
-    const res = await fetch(
-      `${KIE_API_BASE}/jobs/recordInfo?taskId=${encodeURIComponent(taskId)}`,
-      { headers: { Authorization: `Bearer ${apiKey}` } },
-    );
-    const json = (await res.json()) as KieTaskStatusResponse;
-
-    if (!res.ok || json.code !== 200) {
-      throw new Error(
-        json.msg || `Erreur kie.ai (${res.status}) en interrogeant la tâche.`,
-      );
-    }
-
-    if (json.data?.state === "success") {
-      const result = JSON.parse(
-        json.data.resultJson ?? "{}",
-      ) as KieVideoResult;
-      const videoUrl = result.resultUrls?.[0];
-      if (!videoUrl) {
-        throw new Error(
-          "La tâche a réussi mais aucune vidéo n'a été renvoyée.",
-        );
-      }
-      return videoUrl;
-    }
-
-    if (json.data?.state === "fail") {
-      throw new Error(
-        json.data.failMsg || "La génération vidéo a échoué côté kie.ai.",
-      );
-    }
-
-    // "waiting" | "queuing" | "generating" (or any other in-progress state): keep polling.
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-  }
-
-  throw new Error("TIMEOUT");
-}
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.KIE_API_KEY?.trim();
@@ -212,13 +116,20 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const taskId = await createKieTask(
-      apiKey,
-      finalPrompt,
-      sourceImageUrl,
-      klingElements,
-    );
-    const videoUrl = await pollKieTask(apiKey, taskId);
+    const taskId = await createKieTask(apiKey, MODEL_ID, {
+      prompt: finalPrompt,
+      image_urls: [sourceImageUrl],
+      mode: "pro",
+      duration: "5",
+      sound: false,
+      multi_shots: false,
+      multi_prompt: [],
+      ...(klingElements.length > 0 ? { kling_elements: klingElements } : {}),
+    });
+    const videoUrl = await pollKieTask(apiKey, taskId, {
+      intervalMs: POLL_INTERVAL_MS,
+      timeoutMs: POLL_TIMEOUT_MS,
+    });
     await saveVideoGalleryEntry(
       user.id,
       videoUrl,

@@ -8,20 +8,28 @@ function extensionForMimeType(mimeType: string): string {
 }
 
 /**
- * Upload une image générée (base64) dans le bucket Storage et enregistre une
- * entrée de galerie. Best-effort : une erreur est journalisée mais ne fait
- * jamais échouer la génération elle-même (la galerie est secondaire).
+ * Télécharge un résultat image hébergé temporairement par kie.ai (les URLs
+ * kie.ai expirent après ~24h), le réhéberge durablement dans notre bucket
+ * Storage, et enregistre l'entrée de galerie. Renvoie l'URL permanente à
+ * afficher/stocker. Si la persistance échoue, journalise l'erreur et
+ * retombe sur l'URL source kie.ai plutôt que de faire échouer une
+ * génération que l'utilisateur vient de payer.
  */
-export async function saveImageGalleryEntry(
+export async function persistImageResult(
   userId: string,
-  imageBase64: string,
-  mimeType: string,
+  sourceUrl: string,
   label: string,
-): Promise<void> {
+): Promise<string> {
   try {
+    const res = await fetch(sourceUrl);
+    if (!res.ok) {
+      throw new Error(`Téléchargement du résultat échoué (${res.status}).`);
+    }
+    const mimeType = res.headers.get("content-type") || "image/png";
+    const bytes = Buffer.from(await res.arrayBuffer());
+
     const service = createServiceClient();
     const path = `${userId}/${crypto.randomUUID()}.${extensionForMimeType(mimeType)}`;
-    const bytes = Buffer.from(imageBase64, "base64");
 
     const { error: uploadError } = await service.storage
       .from(BUCKET)
@@ -39,8 +47,11 @@ export async function saveImageGalleryEntry(
       label,
     });
     if (insertError) throw insertError;
+
+    return publicUrl;
   } catch (err) {
-    console.error("Échec de l'enregistrement en galerie (image) :", err);
+    console.error("Échec de la persistance du résultat image en galerie :", err);
+    return sourceUrl;
   }
 }
 
