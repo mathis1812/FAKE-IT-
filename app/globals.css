@@ -64,29 +64,3 @@ body {
     animation: none !important;
   }
 }
-
-.compare-range {
-  -webkit-appearance: none;
-  appearance: none;
-  background: transparent;
-  cursor: ew-resize;
-}
-
-.compare-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 9999px;
-  background: var(--primary);
-  border: 2px solid #120f17;
-  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.45);
-}
-
-.compare-range::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  border-radius: 9999px;
-  background: var(--primary);
-  border: 2px solid #120f17;
-}

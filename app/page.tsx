@@ -136,61 +136,6 @@ async function uploadImage(file: File): Promise<string> {
   return data.fileUrl as string;
 }
 
-function BeforeAfterSlider({
-  before,
-  after,
-}: {
-  before: string;
-  after: string;
-}) {
-  const [pos, setPos] = useState(50);
-
-  return (
-    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-black sm:aspect-[3/4] lg:aspect-square">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={before}
-        alt="Avant"
-        className="absolute inset-0 h-full w-full object-cover"
-      />
-      <div
-        className="absolute inset-0 overflow-hidden"
-        style={{ clipPath: `inset(0 0 0 ${pos}%)` }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={after}
-          alt="Après"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      </div>
-      <div
-        className="pointer-events-none absolute inset-y-0 w-px bg-primary/90"
-        style={{ left: `${pos}%` }}
-      >
-        <div className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-primary/40 bg-ink/90 text-[10px] font-semibold tracking-wide text-primary-soft">
-          ↔
-        </div>
-      </div>
-      <div className="pointer-events-none absolute left-3 top-3 rounded-md bg-black/55 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-white/80 backdrop-blur-sm">
-        Avant
-      </div>
-      <div className="pointer-events-none absolute right-3 top-3 rounded-md bg-primary/15 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-primary-soft backdrop-blur-sm">
-        Après
-      </div>
-      <input
-        type="range"
-        min={0}
-        max={100}
-        value={pos}
-        onChange={(e) => setPos(Number(e.target.value))}
-        aria-label="Comparer avant et après"
-        className="compare-range absolute inset-0 z-10 h-full w-full opacity-0"
-      />
-    </div>
-  );
-}
-
 function DropZone({
   label,
   hint,
@@ -784,7 +729,7 @@ export default function Home() {
                     Canvas
                   </p>
                   <h3 className="font-display mt-1 text-2xl font-semibold text-white">
-                    {result ? "Avant / Après" : "Aperçu"}
+                    {result ? "Résultat" : "Aperçu"}
                   </h3>
                 </div>
                 {result && (
@@ -815,15 +760,14 @@ export default function Home() {
                     {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
                   </p>
                 </div>
-              ) : result && prepared ? (
-                <div className="animate-reveal">
-                  <BeforeAfterSlider
-                    before={prepared.previewUrl}
-                    after={result}
+              ) : result ? (
+                <div className="animate-reveal flex min-h-[360px] items-center justify-center lg:min-h-[520px]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={result}
+                    alt="Résultat généré"
+                    className="max-h-[520px] w-full rounded-2xl object-contain"
                   />
-                  <p className="mt-3 text-center text-xs text-neutral-600">
-                    Glissez pour comparer
-                  </p>
                 </div>
               ) : prepared ? (
                 <div className="flex min-h-[360px] items-center justify-center lg:min-h-[520px]">
@@ -842,8 +786,7 @@ export default function Home() {
                   </p>
                   <p className="max-w-sm text-sm text-neutral-600">
                     Uploadez une photo, choisissez un preset, générez. Le
-                    slider avant/après s&apos;affiche dès que le résultat
-                    est prêt.
+                    résultat s&apos;affiche ici dès qu&apos;il est prêt.
                   </p>
                 </div>
               )}
