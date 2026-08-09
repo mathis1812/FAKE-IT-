@@ -664,7 +664,9 @@ export default function Home() {
         probe.preload = "metadata";
         probe.onloadedmetadata = () => {
           const duration = probe.duration;
-          URL.revokeObjectURL(probe.src);
+          // Ne pas revoke previewUrl ici : il sert à l'aperçu DropZone.
+          probe.removeAttribute("src");
+          probe.load();
           if (
             !Number.isFinite(duration) ||
             duration < 2 ||
@@ -684,9 +686,12 @@ export default function Home() {
           });
         };
         probe.onerror = () => {
-          URL.revokeObjectURL(probe.src);
+          probe.removeAttribute("src");
+          probe.load();
           URL.revokeObjectURL(previewUrl);
-          setVideoError("Impossible de lire la vidéo. Réessayez avec un autre fichier.");
+          setVideoError(
+            "Impossible de lire la vidéo. Réessayez avec un autre fichier.",
+          );
         };
         probe.src = previewUrl;
         return;
