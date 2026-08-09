@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import Panel from "@/components/Panel";
+import AccountStatCard from "@/components/AccountStatCard";
 import SignOutButton from "@/components/SignOutButton";
 import ManageSubscriptionButton from "@/components/ManageSubscriptionButton";
 import { createClient } from "@/lib/supabase/server";
@@ -37,7 +38,7 @@ export default async function ComptePage() {
     : null;
 
   return (
-    <div className="animate-fade-up mx-auto max-w-md py-8">
+    <div className="animate-fade-up mx-auto max-w-4xl py-8">
       <div className="mb-8 text-center">
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
           Mon compte
@@ -47,57 +48,159 @@ export default async function ComptePage() {
         </h2>
       </div>
 
-      <Panel className="p-6">
-        <dl className="space-y-4 text-sm">
-          <div>
-            <dt className="text-xs uppercase tracking-[0.1em] text-neutral-500">
-              Email
-            </dt>
-            <dd className="mt-1 text-white">{user.email}</dd>
-          </div>
-          <div>
-            <dt className="text-xs uppercase tracking-[0.1em] text-neutral-500">
-              Palier
-            </dt>
-            <dd className="mt-1 text-white">
-              {planName ?? "Aucun abonnement actif"}
-            </dd>
-          </div>
-          {renewalDate && (
-            <div>
-              <dt className="text-xs uppercase tracking-[0.1em] text-neutral-500">
-                Prochain renouvellement
-              </dt>
-              <dd className="mt-1 text-white">{renewalDate}</dd>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="space-y-6">
+          <Panel className="p-6">
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-soft">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden
+                >
+                  <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.8" />
+                  <path
+                    d="M4 20c0-4 3.6-7 8-7s8 3 8 7"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-white">
+                  Informations Personnelles
+                </p>
+                <p className="text-xs text-neutral-500">
+                  Vos données de base sur Bluminoo Studio.
+                </p>
+              </div>
             </div>
-          )}
-          <div>
-            <dt className="text-xs uppercase tracking-[0.1em] text-neutral-500">
-              Crédits disponibles
-            </dt>
-            <dd className="mt-1 text-white">
-              {profileError ? "Impossible de charger ton solde pour le moment." : (profile?.credits ?? 0)}
-            </dd>
-          </div>
-        </dl>
 
-        <div className="mt-6 space-y-3">
-          {planId ? (
-            <ManageSubscriptionButton />
-          ) : (
-            <p className="text-center text-sm text-neutral-500">
-              <Link
-                href="/tarifs"
-                className="font-medium text-primary-soft underline underline-offset-2 hover:text-primary"
-              >
-                Voir les paliers
-              </Link>{" "}
-              pour souscrire un abonnement.
+            <dl className="mt-6 space-y-4 text-sm">
+              <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-neutral-500">
+                  Email
+                </dt>
+                <dd className="mt-1 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-white">
+                  {user.email}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-neutral-500">
+                  Rôle
+                </dt>
+                <dd className="mt-1 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-white">
+                  User
+                </dd>
+              </div>
+            </dl>
+          </Panel>
+
+          <Panel className="p-6">
+            <p className="text-sm font-semibold text-white">
+              Recharger mes crédits
             </p>
-          )}
-          <SignOutButton />
+            <p className="mt-1 text-xs text-neutral-500">
+              Passe à un palier supérieur ou renouvelle ton abonnement pour
+              obtenir plus de crédits.
+            </p>
+            <Link
+              href="/tarifs"
+              className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-ink transition hover:bg-primary-soft"
+            >
+              Recharger mes crédits
+            </Link>
+          </Panel>
         </div>
-      </Panel>
+
+        <div className="space-y-6">
+          <AccountStatCard
+            title="Crédits"
+            icon={
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden
+              >
+                <ellipse cx="12" cy="6" rx="7" ry="3" stroke="currentColor" strokeWidth="1.8" />
+                <path
+                  d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+              </svg>
+            }
+          >
+            <p
+              className={
+                profileError
+                  ? "text-sm font-medium text-neutral-400"
+                  : "text-3xl font-semibold text-white"
+              }
+            >
+              {profileError
+                ? "Impossible de charger ton solde pour le moment."
+                : profile?.credits ?? 0}
+            </p>
+            {!profileError && (
+              <p className="mt-1 text-xs text-neutral-500">crédits restants</p>
+            )}
+          </AccountStatCard>
+
+          <AccountStatCard
+            title="Abonnement"
+            icon={
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden
+              >
+                <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="1.8" />
+                <path d="M3 10h18" stroke="currentColor" strokeWidth="1.8" />
+              </svg>
+            }
+          >
+            <p className="text-xl font-semibold text-white">
+              {planName ?? "Plan Gratuit"}
+            </p>
+            {renewalDate && (
+              <p className="mt-1 text-xs text-neutral-500">
+                Renouvellement le {renewalDate}
+              </p>
+            )}
+            <div className="mt-4">
+              {planId ? (
+                <ManageSubscriptionButton />
+              ) : (
+                <Link
+                  href="/tarifs"
+                  className="flex w-full items-center justify-center rounded-2xl border border-primary/40 px-4 py-3 text-sm font-semibold text-primary-soft transition hover:border-primary hover:text-primary"
+                >
+                  Voir les offres
+                </Link>
+              )}
+            </div>
+          </AccountStatCard>
+        </div>
+      </div>
+
+      <div className="mx-auto mt-6 max-w-md">
+        <SignOutButton />
+      </div>
     </div>
   );
 }
