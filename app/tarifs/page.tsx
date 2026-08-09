@@ -1,27 +1,30 @@
-import PricingGrid from "@/components/PricingGrid";
+import PricingGrid, { type PlanFeature } from "@/components/PricingGrid";
 import { createClient } from "@/lib/supabase/server";
 import { PLANS, type PlanId } from "@/lib/stripe";
 
 const PLAN_ORDER: PlanId[] = ["decouverte", "essentiel", "ultimate"];
 
-const PLAN_FEATURES: Record<PlanId, string[]> = {
+const PLAN_FEATURES: Record<PlanId, PlanFeature[]> = {
   decouverte: [
-    "Génération photo & vidéo",
-    "Photo de référence optionnelle",
-    "Historique complet",
+    { text: "Génération photo & vidéo" },
+    { text: "Qualité 1K" },
+    { text: "Photo de référence optionnelle" },
+    { text: "Historique complet" },
   ],
   essentiel: [
-    "Génération photo & vidéo",
-    "Photo de référence optionnelle",
-    "Historique complet",
-    "Support prioritaire",
+    { text: "Génération photo & vidéo" },
+    { text: "Qualité 2K", bold: true },
+    { text: "Photo de référence optionnelle" },
+    { text: "Historique complet" },
+    { text: "Support prioritaire" },
   ],
   ultimate: [
-    "Génération photo & vidéo",
-    "Photo de référence optionnelle",
-    "Historique complet",
-    "Support prioritaire",
-    "12 000 crédits/mois (plafonné)",
+    { text: "Génération photo & vidéo" },
+    { text: "Qualité 4K Ultra-détails", bold: true },
+    { text: "Photo de référence optionnelle" },
+    { text: "Historique complet" },
+    { text: "Support prioritaire" },
+    { text: "12 000 crédits/mois (plafonné)" },
   ],
 };
 

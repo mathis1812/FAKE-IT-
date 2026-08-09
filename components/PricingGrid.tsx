@@ -6,13 +6,15 @@ import SubscribeButton from "@/components/SubscribeButton";
 import ManageSubscriptionButton from "@/components/ManageSubscriptionButton";
 import type { BillingPeriod, PlanId } from "@/lib/stripe";
 
+export type PlanFeature = { text: string; bold?: boolean };
+
 type PlanView = {
   id: PlanId;
   name: string;
   monthlyPriceEur: number;
   annualPriceEur: number;
   creditsPerMonth: number;
-  features: string[];
+  features: PlanFeature[];
 };
 
 function formatEur(amount: number): string {
@@ -118,9 +120,15 @@ export default function PricingGrid({
 
               <ul className="mb-6 flex-1 space-y-2.5 text-sm text-neutral-400">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2">
+                  <li key={feature.text} className="flex items-start gap-2">
                     <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-primary" />
-                    {feature}
+                    <span
+                      className={
+                        feature.bold ? "font-semibold text-white" : undefined
+                      }
+                    >
+                      {feature.text}
+                    </span>
                   </li>
                 ))}
               </ul>
