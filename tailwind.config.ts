@@ -9,6 +9,9 @@ const config: Config = {
     extend: {
       colors: {
         ink: "#0a0810",
+        background: "rgb(var(--background) / <alpha-value>)",
+        foreground: "rgb(var(--foreground) / <alpha-value>)",
+        panel: "rgb(var(--panel-rgb) / <alpha-value>)",
         primary: {
           DEFAULT: "#a855f7",
           soft: "#d8b4fe",

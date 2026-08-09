@@ -10,7 +10,7 @@ export default function Panel({
 }) {
   return (
     <div
-      className={`relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#13101b]/85 backdrop-blur-xl ${className}`}
+      className={`relative overflow-hidden rounded-3xl border border-foreground/[0.08] bg-panel/85 backdrop-blur-xl ${className}`}
     >
       {children}
     </div>

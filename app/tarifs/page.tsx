@@ -57,7 +57,7 @@ export default async function TarifsPage() {
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
           Tarifs
         </p>
-        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
+        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-foreground">
           Des tarifs simples, pensés pour créer sans limite.
         </h2>
       </div>

@@ -17,7 +17,7 @@ export default function SignOutButton() {
     <button
       type="button"
       onClick={handleSignOut}
-      className="w-full rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-neutral-300 transition hover:border-white/20 hover:text-white"
+      className="w-full rounded-2xl border border-foreground/10 px-4 py-3 text-sm font-medium text-foreground/85 transition hover:border-foreground/20 hover:text-foreground"
     >
       Se déconnecter
     </button>

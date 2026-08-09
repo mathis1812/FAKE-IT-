@@ -85,10 +85,10 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
             </button>
             <div className="flex items-center justify-between gap-2 p-3">
               <div className="min-w-0">
-                <p className="truncate text-xs font-medium text-neutral-200">
+                <p className="truncate text-xs font-medium text-foreground">
                   {entry.label}
                 </p>
-                <p className="text-[11px] text-neutral-600">
+                <p className="text-[11px] text-foreground/35">
                   {formatDate(entry.created_at)}
                 </p>
               </div>
@@ -96,7 +96,7 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
                 type="button"
                 onClick={() => void downloadEntry(entry)}
                 aria-label={`Télécharger : ${entry.label}`}
-                className="shrink-0 rounded-full border border-white/10 p-2 text-neutral-400 transition hover:border-white/20 hover:text-white"
+                className="shrink-0 rounded-full border border-foreground/10 p-2 text-foreground/65 transition hover:border-foreground/20 hover:text-foreground"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
                   <path
@@ -143,10 +143,10 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
             )}
             <div className="mt-3 flex w-full items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-neutral-100">
+                <p className="text-sm font-medium text-foreground">
                   {selected.label}
                 </p>
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-foreground/50">
                   {formatDate(selected.created_at)}
                 </p>
               </div>
@@ -161,7 +161,7 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
                 <button
                   type="button"
                   onClick={() => setSelected(null)}
-                  className="rounded-xl border border-white/10 px-3.5 py-2 text-xs font-medium text-neutral-300 transition hover:border-white/20"
+                  className="rounded-xl border border-foreground/10 px-3.5 py-2 text-xs font-medium text-foreground/85 transition hover:border-foreground/20"
                 >
                   Fermer
                 </button>

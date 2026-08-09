@@ -44,14 +44,33 @@ export const metadata: Metadata = {
   },
 };
 
+const THEME_INIT_SCRIPT = `
+(function () {
+  try {
+    var stored = window.localStorage.getItem("theme");
+    if (stored === "light") {
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`}>
-      <body className="bg-ink font-body text-neutral-100 antialiased">
+    <html
+      lang="fr"
+      className={`${cormorant.variable} ${montserrat.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body className="bg-background font-body text-foreground antialiased">
         <div className="studio-shell min-h-screen">
           <StudioBackdrop />
           <div className="studio-content min-h-screen">

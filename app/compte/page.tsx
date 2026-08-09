@@ -42,7 +42,7 @@ export default async function ComptePage() {
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
           Mon compte
         </p>
-        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
+        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-foreground">
           Bienvenue
         </h2>
       </div>
@@ -50,32 +50,32 @@ export default async function ComptePage() {
       <Panel className="p-6">
         <dl className="space-y-4 text-sm">
           <div>
-            <dt className="text-xs uppercase tracking-[0.1em] text-neutral-500">
+            <dt className="text-xs uppercase tracking-[0.1em] text-foreground/50">
               Email
             </dt>
-            <dd className="mt-1 text-white">{user.email}</dd>
+            <dd className="mt-1 text-foreground">{user.email}</dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-[0.1em] text-neutral-500">
+            <dt className="text-xs uppercase tracking-[0.1em] text-foreground/50">
               Palier
             </dt>
-            <dd className="mt-1 text-white">
+            <dd className="mt-1 text-foreground">
               {planName ?? "Aucun abonnement actif"}
             </dd>
           </div>
           {renewalDate && (
             <div>
-              <dt className="text-xs uppercase tracking-[0.1em] text-neutral-500">
+              <dt className="text-xs uppercase tracking-[0.1em] text-foreground/50">
                 Prochain renouvellement
               </dt>
-              <dd className="mt-1 text-white">{renewalDate}</dd>
+              <dd className="mt-1 text-foreground">{renewalDate}</dd>
             </div>
           )}
           <div>
-            <dt className="text-xs uppercase tracking-[0.1em] text-neutral-500">
+            <dt className="text-xs uppercase tracking-[0.1em] text-foreground/50">
               Crédits disponibles
             </dt>
-            <dd className="mt-1 text-white">
+            <dd className="mt-1 text-foreground">
               {profileError ? "Impossible de charger ton solde pour le moment." : (profile?.credits ?? 0)}
             </dd>
           </div>
@@ -85,10 +85,10 @@ export default async function ComptePage() {
           {planId ? (
             <ManageSubscriptionButton />
           ) : (
-            <p className="text-center text-sm text-neutral-500">
+            <p className="text-center text-sm text-foreground/50">
               <Link
                 href="/tarifs"
-                className="font-medium text-primary-soft underline underline-offset-2 hover:text-primary"
+                className="font-medium text-[var(--link)] underline underline-offset-2 hover:text-primary"
               >
                 Voir les paliers
               </Link>{" "}

@@ -57,7 +57,7 @@ export default function InscriptionPage() {
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
           Inscription
         </p>
-        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
+        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-foreground">
           Crée ton compte Bluminoo
         </h2>
       </div>
@@ -67,7 +67,7 @@ export default function InscriptionPage() {
           <div>
             <label
               htmlFor="email"
-              className="mb-1.5 block text-xs font-medium uppercase tracking-[0.1em] text-neutral-400"
+              className="mb-1.5 block text-xs font-medium uppercase tracking-[0.1em] text-foreground/65"
             >
               Email
             </label>
@@ -77,13 +77,13 @@ export default function InscriptionPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
             />
           </div>
           <div>
             <label
               htmlFor="password"
-              className="mb-1.5 block text-xs font-medium uppercase tracking-[0.1em] text-neutral-400"
+              className="mb-1.5 block text-xs font-medium uppercase tracking-[0.1em] text-foreground/65"
             >
               Mot de passe
             </label>
@@ -94,12 +94,12 @@ export default function InscriptionPage() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-white outline-none focus:border-primary/50"
+              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
             />
           </div>
 
           {error && (
-            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-[var(--danger-text)]">
               {error}
             </div>
           )}
@@ -113,9 +113,9 @@ export default function InscriptionPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-neutral-400">
+        <p className="mt-6 text-center text-sm text-foreground/65">
           Déjà un compte ?{" "}
-          <Link href="/connexion" className="text-primary-soft hover:underline">
+          <Link href="/connexion" className="text-[var(--link)] hover:underline">
             Se connecter
           </Link>
         </p>

@@ -8,15 +8,15 @@ export default function MentionsLegalesPage() {
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
           Informations légales
         </p>
-        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
+        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-foreground">
           Mentions légales
         </h2>
 
         <LegalIdentityNotice />
 
-        <div className="space-y-6 text-sm leading-relaxed text-neutral-400">
+        <div className="space-y-6 text-sm leading-relaxed text-foreground/65">
           <section>
-            <h3 className="mb-2 text-base font-semibold text-neutral-100">
+            <h3 className="mb-2 text-base font-semibold text-foreground">
               1. Éditeur du site
             </h3>
             <p>
@@ -32,7 +32,7 @@ export default function MentionsLegalesPage() {
               Contact :{" "}
               <a
                 href="mailto:mathisvergne27@gmail.com"
-                className="text-primary-soft underline underline-offset-2 hover:text-primary"
+                className="text-[var(--link)] underline underline-offset-2 hover:text-primary"
               >
                 mathisvergne27@gmail.com
               </a>
@@ -43,7 +43,7 @@ export default function MentionsLegalesPage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-neutral-100">
+            <h3 className="mb-2 text-base font-semibold text-foreground">
               2. Hébergement
             </h3>
             <p>
@@ -57,7 +57,7 @@ export default function MentionsLegalesPage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-neutral-100">
+            <h3 className="mb-2 text-base font-semibold text-foreground">
               3. Propriété intellectuelle
             </h3>
             <p>
@@ -69,7 +69,7 @@ export default function MentionsLegalesPage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-neutral-100">
+            <h3 className="mb-2 text-base font-semibold text-foreground">
               4. Génération par intelligence artificielle
             </h3>
             <p>
@@ -85,7 +85,7 @@ export default function MentionsLegalesPage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-neutral-100">
+            <h3 className="mb-2 text-base font-semibold text-foreground">
               5. Contact
             </h3>
             <p>
@@ -93,7 +93,7 @@ export default function MentionsLegalesPage() {
               légales :{" "}
               <a
                 href="mailto:mathisvergne27@gmail.com"
-                className="text-primary-soft underline underline-offset-2 hover:text-primary"
+                className="text-[var(--link)] underline underline-offset-2 hover:text-primary"
               >
                 mathisvergne27@gmail.com
               </a>

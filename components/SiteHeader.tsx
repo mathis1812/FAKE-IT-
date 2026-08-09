@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const MOBILE_BREAKPOINT_QUERY = "(min-width: 768px)";
 
@@ -89,18 +90,18 @@ export default function SiteHeader() {
 
   return (
     <Fragment>
-      <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-ink/55 backdrop-blur-2xl">
+      <header className="sticky top-0 z-30 border-b border-foreground/[0.06] bg-background/55 backdrop-blur-2xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <Link href="/" className="flex items-baseline gap-3">
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-white">
+            <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
               Blumin<span className="text-primary">oo</span>
             </h1>
-            <span className="hidden text-[10px] font-medium uppercase tracking-[0.22em] text-neutral-500 sm:inline">
+            <span className="hidden text-[10px] font-medium uppercase tracking-[0.22em] text-foreground/50 sm:inline">
               Studio
             </span>
           </Link>
 
-          <div className="hidden items-center gap-4 md:flex">
+          <div className="hidden items-center gap-3 md:flex">
             <nav className="flex items-center gap-1">
               {NAV_ITEMS.map((item) => {
                 const active = pathname === item.href;
@@ -112,7 +113,7 @@ export default function SiteHeader() {
                     className={`rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition duration-200 ${
                       active
                         ? "bg-primary text-ink"
-                        : "text-neutral-400 hover:text-neutral-100"
+                        : "text-foreground/65 hover:text-foreground"
                     }`}
                   >
                     {item.label}
@@ -123,46 +124,50 @@ export default function SiteHeader() {
             {isLoggedIn !== null && (
               <Link
                 href={isLoggedIn ? "/compte" : "/connexion"}
-                className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-neutral-300 transition hover:border-white/20 hover:text-white"
+                className="rounded-full border border-foreground/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/80 transition hover:border-foreground/20 hover:text-foreground"
               >
                 {isLoggedIn ? "Mon compte" : "Connexion"}
               </Link>
             )}
+            <ThemeToggle />
           </div>
 
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            aria-controls="mobile-nav-panel"
-            aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
-            className="cursor-pointer rounded-xl border border-white/10 p-2 text-neutral-300 transition hover:border-white/20 hover:text-white md:hidden"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-              {open ? (
-                <path
-                  d="M6 6l12 12M18 6L6 18"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-              ) : (
-                <path
-                  d="M4 7h16M4 12h16M4 17h16"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-              )}
-            </svg>
-          </button>
+          <div className="flex items-center gap-2 md:hidden">
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-controls="mobile-nav-panel"
+              aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
+              className="cursor-pointer rounded-xl border border-foreground/10 p-2 text-foreground/80 transition hover:border-foreground/20 hover:text-foreground"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                {open ? (
+                  <path
+                    d="M6 6l12 12M18 6L6 18"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                ) : (
+                  <path
+                    d="M4 7h16M4 12h16M4 17h16"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
 
         {open && (
           <div className="md:hidden">
             <div
               id="mobile-nav-panel"
-              className="absolute inset-x-0 top-full z-30 border-b border-white/[0.06] bg-ink/95 backdrop-blur-2xl"
+              className="absolute inset-x-0 top-full z-30 border-b border-foreground/[0.06] bg-background/95 backdrop-blur-2xl"
             >
               <nav className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-4 sm:px-6">
                 {NAV_ITEMS.map((item) => {
@@ -176,7 +181,7 @@ export default function SiteHeader() {
                       className={`rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.1em] transition ${
                         active
                           ? "bg-primary text-ink"
-                          : "text-neutral-300 hover:bg-white/[0.04] hover:text-white"
+                          : "text-foreground/80 hover:bg-foreground/[0.04] hover:text-foreground"
                       }`}
                     >
                       {item.label}
@@ -187,7 +192,7 @@ export default function SiteHeader() {
                   <Link
                     href={isLoggedIn ? "/compte" : "/connexion"}
                     onClick={() => setOpen(false)}
-                    className="rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-neutral-300 transition hover:bg-white/[0.04] hover:text-white"
+                    className="rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-foreground/80 transition hover:bg-foreground/[0.04] hover:text-foreground"
                   >
                     {isLoggedIn ? "Mon compte" : "Connexion"}
                   </Link>

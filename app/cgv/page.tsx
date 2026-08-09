@@ -8,15 +8,15 @@ export default function CgvPage() {
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
           Conditions générales
         </p>
-        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
+        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-foreground">
           Conditions générales de vente
         </h2>
 
         <LegalIdentityNotice />
 
-        <div className="space-y-6 text-sm leading-relaxed text-neutral-400">
+        <div className="space-y-6 text-sm leading-relaxed text-foreground/65">
           <section>
-            <h3 className="mb-2 text-base font-semibold text-neutral-100">
+            <h3 className="mb-2 text-base font-semibold text-foreground">
               1. Objet
             </h3>
             <p>
@@ -29,7 +29,7 @@ export default function CgvPage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-neutral-100">
+            <h3 className="mb-2 text-base font-semibold text-foreground">
               2. Offres et tarifs
             </h3>
             <p>
@@ -69,7 +69,7 @@ export default function CgvPage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-neutral-100">
+            <h3 className="mb-2 text-base font-semibold text-foreground">
               3. Paiement et renouvellement
             </h3>
             <p>
@@ -83,7 +83,7 @@ export default function CgvPage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-neutral-100">
+            <h3 className="mb-2 text-base font-semibold text-foreground">
               4. Résiliation
             </h3>
             <p>
@@ -96,7 +96,7 @@ export default function CgvPage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-neutral-100">
+            <h3 className="mb-2 text-base font-semibold text-foreground">
               5. Droit de rétractation
             </h3>
             <p>
@@ -113,7 +113,7 @@ export default function CgvPage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-neutral-100">
+            <h3 className="mb-2 text-base font-semibold text-foreground">
               6. Responsabilité
             </h3>
             <p>
@@ -130,7 +130,7 @@ export default function CgvPage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-neutral-100">
+            <h3 className="mb-2 text-base font-semibold text-foreground">
               7. Droit applicable et litiges
             </h3>
             <p>
@@ -143,14 +143,14 @@ export default function CgvPage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-neutral-100">
+            <h3 className="mb-2 text-base font-semibold text-foreground">
               8. Contact
             </h3>
             <p>
               Pour toute question relative aux présentes CGV :{" "}
               <a
                 href="mailto:mathisvergne27@gmail.com"
-                className="text-primary-soft underline underline-offset-2 hover:text-primary"
+                className="text-[var(--link)] underline underline-offset-2 hover:text-primary"
               >
                 mathisvergne27@gmail.com
               </a>
