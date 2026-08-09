@@ -70,9 +70,9 @@ export default async function ComptePage() {
                 </svg>
               </span>
               <div>
-                <p className="text-sm font-semibold text-white">
+                <h3 className="text-sm font-semibold text-white">
                   Informations Personnelles
-                </p>
+                </h3>
                 <p className="text-xs text-neutral-500">
                   Vos données de base sur Bluminoo Studio.
                 </p>
@@ -100,9 +100,9 @@ export default async function ComptePage() {
           </Panel>
 
           <Panel className="p-6">
-            <p className="text-sm font-semibold text-white">
+            <h3 className="text-sm font-semibold text-white">
               Recharger mes crédits
-            </p>
+            </h3>
             <p className="mt-1 text-xs text-neutral-500">
               Passe à un palier supérieur ou renouvelle ton abonnement pour
               obtenir plus de crédits.
@@ -111,7 +111,7 @@ export default async function ComptePage() {
               href="/tarifs"
               className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-ink transition hover:bg-primary-soft"
             >
-              Recharger mes crédits
+              Voir les paliers
             </Link>
           </Panel>
         </div>

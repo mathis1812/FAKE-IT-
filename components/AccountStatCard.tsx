@@ -16,9 +16,9 @@ export default function AccountStatCard({
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-soft">
           {icon}
         </span>
-        <span className="text-sm font-semibold uppercase tracking-[0.08em] text-primary-soft">
+        <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-primary-soft">
           {title}
-        </span>
+        </h3>
       </div>
       <div className="mt-4">{children}</div>
     </Panel>
