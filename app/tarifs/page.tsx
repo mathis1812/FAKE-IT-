@@ -7,18 +7,18 @@ const PLAN_ORDER: PlanId[] = ["decouverte", "essentiel", "ultimate"];
 const PLAN_FEATURES: Record<PlanId, string[]> = {
   decouverte: [
     "Génération photo & vidéo",
-    "Presets Montre / Voiture / Lieu",
+    "Photo de référence optionnelle",
     "Historique complet",
   ],
   essentiel: [
     "Génération photo & vidéo",
-    "Presets Montre / Voiture / Lieu",
+    "Photo de référence optionnelle",
     "Historique complet",
     "Support prioritaire",
   ],
   ultimate: [
     "Génération photo & vidéo",
-    "Presets Montre / Voiture / Lieu",
+    "Photo de référence optionnelle",
     "Historique complet",
     "Support prioritaire",
     "12 000 crédits/mois (plafonné)",

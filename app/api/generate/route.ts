@@ -17,6 +17,7 @@ const POLL_TIMEOUT_MS = 100_000;
 
 type GenerateBody = {
   sourceImageUrl?: string;
+  objectImageUrl?: string;
   prompt?: string;
   label?: string;
 };
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { sourceImageUrl, prompt, label } = body;
+  const { sourceImageUrl, objectImageUrl, prompt, label } = body;
 
   if (!sourceImageUrl || typeof sourceImageUrl !== "string") {
     return NextResponse.json(
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
 
   if (!prompt || !prompt.trim()) {
     return NextResponse.json(
-      { error: "Prompt manquant. Choisissez une catégorie ou saisissez un prompt." },
+      { error: "Prompt manquant. Décrivez la transformation souhaitée." },
       { status: 400 },
     );
   }
@@ -91,10 +92,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const imageInput = [sourceImageUrl];
+  let finalPrompt = prompt.trim();
+  if (objectImageUrl && typeof objectImageUrl === "string") {
+    imageInput.push(objectImageUrl);
+    finalPrompt +=
+      " Integrate the reference object shown in the second image photorealistically, " +
+      "while preserving the subject, pose, lighting and background from the first image.";
+  }
+
   try {
     const taskId = await createKieTask(apiKey, MODEL_ID, {
-      prompt: prompt.trim(),
-      image_input: [sourceImageUrl],
+      prompt: finalPrompt,
+      image_input: imageInput,
       aspect_ratio: "auto",
       resolution: "1K",
       output_format: "png",

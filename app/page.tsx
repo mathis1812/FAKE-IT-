@@ -5,31 +5,9 @@ import Panel from "@/components/Panel";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "image" | "video";
-type CategoryId = "montre" | "voiture" | "lieu";
 
-const PRESETS: Record<
-  CategoryId,
-  { label: string; subtitle: string; prompt: string }
-> = {
-  montre: {
-    label: "Montre",
-    subtitle: "Rolex-style",
-    prompt:
-      "Replace only the watch on the subject's wrist with a photorealistic luxury watch (Rolex Submariner style, stainless steel, ceramic bezel). Preserve the exact wrist, hand, skin tone, veins, hair, pose and background. Match the original lighting, shadows and reflections on the metal case realistically. Photorealistic, shot on a smartphone, natural grain. Do not alter anything else in the image.",
-  },
-  voiture: {
-    label: "Voiture",
-    subtitle: "Ferrari-style",
-    prompt:
-      "Replace only the vehicle with a photorealistic luxury sports car (Ferrari style) in a plausible color, keeping the exact same position, angle, perspective and scale in the scene. Preserve the background, road, lighting, weather and shadows exactly. Keep the license plate area realistic. Candid smartphone photo look, natural depth of field. Do not change anything else.",
-  },
-  lieu: {
-    label: "Lieu",
-    subtitle: "Rooftop luxe",
-    prompt:
-      "Keep the subject, their exact face, pose, outfit and body unchanged. Replace only the background with a photorealistic upscale setting (luxury rooftop restaurant at golden hour, city skyline, tasteful ambient lighting). Blend the subject naturally into the new environment with matching light direction, color temperature and soft shadows. Candid iPhone photo aesthetic, realistic, not over-processed.",
-  },
-};
+const IMAGE_PROMPT_PLACEHOLDER =
+  "Décrivez précisément votre photo (ex : remplace la montre au poignet par une Rolex Submariner en acier, conserve le visage, la pose et le fond)…";
 
 const VIDEO_PROMPT_PLACEHOLDER =
   "Ex : Remplace la montre au poignet par une Rolex Submariner en acier, mouvements naturels, conserve le visage, la pose et le fond…";
@@ -234,13 +212,16 @@ export default function Home() {
 
   const [prepared, setPrepared] = useState<PreparedImage | null>(null);
   const [fileName, setFileName] = useState("");
-  const [category, setCategory] = useState<CategoryId>("montre");
+  const [secondaryImage, setSecondaryImage] = useState<PreparedImage | null>(
+    null,
+  );
   const [customPrompt, setCustomPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const secondaryInputRef = useRef<HTMLInputElement>(null);
 
   const [videoSource, setVideoSource] = useState<VideoUpload | null>(null);
   const [videoObject, setVideoObject] = useState<VideoUpload | null>(null);
@@ -334,6 +315,24 @@ export default function Home() {
     [handleFile],
   );
 
+  const handleSecondaryFile = useCallback(async (file: File) => {
+    setError("");
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    try {
+      setSecondaryImage(await prepareImage(file));
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Préparation de l'image impossible.",
+      );
+    }
+  }, []);
+
   const onDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
@@ -349,7 +348,11 @@ export default function Home() {
       setError("Veuillez d'abord uploader une image.");
       return;
     }
-    const prompt = customPrompt.trim() || PRESETS[category].prompt;
+    const prompt = customPrompt.trim();
+    if (!prompt) {
+      setError("Décrivez la transformation souhaitée.");
+      return;
+    }
     setLoading(true);
     setError("");
     setResult("");
@@ -366,13 +369,29 @@ export default function Home() {
       });
       const sourceImageUrl = await uploadImage(file);
 
+      let objectImageUrl: string | undefined;
+      if (secondaryImage) {
+        const objectBlob = await (await fetch(secondaryImage.previewUrl)).blob();
+        if (objectBlob.size > MAX_VIDEO_FILE_BYTES) {
+          setError(
+            "Photo de référence trop volumineuse après compression (max 4 Mo).",
+          );
+          return;
+        }
+        const objectFile = new File([objectBlob], "reference.jpg", {
+          type: secondaryImage.mimeType,
+        });
+        objectImageUrl = await uploadImage(objectFile);
+      }
+
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sourceImageUrl,
+          objectImageUrl,
           prompt,
-          label: PRESETS[category].label,
+          label: "Génération image",
         }),
       });
       const data = await res.json().catch(() => null);
@@ -402,7 +421,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [prepared, customPrompt, category, fileName, refreshCredits]);
+  }, [prepared, customPrompt, fileName, secondaryImage, refreshCredits]);
 
   const download = useCallback(() => {
     if (!result) return;
@@ -419,6 +438,7 @@ export default function Home() {
   const reset = useCallback(() => {
     setPrepared(null);
     setFileName("");
+    setSecondaryImage(null);
     setResult("");
     setError("");
     setCustomPrompt("");
@@ -547,251 +567,255 @@ export default function Home() {
       </div>
 
       {mode === "image" ? (
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
-          <aside className="animate-fade-up lg:col-span-5">
-            <Panel className="p-5 sm:p-6 lg:sticky lg:top-24">
-              <div className="mb-6">
-                <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
-                  Génération image
-                </p>
-                <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
-                  Intégrez le luxe. Gardez tout le reste.
-                </h2>
-                <p className="mt-3 text-sm leading-relaxed text-neutral-500">
-                  Une photo. Un preset. Un rendu photoréaliste, sans trahir
-                  le cadre d&apos;origine.
-                </p>
-              </div>
+        <div className="animate-fade-up mx-auto max-w-xl">
+          <Panel className="p-5 sm:p-6">
+            <div className="mb-5 text-center">
+              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
+                Génération image
+              </p>
+              <h2 className="font-display mt-2 text-2xl font-semibold leading-tight tracking-tight text-white">
+                Intégrez le luxe. Gardez tout le reste.
+              </h2>
+            </div>
 
-              <div className="mb-6 rounded-2xl border border-dashed border-white/10">
-                <div
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Choisir une photo à transformer"
-                  onDragOver={(e) => {
+            <div className="mb-4 overflow-hidden rounded-2xl border border-dashed border-white/10">
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Choisir une photo à transformer"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={onDrop}
+                onClick={() => inputRef.current?.click()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={onDrop}
-                  onClick={() => inputRef.current?.click()}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      inputRef.current?.click();
-                    }
-                  }}
-                  className={`cursor-pointer overflow-hidden rounded-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
-                    isDragging
-                      ? "bg-primary/[0.08]"
-                      : "bg-white/[0.02] hover:bg-white/[0.035]"
-                  }`}
-                >
-                  <input
-                    ref={inputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={onInputChange}
-                  />
-                  {prepared ? (
-                    <div className="relative">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={prepared.previewUrl}
-                        alt="Aperçu"
-                        className="max-h-52 w-full object-cover"
-                      />
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
-                        <p className="truncate text-xs text-neutral-300">
-                          {fileName || "Image sélectionnée"} · cliquer pour
-                          changer
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
-                      <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary">
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          aria-hidden
-                        >
-                          <path
-                            d="M12 16V8m0 0l-3 3m3-3l3 3M4 16.5V17a3 3 0 003 3h10a3 3 0 003-3v-.5"
-                            stroke="currentColor"
-                            strokeWidth="1.6"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </div>
-                      <p className="text-sm font-medium text-neutral-100">
-                        Déposez une photo ou cliquez
-                      </p>
-                      <p className="text-xs text-neutral-600">
-                        Max 10 Mo · compression auto au-delà de 2 Mo
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <section className="mb-6">
-                <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">
-                  Preset
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {(Object.keys(PRESETS) as CategoryId[]).map((id) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => setCategory(id)}
-                      className={`cursor-pointer rounded-xl px-2 py-3 text-left transition duration-200 ${
-                        category === id
-                          ? "bg-primary text-ink"
-                          : "border border-white/10 bg-white/[0.02] text-neutral-300 hover:border-primary/30"
-                      }`}
-                    >
-                      <span className="block text-sm font-semibold leading-none">
-                        {PRESETS[id].label}
-                      </span>
-                      <span
-                        className={`mt-1.5 block text-[10px] leading-none ${
-                          category === id
-                            ? "text-ink/70"
-                            : "text-neutral-600"
-                        }`}
-                      >
-                        {PRESETS[id].subtitle}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </section>
-
-              <section className="mb-6">
-                <label
-                  htmlFor="custom-prompt"
-                  className="mb-3 block text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500"
-                >
-                  Prompt libre{" "}
-                  <span className="normal-case tracking-normal text-neutral-600">
-                    (optionnel)
-                  </span>
-                </label>
-                <textarea
-                  id="custom-prompt"
-                  value={customPrompt}
-                  onChange={(e) => setCustomPrompt(e.target.value)}
-                  rows={4}
-                  placeholder="Remplace le preset si rempli…"
-                  className="w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-700 focus:border-primary/50"
+                    inputRef.current?.click();
+                  }
+                }}
+                className={`aspect-[3/4] cursor-pointer overflow-hidden rounded-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+                  isDragging
+                    ? "bg-primary/[0.08]"
+                    : "bg-white/[0.02] hover:bg-white/[0.035]"
+                }`}
+              >
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={onInputChange}
                 />
-              </section>
-
-              {error && (
-                <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
-                  {error}
-                </div>
-              )}
-
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <button
-                  type="button"
-                  onClick={generate}
-                  disabled={loading || !prepared}
-                  className="flex-1 cursor-pointer rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {loading ? "Génération… (~15-30s)" : "Générer"}
-                </button>
-                {prepared && (
-                  <button
-                    type="button"
-                    onClick={reset}
-                    disabled={loading}
-                    className="cursor-pointer rounded-2xl border border-white/10 px-4 py-3.5 text-sm font-medium text-neutral-400 transition hover:border-white/20 hover:text-neutral-200 disabled:opacity-40"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-            </Panel>
-          </aside>
-
-          <section className="animate-fade-up-delay lg:col-span-7">
-            <Panel className="min-h-[420px] p-4 sm:p-6 lg:min-h-[640px]">
-              <div className="mb-4 flex items-end justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">
-                    Canvas
-                  </p>
-                  <h3 className="font-display mt-1 text-2xl font-semibold text-white">
-                    {result ? "Résultat" : "Aperçu"}
-                  </h3>
-                </div>
-                {result && (
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={download}
-                      className="cursor-pointer rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-ink transition duration-200 hover:bg-primary-soft"
-                    >
-                      Télécharger
-                    </button>
-                    <button
-                      type="button"
-                      onClick={generate}
-                      disabled={loading}
-                      className="cursor-pointer rounded-xl border border-white/10 px-3.5 py-2 text-xs font-medium text-neutral-300 transition hover:border-white/20 disabled:opacity-40"
-                    >
-                      {loading ? "…" : "Régénérer"}
-                    </button>
+                {prepared ? (
+                  <div className="relative h-full">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={prepared.previewUrl}
+                      alt="Aperçu"
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
+                      <p className="truncate text-xs text-neutral-300">
+                        {fileName || "Image sélectionnée"} · touche pour
+                        changer
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
+                    <div className="mb-1 flex h-14 w-14 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary">
+                      <svg
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        aria-hidden
+                      >
+                        <path
+                          d="M12 12a4 4 0 100-8 4 4 0 000 8zm-7 8a7 7 0 0114 0"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-semibold uppercase tracking-[0.1em] text-neutral-200">
+                      Ta photo
+                    </p>
+                    <p className="text-xs text-neutral-600">
+                      Touche pour importer · max 10 Mo
+                    </p>
                   </div>
                 )}
               </div>
+            </div>
 
-              {loading ? (
-                <div className="flex min-h-[360px] flex-col items-center justify-center gap-4 lg:min-h-[520px]">
-                  <div className="h-14 w-14 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
-                  <p className="text-sm text-neutral-400">
-                    {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
-                  </p>
-                </div>
-              ) : result ? (
-                <div className="animate-reveal flex min-h-[360px] items-center justify-center lg:min-h-[520px]">
+            <input
+              ref={secondaryInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) void handleSecondaryFile(file);
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => secondaryInputRef.current?.click()}
+              className="mb-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm font-medium text-neutral-300 transition hover:border-white/20 hover:text-neutral-100"
+            >
+              {secondaryImage ? (
+                <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={result}
-                    alt="Résultat généré"
-                    className="max-h-[520px] w-full rounded-2xl object-contain"
+                    src={secondaryImage.previewUrl}
+                    alt="Référence"
+                    className="h-6 w-6 rounded-md object-cover"
                   />
-                </div>
-              ) : prepared ? (
-                <div className="flex min-h-[360px] items-center justify-center lg:min-h-[520px]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={prepared.previewUrl}
-                    alt="Original"
-                    className="max-h-[520px] w-full rounded-2xl object-contain"
-                  />
-                </div>
+                  <span className="truncate">Photo de référence ajoutée</span>
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Retirer la photo de référence"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSecondaryImage(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSecondaryImage(null);
+                      }
+                    }}
+                    className="ml-1 cursor-pointer text-neutral-500 hover:text-neutral-200"
+                  >
+                    ✕
+                  </span>
+                </>
               ) : (
-                <div className="flex min-h-[360px] flex-col items-center justify-center gap-3 text-center lg:min-h-[520px]">
-                  <div className="h-px w-16 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-                  <p className="font-display text-xl font-semibold text-neutral-300">
-                    Votre rendu apparaîtra ici
-                  </p>
-                  <p className="max-w-sm text-sm text-neutral-600">
-                    Uploadez une photo, choisissez un preset, générez. Le
-                    résultat s&apos;affiche ici dès qu&apos;il est prêt.
-                  </p>
+                <>
+                  <span className="text-base leading-none">+</span>
+                  <span>
+                    Ajouter photo{" "}
+                    <span className="text-neutral-600">(optionnel)</span>
+                  </span>
+                </>
+              )}
+            </button>
+
+            <textarea
+              id="custom-prompt"
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              rows={3}
+              placeholder={IMAGE_PROMPT_PLACEHOLDER}
+              className="mb-4 w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-700 focus:border-primary/50"
+            />
+
+            {error && (
+              <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
+                {error}
+              </div>
+            )}
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={generate}
+                disabled={loading || !prepared || !customPrompt.trim()}
+                className="flex-1 cursor-pointer rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {loading ? "Génération… (~15-30s)" : "Générer"}
+              </button>
+              {prepared && (
+                <button
+                  type="button"
+                  onClick={reset}
+                  disabled={loading}
+                  className="cursor-pointer rounded-2xl border border-white/10 px-4 py-3.5 text-sm font-medium text-neutral-400 transition hover:border-white/20 hover:text-neutral-200 disabled:opacity-40"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+          </Panel>
+
+          <Panel className="animate-fade-up-delay mt-8 min-h-[360px] p-4 sm:p-6">
+            <div className="mb-4 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">
+                  Canvas
+                </p>
+                <h3 className="font-display mt-1 text-2xl font-semibold text-white">
+                  {result ? "Résultat" : "Aperçu"}
+                </h3>
+              </div>
+              {result && (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={download}
+                    className="cursor-pointer rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-ink transition duration-200 hover:bg-primary-soft"
+                  >
+                    Télécharger
+                  </button>
+                  <button
+                    type="button"
+                    onClick={generate}
+                    disabled={loading}
+                    className="cursor-pointer rounded-xl border border-white/10 px-3.5 py-2 text-xs font-medium text-neutral-300 transition hover:border-white/20 disabled:opacity-40"
+                  >
+                    {loading ? "…" : "Régénérer"}
+                  </button>
                 </div>
               )}
-            </Panel>
-          </section>
+            </div>
+
+            {loading ? (
+              <div className="flex min-h-[300px] flex-col items-center justify-center gap-4">
+                <div className="h-14 w-14 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+                <p className="text-sm text-neutral-400">
+                  {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
+                </p>
+              </div>
+            ) : result ? (
+              <div className="animate-reveal flex min-h-[300px] items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={result}
+                  alt="Résultat généré"
+                  className="max-h-[520px] w-full rounded-2xl object-contain"
+                />
+              </div>
+            ) : prepared ? (
+              <div className="flex min-h-[300px] items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={prepared.previewUrl}
+                  alt="Original"
+                  className="max-h-[520px] w-full rounded-2xl object-contain"
+                />
+              </div>
+            ) : (
+              <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 text-center">
+                <div className="h-px w-16 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+                <p className="font-display text-xl font-semibold text-neutral-300">
+                  Votre rendu apparaîtra ici
+                </p>
+                <p className="max-w-sm text-sm text-neutral-600">
+                  Uploadez une photo, décrivez la transformation, générez. Le
+                  résultat s&apos;affiche ici dès qu&apos;il est prêt.
+                </p>
+              </div>
+            )}
+          </Panel>
         </div>
       ) : (
         <div className="animate-fade-up mx-auto max-w-4xl">

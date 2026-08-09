@@ -18,8 +18,9 @@ Fond animé **DotField** (React Bits).
 
 ### Image (Nano Banana Pro via kie.ai)
 - Upload par glisser-déposer ou clic, avec aperçu immédiat de l'original
-- 3 presets : **Montre**, **Voiture**, **Lieu**
-- Champ de prompt personnalisé (remplace le preset s'il est rempli)
+- Prompt libre obligatoire décrivant la transformation souhaitée
+- Photo de référence secondaire optionnelle (objet à intégrer), envoyée en
+  second élément de `image_input` à nano-banana-pro
 - Compression/redimensionnement automatique côté client (> 2 Mo → max 1536 px, JPEG 0.9)
 - Upload sécurisé via `/api/kie/upload`, génération via le modèle `nano-banana-pro`
 - Comparaison Avant / Après, téléchargement et régénération
