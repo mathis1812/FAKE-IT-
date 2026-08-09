@@ -5,8 +5,9 @@ ultra-réaliste avec un élément de luxe intégré (montre, voiture, décor hau
 en préservant la personne, la pose, la lumière et le cadrage d'origine — en **image**
 ou en **vidéo**.
 
-Propulsée par **Google Gemini 3 Pro Image**, **kie.ai Kling 3.0 Pro**, Next.js 14
-(App Router), TypeScript et Tailwind CSS. Fond animé **DotField** (React Bits).
+Propulsée par **Google Gemini 3 Pro Image**, **kie.ai Wan 2.7 Video Edit**,
+Next.js 14 (App Router), TypeScript et Tailwind CSS. Fond animé **DotField**
+(React Bits).
 
 > Le projet Vercel et le dépôt s'appellent toujours `fakeit` : seule l'interface
 > a été rebaptisée.
@@ -21,10 +22,12 @@ Propulsée par **Google Gemini 3 Pro Image**, **kie.ai Kling 3.0 Pro**, Next.js 
 - Comparaison Avant / Après, téléchargement (`bluminoo-result.png`) et régénération
 
 ### Vidéo — Remplacer un Objet (kie.ai)
-- Upload image source (requis) + image objet de remplacement (optionnel)
+- Upload **vidéo source** (requis, MP4/MOV 2–10 s, max 50 Mo) + image objet (optionnel)
 - Prompt libre décrivant le remplacement
-- Génération d'une courte vidéo (~5 s) via Kling 3.0 Pro image-to-video
-- Upload sécurisé via `/api/kie/upload` — `KIE_API_KEY` jamais exposée au client
+- Édition video-to-video via **Wan 2.7 Video Edit** (`wan/2-7-videoedit`)
+- Upload direct vers Supabase Storage (URL signée, auth requise) — pas de passage
+  du fichier par la fonction Vercel
+- Génération verrouillée sur l'auth + les crédits (150 image / 400 vidéo)
 
 ## 1. Obtenir les clés API
 
@@ -99,8 +102,8 @@ Redéployez pour que les variables soient prises en compte.
 ## Coût
 
 - Image Gemini 3 Pro Image : environ **~0,15 $ / image** (résolution standard)
-- Vidéo Kling 3.0 Pro (kie.ai, mode pro sans audio) : environ **~0,45 $
-  pour 5 s** (tarif kie.ai, ~20 % sous le prix officiel/fal.ai)
+- Vidéo Wan 2.7 Video Edit (kie.ai) : tarif variable selon résolution /
+  durée — comptez l'ordre de **quelques dixièmes de dollar** par clip court
 
 ## Scripts
 
@@ -115,3 +118,5 @@ Redéployez pour que les variables soient prises en compte.
 - `KIE_API_KEY` : utilisée côté serveur uniquement
   (`app/api/generate-video`, `app/api/kie/upload`) — jamais exposée au
   client
+- Upload vidéo : `/api/upload/sign` (auth Supabase) puis envoi direct au
+  bucket Storage `gallery`

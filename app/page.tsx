@@ -1,11 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Panel from "@/components/Panel";
+import {
+  IMAGE_GENERATION_COST,
+  VIDEO_GENERATION_COST,
+} from "@/lib/credit-costs";
 import { createClient } from "@/lib/supabase/client";
 
 type Mode = "image" | "video";
 type CategoryId = "montre" | "voiture" | "lieu";
+type MediaKind = "image" | "video";
 
 const PRESETS: Record<
   CategoryId,
@@ -35,7 +41,7 @@ const VIDEO_PROMPT_PLACEHOLDER =
   "Ex : Remplace la montre au poignet par une Rolex Submariner en acier, mouvements naturels, conserve le visage, la pose et le fond…";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
-const MAX_VIDEO_FILE_BYTES = 4 * 1024 * 1024;
+const MAX_SOURCE_VIDEO_BYTES = 50 * 1024 * 1024;
 const COMPRESS_THRESHOLD_BYTES = 2 * 1024 * 1024;
 const MAX_DIMENSION = 1536;
 const JPEG_QUALITY = 0.9;
@@ -46,10 +52,11 @@ type PreparedImage = {
   mimeType: string;
 };
 
-type VideoUpload = {
+type StudioUpload = {
   file: File;
   previewUrl: string;
   name: string;
+  kind: MediaKind;
 };
 
 function stripDataUrlPrefix(dataUrl: string): {
@@ -122,18 +129,116 @@ function validateImageFile(file: File): string | null {
   return null;
 }
 
-async function uploadImage(file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append("file", file);
-  const res = await fetch("/api/kie/upload", {
+async function uploadViaSignedUrl(
+  file: File,
+  kind: MediaKind,
+): Promise<string> {
+  const signRes = await fetch("/api/upload/sign", {
     method: "POST",
-    body: formData,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      filename: file.name,
+      contentType: file.type || (kind === "video" ? "video/mp4" : "image/jpeg"),
+      byteSize: file.size,
+      kind,
+    }),
   });
-  const data = await res.json().catch(() => null);
-  if (!res.ok || !data?.fileUrl) {
-    throw new Error(data?.error || "Échec de l'upload de l'image.");
+  const signData = await signRes.json().catch(() => null);
+  if (!signRes.ok || !signData?.path || !signData?.token || !signData?.publicUrl) {
+    throw new Error(signData?.error || "Échec de la préparation de l'upload.");
   }
-  return data.fileUrl as string;
+
+  const supabase = createClient();
+  const { error } = await supabase.storage
+    .from("gallery")
+    .uploadToSignedUrl(signData.path as string, signData.token as string, file);
+
+  if (error) {
+    throw new Error(error.message || "Échec de l'upload du fichier.");
+  }
+
+  return signData.publicUrl as string;
+}
+
+function formatApiError(
+  status: number,
+  serverMessage: string | undefined,
+  fallback: string,
+): string {
+  if (status === 401) {
+    return (
+      serverMessage ||
+      "Connectez-vous pour générer. Créez un compte ou connectez-vous puis réessayez."
+    );
+  }
+  if (status === 402) {
+    return (
+      serverMessage ||
+      "Crédits insuffisants. Rendez-vous sur Tarifs pour recharger votre compte."
+    );
+  }
+  return serverMessage || fallback;
+}
+
+function StudioAccessBar({
+  isLoggedIn,
+  credits,
+  cost,
+}: {
+  isLoggedIn: boolean;
+  credits: number | null;
+  cost: number;
+}) {
+  const insufficient =
+    isLoggedIn && credits !== null && credits < cost;
+
+  return (
+    <div className="mt-4 flex flex-col items-center gap-2">
+      <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-neutral-300">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path
+            d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"
+            fill="currentColor"
+          />
+        </svg>
+        {isLoggedIn ? "Tes crédits" : "Compte requis"}
+        <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-ink">
+          {isLoggedIn ? (credits ?? "…") : "—"}
+        </span>
+        <span className="normal-case tracking-normal text-neutral-500">
+          · {cost} / génération
+        </span>
+      </div>
+      {!isLoggedIn && (
+        <p className="text-center text-xs text-neutral-500">
+          <Link
+            href="/connexion"
+            className="font-medium text-primary-soft underline-offset-2 hover:underline"
+          >
+            Se connecter
+          </Link>
+          {" · "}
+          <Link
+            href="/inscription"
+            className="font-medium text-primary-soft underline-offset-2 hover:underline"
+          >
+            Créer un compte
+          </Link>
+        </p>
+      )}
+      {insufficient && (
+        <p className="text-center text-xs text-amber-200/90">
+          Solde insuffisant.{" "}
+          <Link
+            href="/tarifs"
+            className="font-medium text-primary-soft underline-offset-2 hover:underline"
+          >
+            Voir les tarifs
+          </Link>
+        </p>
+      )}
+    </div>
+  );
 }
 
 function BeforeAfterSlider({
@@ -194,13 +299,17 @@ function BeforeAfterSlider({
 function DropZone({
   label,
   hint,
+  accept,
+  formatsHint,
   upload,
   onPick,
   disabled,
 }: {
   label: string;
   hint: string;
-  upload: VideoUpload | null;
+  accept: string;
+  formatsHint: string;
+  upload: StudioUpload | null;
   onPick: (file: File) => void;
   disabled?: boolean;
 }) {
@@ -248,7 +357,7 @@ function DropZone({
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept={accept}
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -258,18 +367,28 @@ function DropZone({
         />
         {upload ? (
           <div className="flex flex-col items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={upload.previewUrl}
-              alt={label}
-              className="max-h-40 rounded-lg object-contain"
-            />
+            {upload.kind === "video" ? (
+              // eslint-disable-next-line jsx-a11y/media-has-caption
+              <video
+                src={upload.previewUrl}
+                muted
+                playsInline
+                className="max-h-40 rounded-lg object-contain"
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={upload.previewUrl}
+                alt={label}
+                className="max-h-40 rounded-lg object-contain"
+              />
+            )}
             <p className="text-xs text-neutral-500">{upload.name}</p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2 py-6">
             <p className="text-sm font-medium text-neutral-200">{hint}</p>
-            <p className="text-xs text-neutral-600">JPG, PNG, WebP — max 10 Mo</p>
+            <p className="text-xs text-neutral-600">{formatsHint}</p>
           </div>
         )}
       </div>
@@ -297,8 +416,8 @@ export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [videoSource, setVideoSource] = useState<VideoUpload | null>(null);
-  const [videoObject, setVideoObject] = useState<VideoUpload | null>(null);
+  const [videoSource, setVideoSource] = useState<StudioUpload | null>(null);
+  const [videoObject, setVideoObject] = useState<StudioUpload | null>(null);
   const [videoPrompt, setVideoPrompt] = useState("");
   const [videoLoading, setVideoLoading] = useState(false);
   const [videoError, setVideoError] = useState("");
@@ -308,6 +427,14 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const refreshCredits = useCallback(async () => {
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ) {
+      setIsLoggedIn(false);
+      setCredits(null);
+      return;
+    }
     const supabase = createClient();
     const {
       data: { user },
@@ -327,7 +454,26 @@ export default function Home() {
 
   useEffect(() => {
     void refreshCredits();
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ) {
+      return;
+    }
+    const supabase = createClient();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      void refreshCredits();
+    });
+    return () => subscription.unsubscribe();
   }, [refreshCredits]);
+
+  const creditsReady = credits !== null;
+  const canSpendImage =
+    isLoggedIn && creditsReady && credits >= IMAGE_GENERATION_COST;
+  const canSpendVideo =
+    isLoggedIn && creditsReady && credits >= VIDEO_GENERATION_COST;
 
   // Un effet par upload : l'URL est libérée quand l'upload change ou que la
   // page est démontée. L'ancienne version dépendait d'un tableau de deps vide
@@ -404,6 +550,18 @@ export default function Home() {
       setError("Veuillez d'abord uploader une image.");
       return;
     }
+    if (!isLoggedIn) {
+      setError(
+        "Connectez-vous pour générer une image. Créez un compte ou connectez-vous puis réessayez.",
+      );
+      return;
+    }
+    if (credits !== null && credits < IMAGE_GENERATION_COST) {
+      setError(
+        `Crédits insuffisants (${credits} disponibles, ${IMAGE_GENERATION_COST} requis). Rendez-vous sur Tarifs pour recharger.`,
+      );
+      return;
+    }
     const prompt = customPrompt.trim() || PRESETS[category].prompt;
     setLoading(true);
     setError("");
@@ -422,13 +580,18 @@ export default function Home() {
       const data = await res.json().catch(() => null);
       if (!res.ok || !data) {
         setError(
-          (data && data.error) ||
+          formatApiError(
+            res.status,
+            data?.error,
             `Une erreur est survenue (${res.status}). Réessayez.`,
+          ),
         );
+        void refreshCredits();
         return;
       }
       if (data.error) {
         setError(data.error);
+        void refreshCredits();
         return;
       }
       if (data.imageBase64) {
@@ -445,7 +608,14 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [prepared, customPrompt, category, refreshCredits]);
+  }, [
+    prepared,
+    customPrompt,
+    category,
+    refreshCredits,
+    isLoggedIn,
+    credits,
+  ]);
 
   const download = useCallback(() => {
     if (!result) return;
@@ -467,29 +637,85 @@ export default function Home() {
   }, []);
 
   const pickVideoUpload = useCallback(
-    async (file: File, kind: "source" | "object") => {
+    (file: File, slot: "source" | "object") => {
       setVideoError("");
       setVideoUrl("");
+
+      if (slot === "source") {
+        const isMp4 =
+          file.type === "video/mp4" ||
+          file.name.toLowerCase().endsWith(".mp4");
+        const isMov =
+          file.type === "video/quicktime" ||
+          file.name.toLowerCase().endsWith(".mov");
+        if (!isMp4 && !isMov) {
+          setVideoError(
+            "Vidéo non prise en charge. Utilisez un fichier MP4 ou MOV.",
+          );
+          return;
+        }
+        if (file.size > MAX_SOURCE_VIDEO_BYTES) {
+          setVideoError("Vidéo trop volumineuse (max 50 Mo).");
+          return;
+        }
+
+        const previewUrl = URL.createObjectURL(file);
+        const probe = document.createElement("video");
+        probe.preload = "metadata";
+        probe.onloadedmetadata = () => {
+          const duration = probe.duration;
+          // Ne pas revoke previewUrl ici : il sert à l'aperçu DropZone.
+          probe.removeAttribute("src");
+          probe.load();
+          if (
+            !Number.isFinite(duration) ||
+            duration < 2 ||
+            duration > 10
+          ) {
+            URL.revokeObjectURL(previewUrl);
+            setVideoError(
+              "La vidéo source doit durer entre 2 et 10 secondes.",
+            );
+            return;
+          }
+          setVideoSource({
+            file,
+            previewUrl,
+            name: file.name,
+            kind: "video",
+          });
+        };
+        probe.onerror = () => {
+          probe.removeAttribute("src");
+          probe.load();
+          URL.revokeObjectURL(previewUrl);
+          setVideoError(
+            "Impossible de lire la vidéo. Réessayez avec un autre fichier.",
+          );
+        };
+        probe.src = previewUrl;
+        return;
+      }
+
       const validationError = validateImageFile(file);
       if (validationError) {
         setVideoError(validationError);
         return;
       }
-      if (file.size > MAX_VIDEO_FILE_BYTES) {
-        setVideoError("Fichier trop volumineux pour la vidéo (max 4 Mo).");
-        return;
-      }
       const previewUrl = URL.createObjectURL(file);
-      const upload: VideoUpload = { file, previewUrl, name: file.name };
-      if (kind === "source") setVideoSource(upload);
-      else setVideoObject(upload);
+      setVideoObject({
+        file,
+        previewUrl,
+        name: file.name,
+        kind: "image",
+      });
     },
     [],
   );
 
   const generateVideo = useCallback(async () => {
     if (!videoSource) {
-      setVideoError("Veuillez uploader une image source.");
+      setVideoError("Veuillez uploader une vidéo source.");
       return;
     }
     const prompt = videoPrompt.trim();
@@ -499,19 +725,34 @@ export default function Home() {
       );
       return;
     }
+    if (!isLoggedIn) {
+      setVideoError(
+        "Connectez-vous pour générer une vidéo. Créez un compte ou connectez-vous puis réessayez.",
+      );
+      return;
+    }
+    if (credits !== null && credits < VIDEO_GENERATION_COST) {
+      setVideoError(
+        `Crédits insuffisants (${credits} disponibles, ${VIDEO_GENERATION_COST} requis). Rendez-vous sur Tarifs pour recharger.`,
+      );
+      return;
+    }
     setVideoLoading(true);
     setVideoError("");
     setVideoUrl("");
     try {
-      const sourceImageUrl = await uploadImage(videoSource.file);
+      const sourceVideoUrl = await uploadViaSignedUrl(
+        videoSource.file,
+        "video",
+      );
       const objectImageUrl = videoObject
-        ? await uploadImage(videoObject.file)
+        ? await uploadViaSignedUrl(videoObject.file, "image")
         : undefined;
       const res = await fetch("/api/generate-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sourceImageUrl,
+          sourceVideoUrl,
           objectImageUrl,
           prompt,
           label: "Remplacement d'objet",
@@ -520,13 +761,18 @@ export default function Home() {
       const data = await res.json().catch(() => null);
       if (!res.ok || !data) {
         setVideoError(
-          (data && data.error) ||
+          formatApiError(
+            res.status,
+            data?.error,
             `Une erreur est survenue (${res.status}). Réessayez.`,
+          ),
         );
+        void refreshCredits();
         return;
       }
       if (data.error) {
         setVideoError(data.error);
+        void refreshCredits();
         return;
       }
       if (data.videoUrl) {
@@ -544,7 +790,14 @@ export default function Home() {
     } finally {
       setVideoLoading(false);
     }
-  }, [videoSource, videoObject, videoPrompt, refreshCredits]);
+  }, [
+    videoSource,
+    videoObject,
+    videoPrompt,
+    refreshCredits,
+    isLoggedIn,
+    credits,
+  ]);
 
   const downloadVideo = useCallback(() => {
     if (!videoUrl) return;
@@ -733,20 +986,63 @@ export default function Home() {
                 />
               </section>
 
+              <StudioAccessBar
+                isLoggedIn={isLoggedIn}
+                credits={credits}
+                cost={IMAGE_GENERATION_COST}
+              />
+
               {error && (
-                <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
+                <div className="mb-4 mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
                   {error}
+                  {(error.toLowerCase().includes("connectez") ||
+                    error.toLowerCase().includes("crédits")) && (
+                    <span className="mt-2 block text-xs text-red-100/80">
+                      {error.toLowerCase().includes("connectez") ? (
+                        <>
+                          <Link
+                            href="/connexion"
+                            className="underline underline-offset-2"
+                          >
+                            Connexion
+                          </Link>
+                          {" · "}
+                          <Link
+                            href="/inscription"
+                            className="underline underline-offset-2"
+                          >
+                            Inscription
+                          </Link>
+                        </>
+                      ) : (
+                        <Link
+                          href="/tarifs"
+                          className="underline underline-offset-2"
+                        >
+                          Ouvrir les tarifs
+                        </Link>
+                      )}
+                    </span>
+                  )}
                 </div>
               )}
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button
                   type="button"
                   onClick={generate}
-                  disabled={loading || !prepared}
+                  disabled={loading || !prepared || !canSpendImage}
                   className="flex-1 cursor-pointer rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {loading ? "Génération… (~15-30s)" : "Générer"}
+                  {loading
+                    ? "Génération… (~15-30s)"
+                    : !isLoggedIn
+                      ? "Connectez-vous pour générer"
+                      : !creditsReady
+                        ? "Chargement des crédits…"
+                        : credits < IMAGE_GENERATION_COST
+                          ? "Crédits insuffisants"
+                          : `Générer · ${IMAGE_GENERATION_COST} crédits`}
                 </button>
                 {prepared && (
                   <button
@@ -785,7 +1081,7 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={generate}
-                      disabled={loading}
+                      disabled={loading || !canSpendImage}
                       className="cursor-pointer rounded-xl border border-white/10 px-3.5 py-2 text-xs font-medium text-neutral-300 transition hover:border-white/20 disabled:opacity-40"
                     >
                       {loading ? "…" : "Régénérer"}
@@ -843,10 +1139,10 @@ export default function Home() {
               Remplacer un objet
             </p>
             <h2 className="font-display mt-2 text-3xl font-semibold text-white">
-              Vidéo courte, intégration réaliste
+              Éditez votre vidéo, gardez le mouvement
             </h2>
             <p className="mt-2 text-sm text-neutral-500">
-              ~5 s de vidéo · génération ~90 s · Kling 3.0 Pro via kie.ai
+              Vidéo source 2–10 s · Wan 2.7 Video Edit via kie.ai · ~90 s
             </p>
           </Panel>
 
@@ -870,35 +1166,33 @@ export default function Home() {
               />
             </div>
             <p className="mt-3 text-center text-xs text-neutral-600">
-              Remplacement d&apos;objet par IA
+              Remplacement d&apos;objet dans une vidéo existante
             </p>
-            <div className="mt-4 flex justify-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-neutral-300">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor" />
-                </svg>
-                Tes crédits
-                <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-ink">
-                  {isLoggedIn ? (credits ?? "…") : "0"}
-                </span>
-              </div>
-            </div>
+            <StudioAccessBar
+              isLoggedIn={isLoggedIn}
+              credits={credits}
+              cost={VIDEO_GENERATION_COST}
+            />
           </Panel>
 
           <Panel className="p-5 sm:p-6">
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <DropZone
-                label="Image source (requis)"
-                hint="Votre photo / scène"
+                label="Vidéo source (requis)"
+                hint="Votre clip à éditer"
+                accept="video/mp4,video/quicktime,.mp4,.mov"
+                formatsHint="MP4, MOV — 2 à 10 s · max 50 Mo"
                 upload={videoSource}
-                onPick={(file) => void pickVideoUpload(file, "source")}
+                onPick={(file) => pickVideoUpload(file, "source")}
                 disabled={videoLoading}
               />
               <DropZone
                 label="Objet (optionnel)"
                 hint="Référence luxe"
+                accept="image/*"
+                formatsHint="JPG, PNG, WebP — max 10 Mo"
                 upload={videoObject}
-                onPick={(file) => void pickVideoUpload(file, "object")}
+                onPick={(file) => pickVideoUpload(file, "object")}
                 disabled={videoLoading}
               />
             </div>
@@ -926,13 +1220,22 @@ export default function Home() {
                 type="button"
                 onClick={generateVideo}
                 disabled={
-                  videoLoading || !videoSource || !videoPrompt.trim()
+                  videoLoading ||
+                  !videoSource ||
+                  !videoPrompt.trim() ||
+                  !canSpendVideo
                 }
                 className="cursor-pointer rounded-2xl bg-primary px-6 py-3.5 text-sm font-bold text-ink transition hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {videoLoading
                   ? "Génération vidéo… (~90s+)"
-                  : "Générer la vidéo"}
+                  : !isLoggedIn
+                    ? "Connectez-vous pour générer"
+                    : !creditsReady
+                      ? "Chargement des crédits…"
+                      : credits < VIDEO_GENERATION_COST
+                        ? "Crédits insuffisants"
+                        : `Générer la vidéo · ${VIDEO_GENERATION_COST} crédits`}
               </button>
               {(videoSource || videoObject || videoPrompt) && (
                 <button
@@ -949,6 +1252,35 @@ export default function Home() {
             {videoError && (
               <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
                 {videoError}
+                {(videoError.toLowerCase().includes("connectez") ||
+                  videoError.toLowerCase().includes("crédits")) && (
+                  <span className="mt-2 block text-xs text-red-100/80">
+                    {videoError.toLowerCase().includes("connectez") ? (
+                      <>
+                        <Link
+                          href="/connexion"
+                          className="underline underline-offset-2"
+                        >
+                          Connexion
+                        </Link>
+                        {" · "}
+                        <Link
+                          href="/inscription"
+                          className="underline underline-offset-2"
+                        >
+                          Inscription
+                        </Link>
+                      </>
+                    ) : (
+                      <Link
+                        href="/tarifs"
+                        className="underline underline-offset-2"
+                      >
+                        Ouvrir les tarifs
+                      </Link>
+                    )}
+                  </span>
+                )}
               </div>
             )}
 
@@ -980,7 +1312,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={generateVideo}
-                    disabled={videoLoading}
+                    disabled={videoLoading || !canSpendVideo}
                     className="cursor-pointer rounded-xl border border-white/10 px-4 py-2.5 text-sm font-medium text-neutral-300 transition hover:border-white/20 disabled:opacity-40"
                   >
                     {videoLoading ? "…" : "Régénérer"}

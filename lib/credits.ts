@@ -1,7 +1,9 @@
 import { createServiceClient } from "@/lib/supabase/service";
 
-export const IMAGE_GENERATION_COST = 150;
-export const VIDEO_GENERATION_COST = 400;
+export {
+  IMAGE_GENERATION_COST,
+  VIDEO_GENERATION_COST,
+} from "@/lib/credit-costs";
 
 export async function spendCredits(
   userId: string,
