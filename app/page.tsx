@@ -589,18 +589,21 @@ export default function Home() {
                 }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={onDrop}
-                onClick={() => inputRef.current?.click()}
+                onClick={() => {
+                  if (!loading) inputRef.current?.click();
+                }}
                 onKeyDown={(e) => {
+                  if (loading) return;
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     inputRef.current?.click();
                   }
                 }}
-                className={`aspect-[3/4] cursor-pointer overflow-hidden rounded-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+                className={`aspect-square max-h-80 cursor-pointer overflow-hidden rounded-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
                   isDragging
                     ? "bg-primary/[0.08]"
                     : "bg-white/[0.02] hover:bg-white/[0.035]"
-                }`}
+                } ${loading ? "cursor-not-allowed" : ""}`}
               >
                 <input
                   ref={inputRef}
@@ -609,7 +612,28 @@ export default function Home() {
                   className="hidden"
                   onChange={onInputChange}
                 />
-                {prepared ? (
+                {loading ? (
+                  <div className="flex h-full flex-col items-center justify-center gap-3 px-4 text-center">
+                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+                    <p className="text-xs text-neutral-400">
+                      {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
+                    </p>
+                  </div>
+                ) : result ? (
+                  <div className="animate-reveal relative h-full">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={result}
+                      alt="Résultat généré"
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
+                      <p className="truncate text-xs text-neutral-300">
+                        Résultat · touche pour changer de photo
+                      </p>
+                    </div>
+                  </div>
+                ) : prepared ? (
                   <div className="relative h-full">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -726,14 +750,34 @@ export default function Home() {
             )}
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <button
-                type="button"
-                onClick={generate}
-                disabled={loading || !prepared || !customPrompt.trim()}
-                className="flex-1 cursor-pointer rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {loading ? "Génération… (~15-30s)" : "Générer"}
-              </button>
+              {result ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={download}
+                    className="flex-1 cursor-pointer rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft"
+                  >
+                    Télécharger
+                  </button>
+                  <button
+                    type="button"
+                    onClick={generate}
+                    disabled={loading || !customPrompt.trim()}
+                    className="cursor-pointer rounded-2xl border border-white/10 px-4 py-3.5 text-sm font-medium text-neutral-300 transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {loading ? "…" : "Régénérer"}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={generate}
+                  disabled={loading || !prepared || !customPrompt.trim()}
+                  className="flex-1 cursor-pointer rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {loading ? "Génération… (~15-30s)" : "Générer"}
+                </button>
+              )}
               {prepared && (
                 <button
                   type="button"
@@ -745,76 +789,6 @@ export default function Home() {
                 </button>
               )}
             </div>
-          </Panel>
-
-          <Panel className="animate-fade-up-delay mt-8 min-h-[360px] p-4 sm:p-6">
-            <div className="mb-4 flex items-end justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">
-                  Canvas
-                </p>
-                <h3 className="font-display mt-1 text-2xl font-semibold text-white">
-                  {result ? "Résultat" : "Aperçu"}
-                </h3>
-              </div>
-              {result && (
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={download}
-                    className="cursor-pointer rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-ink transition duration-200 hover:bg-primary-soft"
-                  >
-                    Télécharger
-                  </button>
-                  <button
-                    type="button"
-                    onClick={generate}
-                    disabled={loading}
-                    className="cursor-pointer rounded-xl border border-white/10 px-3.5 py-2 text-xs font-medium text-neutral-300 transition hover:border-white/20 disabled:opacity-40"
-                  >
-                    {loading ? "…" : "Régénérer"}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {loading ? (
-              <div className="flex min-h-[300px] flex-col items-center justify-center gap-4">
-                <div className="h-14 w-14 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
-                <p className="text-sm text-neutral-400">
-                  {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
-                </p>
-              </div>
-            ) : result ? (
-              <div className="animate-reveal flex min-h-[300px] items-center justify-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={result}
-                  alt="Résultat généré"
-                  className="max-h-[520px] w-full rounded-2xl object-contain"
-                />
-              </div>
-            ) : prepared ? (
-              <div className="flex min-h-[300px] items-center justify-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={prepared.previewUrl}
-                  alt="Original"
-                  className="max-h-[520px] w-full rounded-2xl object-contain"
-                />
-              </div>
-            ) : (
-              <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 text-center">
-                <div className="h-px w-16 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-                <p className="font-display text-xl font-semibold text-neutral-300">
-                  Votre rendu apparaîtra ici
-                </p>
-                <p className="max-w-sm text-sm text-neutral-600">
-                  Uploadez une photo, décrivez la transformation, générez. Le
-                  résultat s&apos;affiche ici dès qu&apos;il est prêt.
-                </p>
-              </div>
-            )}
           </Panel>
         </div>
       ) : (
