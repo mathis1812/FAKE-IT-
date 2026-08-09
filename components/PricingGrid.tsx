@@ -33,14 +33,14 @@ export default function PricingGrid({
   return (
     <div>
       <div className="mb-8 flex justify-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-foreground/10 p-1 text-xs font-semibold uppercase tracking-[0.1em]">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 p-1 text-xs font-semibold uppercase tracking-[0.1em]">
           <button
             type="button"
             onClick={() => setPeriod("monthly")}
             className={`rounded-full px-4 py-1.5 transition ${
               period === "monthly"
                 ? "bg-primary text-ink"
-                : "text-foreground/65 hover:text-foreground"
+                : "text-neutral-400 hover:text-neutral-100"
             }`}
           >
             Mensuel
@@ -51,7 +51,7 @@ export default function PricingGrid({
             className={`rounded-full px-4 py-1.5 transition ${
               period === "annual"
                 ? "bg-primary text-ink"
-                : "text-foreground/65 hover:text-foreground"
+                : "text-neutral-400 hover:text-neutral-100"
             }`}
           >
             Annuel · -20%
@@ -67,7 +67,7 @@ export default function PricingGrid({
           return (
             <Panel key={plan.id} className="flex flex-col p-6">
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="font-display text-xl font-semibold text-foreground">
+                <h3 className="font-display text-xl font-semibold text-white">
                   {plan.name}
                 </h3>
                 {isCurrent && (
@@ -78,45 +78,45 @@ export default function PricingGrid({
               </div>
 
               {period === "monthly" ? (
-                <p className="mb-1 text-3xl font-semibold text-foreground">
+                <p className="mb-1 text-3xl font-semibold text-white">
                   {formatEur(plan.monthlyPriceEur)} €
-                  <span className="text-sm font-normal text-foreground/50">
+                  <span className="text-sm font-normal text-neutral-500">
                     /mois
                   </span>
                 </p>
               ) : (
                 <div className="mb-1">
                   <p className="flex items-baseline gap-2">
-                    <span className="text-sm font-medium text-foreground/35 line-through">
+                    <span className="text-sm font-medium text-neutral-600 line-through">
                       {formatEur(plan.monthlyPriceEur)} €/mois
                     </span>
                     <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary-soft">
                       -20%
                     </span>
                   </p>
-                  <p className="text-3xl font-semibold text-foreground">
+                  <p className="text-3xl font-semibold text-white">
                     {formatEur(annualEffectiveMonthly)} €
-                    <span className="text-sm font-normal text-foreground/50">
+                    <span className="text-sm font-normal text-neutral-500">
                       /mois
                     </span>
                   </p>
-                  <p className="text-xs text-foreground/50">
+                  <p className="text-xs text-neutral-500">
                     Facturé {formatEur(plan.annualPriceEur)} €/an
                   </p>
                 </div>
               )}
 
-              <p className="mb-4 mt-2 text-sm text-foreground/65">
+              <p className="mb-4 mt-2 text-sm text-neutral-400">
                 {plan.creditsPerMonth.toLocaleString("fr-FR")} crédits/mois
                 {period === "annual" && (
-                  <span className="text-foreground/35">
+                  <span className="text-neutral-600">
                     {" "}
                     (crédités en une fois pour l&apos;année)
                   </span>
                 )}
               </p>
 
-              <ul className="mb-6 flex-1 space-y-2.5 text-sm text-foreground/65">
+              <ul className="mb-6 flex-1 space-y-2.5 text-sm text-neutral-400">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2">
                     <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-primary" />
@@ -126,7 +126,7 @@ export default function PricingGrid({
               </ul>
 
               {isCurrent ? (
-                <div className="rounded-2xl border border-foreground/10 px-4 py-3 text-center text-sm font-medium text-foreground/50">
+                <div className="rounded-2xl border border-white/10 px-4 py-3 text-center text-sm font-medium text-neutral-500">
                   Ton palier actuel
                 </div>
               ) : currentPlan ? (

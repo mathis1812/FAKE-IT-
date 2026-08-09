@@ -49,7 +49,7 @@ export default function ConnexionPage() {
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
           Connexion
         </p>
-        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-foreground">
+        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
           Content de te revoir
         </h2>
       </div>
@@ -59,7 +59,7 @@ export default function ConnexionPage() {
           <div>
             <label
               htmlFor="email"
-              className="mb-1.5 block text-xs font-medium uppercase tracking-[0.1em] text-foreground/65"
+              className="mb-1.5 block text-xs font-medium uppercase tracking-[0.1em] text-neutral-400"
             >
               Email
             </label>
@@ -69,13 +69,13 @@ export default function ConnexionPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
+              className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-white outline-none focus:border-primary/50"
             />
           </div>
           <div>
             <label
               htmlFor="password"
-              className="mb-1.5 block text-xs font-medium uppercase tracking-[0.1em] text-foreground/65"
+              className="mb-1.5 block text-xs font-medium uppercase tracking-[0.1em] text-neutral-400"
             >
               Mot de passe
             </label>
@@ -85,12 +85,12 @@ export default function ConnexionPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-foreground/10 bg-foreground/[0.03] px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
+              className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-white outline-none focus:border-primary/50"
             />
           </div>
 
           {error && (
-            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-[var(--danger-text)]">
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
               {error}
             </div>
           )}
@@ -104,9 +104,9 @@ export default function ConnexionPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-foreground/65">
+        <p className="mt-6 text-center text-sm text-neutral-400">
           Pas encore de compte ?{" "}
-          <Link href="/inscription" className="text-[var(--link)] hover:underline">
+          <Link href="/inscription" className="text-primary-soft hover:underline">
             S&apos;inscrire
           </Link>
         </p>

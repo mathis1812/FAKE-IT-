@@ -8,15 +8,15 @@ export default function ConfidentialitePage() {
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
           Confidentialité
         </p>
-        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-foreground">
+        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
           Politique de confidentialité
         </h2>
 
         <LegalIdentityNotice />
 
-        <div className="space-y-6 text-sm leading-relaxed text-foreground/65">
+        <div className="space-y-6 text-sm leading-relaxed text-neutral-400">
           <section>
-            <h3 className="mb-2 text-base font-semibold text-foreground">
+            <h3 className="mb-2 text-base font-semibold text-neutral-100">
               1. Responsable du traitement
             </h3>
             <p>
@@ -24,7 +24,7 @@ export default function ConfidentialitePage() {
               collectées sur Bluminoo Studio est Mathis Vergne, joignable à{" "}
               <a
                 href="mailto:mathisvergne27@gmail.com"
-                className="text-[var(--link)] underline underline-offset-2 hover:text-primary"
+                className="text-primary-soft underline underline-offset-2 hover:text-primary"
               >
                 mathisvergne27@gmail.com
               </a>
@@ -33,7 +33,7 @@ export default function ConfidentialitePage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-foreground">
+            <h3 className="mb-2 text-base font-semibold text-neutral-100">
               2. Données collectées
             </h3>
             <ul className="list-disc space-y-1 pl-5">
@@ -60,7 +60,7 @@ export default function ConfidentialitePage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-foreground">
+            <h3 className="mb-2 text-base font-semibold text-neutral-100">
               3. Finalités du traitement
             </h3>
             <p>
@@ -72,7 +72,7 @@ export default function ConfidentialitePage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-foreground">
+            <h3 className="mb-2 text-base font-semibold text-neutral-100">
               4. Sous-traitants et transferts
             </h3>
             <p>Les prestataires suivants traitent des données pour notre compte :</p>
@@ -105,7 +105,7 @@ export default function ConfidentialitePage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-foreground">
+            <h3 className="mb-2 text-base font-semibold text-neutral-100">
               5. Durée de conservation
             </h3>
             <p>
@@ -121,7 +121,7 @@ export default function ConfidentialitePage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-foreground">
+            <h3 className="mb-2 text-base font-semibold text-neutral-100">
               6. Vos droits
             </h3>
             <p>
@@ -132,7 +132,7 @@ export default function ConfidentialitePage() {
               droits en nous contactant à{" "}
               <a
                 href="mailto:mathisvergne27@gmail.com"
-                className="text-[var(--link)] underline underline-offset-2 hover:text-primary"
+                className="text-primary-soft underline underline-offset-2 hover:text-primary"
               >
                 mathisvergne27@gmail.com
               </a>
@@ -142,7 +142,7 @@ export default function ConfidentialitePage() {
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-semibold text-foreground">
+            <h3 className="mb-2 text-base font-semibold text-neutral-100">
               7. Cookies
             </h3>
             <p>

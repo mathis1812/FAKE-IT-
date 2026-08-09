@@ -44,7 +44,7 @@ export default async function GaleriePage() {
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
           Galerie
         </p>
-        <h2 className="font-display mt-2 text-3xl font-semibold text-foreground">
+        <h2 className="font-display mt-2 text-3xl font-semibold text-white">
           Vos dernières générations
         </h2>
       </div>

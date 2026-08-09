@@ -18,10 +18,10 @@ export default function PlaceholderSection({
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
           {eyebrow}
         </p>
-        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-foreground">
+        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
           {title}
         </h2>
-        <p className="mt-3 text-sm leading-relaxed text-foreground/50">
+        <p className="mt-3 text-sm leading-relaxed text-neutral-500">
           {description}
         </p>
       </Panel>

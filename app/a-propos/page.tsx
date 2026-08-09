@@ -30,33 +30,33 @@ export default function AProposPage() {
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
           À propos
         </p>
-        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-foreground">
+        <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
           Bluminoo Studio
         </h2>
-        <p className="mt-4 text-sm leading-relaxed text-foreground/65">
+        <p className="mt-4 text-sm leading-relaxed text-neutral-400">
           Bluminoo Studio transforme une photo — visage, poignet ou scène —
           en une version ultra-réaliste avec un élément de luxe intégré
           (montre, voiture, décor haut de gamme), en préservant la
           personne, la pose, la lumière et le cadrage d&apos;origine, en
           image ou en vidéo.
         </p>
-        <p className="mt-3 text-sm leading-relaxed text-foreground/65">
+        <p className="mt-3 text-sm leading-relaxed text-neutral-400">
           Propulsé par Nano Banana Pro (Gemini 3 Pro Image, via kie.ai) pour
           l&apos;image, et Kling 3.0 Pro (via kie.ai) pour la vidéo.
         </p>
       </Panel>
 
       <Panel className="mb-6 p-6 sm:p-8">
-        <h3 className="font-display mb-5 text-2xl font-semibold text-foreground">
+        <h3 className="font-display mb-5 text-2xl font-semibold text-white">
           FAQ
         </h3>
         <div className="space-y-5">
           {FAQ_ITEMS.map((item) => (
             <div key={item.question}>
-              <p className="text-sm font-semibold text-foreground">
+              <p className="text-sm font-semibold text-neutral-100">
                 {item.question}
               </p>
-              <p className="mt-1.5 text-sm leading-relaxed text-foreground/50">
+              <p className="mt-1.5 text-sm leading-relaxed text-neutral-500">
                 {item.answer}
               </p>
             </div>
@@ -65,14 +65,14 @@ export default function AProposPage() {
       </Panel>
 
       <Panel className="p-6 text-center sm:p-8">
-        <h3 className="font-display mb-2 text-xl font-semibold text-foreground">
+        <h3 className="font-display mb-2 text-xl font-semibold text-white">
           Contact
         </h3>
-        <p className="text-sm text-foreground/50">
+        <p className="text-sm text-neutral-500">
           Une question, un problème ?{" "}
           <a
             href="mailto:mathisvergne27@gmail.com"
-            className="text-[var(--link)] underline underline-offset-2 hover:text-primary"
+            className="text-primary-soft underline underline-offset-2 hover:text-primary"
           >
             mathisvergne27@gmail.com
           </a>

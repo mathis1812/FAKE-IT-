@@ -137,7 +137,7 @@ function DropZone({
   return (
     <div>
       <div className="mb-2 flex items-center gap-2">
-        <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-foreground/50">
+        <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-neutral-500">
           {label}
         </p>
         {badge && (
@@ -176,7 +176,7 @@ function DropZone({
         className={`aspect-square cursor-pointer overflow-hidden rounded-2xl border border-dashed text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
           dragging
             ? "border-primary/70 bg-primary/5"
-            : "border-foreground/10 bg-foreground/[0.02] hover:border-foreground/20"
+            : "border-white/10 bg-white/[0.02] hover:border-white/20"
         } ${disabled ? "pointer-events-none opacity-50" : ""}`}
       >
         <input
@@ -217,10 +217,10 @@ function DropZone({
                 />
               </svg>
             </div>
-            <p className="text-sm font-semibold uppercase tracking-[0.08em] text-foreground">
+            <p className="text-sm font-semibold uppercase tracking-[0.08em] text-neutral-200">
               {hint}
             </p>
-            <p className="text-xs text-foreground/35">{subtext}</p>
+            <p className="text-xs text-neutral-600">{subtext}</p>
           </div>
         )}
       </div>
@@ -578,7 +578,7 @@ export default function Home() {
   return (
     <>
       <div className="mb-8 flex justify-center">
-        <div className="inline-flex rounded-full border border-foreground/10 bg-foreground/[0.03] p-1">
+        <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
           {(["image", "video"] as Mode[]).map((m) => (
             <button
               key={m}
@@ -587,7 +587,7 @@ export default function Home() {
               className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition duration-200 ${
                 mode === m
                   ? "bg-primary text-ink"
-                  : "text-foreground/65 hover:text-foreground"
+                  : "text-neutral-400 hover:text-neutral-100"
               }`}
             >
               {m === "image" ? "Image" : "Vidéo"}
@@ -603,12 +603,12 @@ export default function Home() {
               <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
                 Génération image
               </p>
-              <h2 className="font-display mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground">
+              <h2 className="font-display mt-2 text-2xl font-semibold leading-tight tracking-tight text-white">
                 Intégrez le luxe. Gardez tout le reste.
               </h2>
             </div>
 
-            <div className="mx-auto mb-4 h-80 w-80 max-w-full overflow-hidden rounded-2xl border border-dashed border-foreground/10">
+            <div className="mx-auto mb-4 h-80 w-80 max-w-full overflow-hidden rounded-2xl border border-dashed border-white/10">
               <div
                 role="button"
                 tabIndex={0}
@@ -632,7 +632,7 @@ export default function Home() {
                 className={`h-full w-full cursor-pointer overflow-hidden rounded-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
                   isDragging
                     ? "bg-primary/[0.08]"
-                    : "bg-foreground/[0.02] hover:bg-foreground/[0.035]"
+                    : "bg-white/[0.02] hover:bg-white/[0.035]"
                 } ${loading ? "cursor-not-allowed" : ""}`}
               >
                 <input
@@ -645,7 +645,7 @@ export default function Home() {
                 {loading ? (
                   <div className="flex h-full flex-col items-center justify-center gap-3 px-4 text-center">
                     <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
-                    <p className="text-xs text-foreground/65">
+                    <p className="text-xs text-neutral-400">
                       {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
                     </p>
                   </div>
@@ -697,10 +697,10 @@ export default function Home() {
                         />
                       </svg>
                     </div>
-                    <p className="text-sm font-semibold uppercase tracking-[0.1em] text-foreground">
+                    <p className="text-sm font-semibold uppercase tracking-[0.1em] text-neutral-200">
                       Ta photo
                     </p>
-                    <p className="text-xs text-foreground/35">
+                    <p className="text-xs text-neutral-600">
                       Touche pour importer · max 10 Mo
                     </p>
                   </div>
@@ -722,7 +722,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => secondaryInputRef.current?.click()}
-              className="mb-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-foreground/10 bg-foreground/[0.02] px-4 py-3 text-sm font-medium text-foreground/85 transition hover:border-foreground/20 hover:text-foreground"
+              className="mb-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm font-medium text-neutral-300 transition hover:border-white/20 hover:text-neutral-100"
             >
               {secondaryImage ? (
                 <>
@@ -748,7 +748,7 @@ export default function Home() {
                         setSecondaryImage(null);
                       }
                     }}
-                    className="ml-1 cursor-pointer text-foreground/50 hover:text-foreground"
+                    className="ml-1 cursor-pointer text-neutral-500 hover:text-neutral-200"
                   >
                     ✕
                   </span>
@@ -758,7 +758,7 @@ export default function Home() {
                   <span className="text-base leading-none">+</span>
                   <span>
                     Ajouter photo{" "}
-                    <span className="text-foreground/35">(optionnel)</span>
+                    <span className="text-neutral-600">(optionnel)</span>
                   </span>
                 </>
               )}
@@ -770,11 +770,11 @@ export default function Home() {
               onChange={(e) => setCustomPrompt(e.target.value)}
               rows={3}
               placeholder={IMAGE_PROMPT_PLACEHOLDER}
-              className="mb-4 w-full resize-y rounded-2xl border border-foreground/10 bg-[var(--input-bg)] p-3.5 text-sm text-foreground outline-none transition placeholder:text-foreground/25 focus:border-primary/50"
+              className="mb-4 w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-700 focus:border-primary/50"
             />
 
             {error && (
-              <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-[var(--danger-text)]">
+              <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
                 {error}
               </div>
             )}
@@ -793,7 +793,7 @@ export default function Home() {
                     type="button"
                     onClick={generate}
                     disabled={loading || !customPrompt.trim()}
-                    className="cursor-pointer rounded-2xl border border-foreground/10 px-4 py-3.5 text-sm font-medium text-foreground/85 transition hover:border-foreground/20 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="cursor-pointer rounded-2xl border border-white/10 px-4 py-3.5 text-sm font-medium text-neutral-300 transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {loading ? "…" : "Régénérer"}
                   </button>
@@ -813,7 +813,7 @@ export default function Home() {
                   type="button"
                   onClick={reset}
                   disabled={loading}
-                  className="cursor-pointer rounded-2xl border border-foreground/10 px-4 py-3.5 text-sm font-medium text-foreground/65 transition hover:border-foreground/20 hover:text-foreground disabled:opacity-40"
+                  className="cursor-pointer rounded-2xl border border-white/10 px-4 py-3.5 text-sm font-medium text-neutral-400 transition hover:border-white/20 hover:text-neutral-200 disabled:opacity-40"
                 >
                   Reset
                 </button>
@@ -827,10 +827,10 @@ export default function Home() {
             <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
               Remplacer un objet
             </p>
-            <h2 className="font-display mt-2 text-3xl font-semibold text-foreground">
+            <h2 className="font-display mt-2 text-3xl font-semibold text-white">
               Vidéo courte, intégration réaliste
             </h2>
-            <p className="mt-2 text-sm text-foreground/50">
+            <p className="mt-2 text-sm text-neutral-500">
               ~5 s de vidéo · génération ~90 s · Kling 3.0 Pro via kie.ai
             </p>
           </Panel>
@@ -838,12 +838,12 @@ export default function Home() {
           <Panel className="mb-6 p-5 sm:p-6">
             <div className="mb-5 flex items-center gap-3">
               <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/10" />
-              <p className="shrink-0 text-[10px] font-medium uppercase tracking-[0.22em] text-foreground/50">
+              <p className="shrink-0 text-[10px] font-medium uppercase tracking-[0.22em] text-neutral-500">
                 Exemple de résultat
               </p>
               <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/10" />
             </div>
-            <div className="mx-auto max-w-sm overflow-hidden rounded-2xl border border-foreground/10 bg-black">
+            <div className="mx-auto max-w-sm overflow-hidden rounded-2xl border border-white/10 bg-black">
               {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
               <video
                 src="/exemple-resultat.mp4"
@@ -854,11 +854,11 @@ export default function Home() {
                 className="h-full w-full object-cover"
               />
             </div>
-            <p className="mt-3 text-center text-xs text-foreground/35">
+            <p className="mt-3 text-center text-xs text-neutral-600">
               Remplacement d&apos;objet par IA
             </p>
             <div className="mt-4 flex justify-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/85">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-neutral-300">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
                   <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor" />
                 </svg>
@@ -911,14 +911,14 @@ export default function Home() {
 
             <section className="mt-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="flex flex-1 items-center gap-2.5 rounded-2xl border border-foreground/10 bg-[var(--input-bg)] px-3.5 py-3 focus-within:border-primary/50">
+                <div className="flex flex-1 items-center gap-2.5 rounded-2xl border border-white/10 bg-black/40 px-3.5 py-3 focus-within:border-primary/50">
                   <svg
                     width="16"
                     height="16"
                     viewBox="0 0 24 24"
                     fill="none"
                     aria-hidden
-                    className="shrink-0 text-foreground/35"
+                    className="shrink-0 text-neutral-600"
                   >
                     <path
                       d="M4 6h16M4 12h10M4 18h7"
@@ -934,7 +934,7 @@ export default function Home() {
                     onChange={(e) => setVideoPrompt(e.target.value)}
                     placeholder={VIDEO_PROMPT_PLACEHOLDER}
                     disabled={videoLoading}
-                    className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-foreground/25 disabled:opacity-50"
+                    className="w-full bg-transparent text-sm text-neutral-100 outline-none placeholder:text-neutral-700 disabled:opacity-50"
                   />
                 </div>
                 <button
@@ -954,7 +954,7 @@ export default function Home() {
                 </button>
               </div>
               <div className="mt-3 flex items-center justify-between gap-3">
-                <p className="flex items-start gap-1.5 text-xs text-foreground/50">
+                <p className="flex items-start gap-1.5 text-xs text-neutral-500">
                   <span className="text-primary">✦</span>
                   <span>
                     Astuce : la photo de référence est automatiquement
@@ -966,7 +966,7 @@ export default function Home() {
                     type="button"
                     onClick={resetVideo}
                     disabled={videoLoading}
-                    className="shrink-0 cursor-pointer text-xs font-medium text-foreground/50 underline underline-offset-2 transition hover:text-foreground/85 disabled:opacity-40"
+                    className="shrink-0 cursor-pointer text-xs font-medium text-neutral-500 underline underline-offset-2 transition hover:text-neutral-300 disabled:opacity-40"
                   >
                     Réinitialiser
                   </button>
@@ -975,7 +975,7 @@ export default function Home() {
             </section>
 
             {videoError && (
-              <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-[var(--danger-text)]">
+              <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
                 {videoError}
               </div>
             )}
@@ -983,7 +983,7 @@ export default function Home() {
             {videoLoading && (
               <div className="mt-8 flex min-h-[200px] flex-col items-center justify-center gap-4">
                 <div className="h-14 w-14 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
-                <p className="text-sm text-foreground/65">
+                <p className="text-sm text-neutral-400">
                   {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
                 </p>
               </div>
@@ -995,7 +995,7 @@ export default function Home() {
                   src={videoUrl}
                   controls
                   playsInline
-                  className="w-full rounded-2xl border border-foreground/10"
+                  className="w-full rounded-2xl border border-white/10"
                 />
                 <div className="mt-4 flex flex-wrap gap-3">
                   <button
@@ -1009,7 +1009,7 @@ export default function Home() {
                     type="button"
                     onClick={generateVideo}
                     disabled={videoLoading}
-                    className="cursor-pointer rounded-xl border border-foreground/10 px-4 py-2.5 text-sm font-medium text-foreground/85 transition hover:border-foreground/20 disabled:opacity-40"
+                    className="cursor-pointer rounded-xl border border-white/10 px-4 py-2.5 text-sm font-medium text-neutral-300 transition hover:border-white/20 disabled:opacity-40"
                   >
                     {videoLoading ? "…" : "Régénérer"}
                   </button>

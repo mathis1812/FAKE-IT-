@@ -35,7 +35,7 @@ export default function ManageSubscriptionButton() {
         type="button"
         onClick={handleClick}
         disabled={loading}
-        className="text-sm font-medium text-[var(--link)] underline underline-offset-2 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
+        className="text-sm font-medium text-primary-soft underline underline-offset-2 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Redirection…" : "Gérer mon abonnement"}
       </button>
