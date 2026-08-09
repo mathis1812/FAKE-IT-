@@ -55,7 +55,17 @@ export async function POST(req: NextRequest) {
 
   if (!sourceImageUrl || typeof sourceImageUrl !== "string") {
     return NextResponse.json(
-      { error: "Image source manquante. Uploadez une image puis réessayez." },
+      { error: "Vidéo source manquante. Uploadez un fichier puis réessayez." },
+      { status: 400 },
+    );
+  }
+
+  if (!objectImageUrl || typeof objectImageUrl !== "string") {
+    return NextResponse.json(
+      {
+        error:
+          "Photo de l'objet de remplacement manquante. Uploadez une image puis réessayez.",
+      },
       { status: 400 },
     );
   }

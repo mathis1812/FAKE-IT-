@@ -26,7 +26,7 @@ Fond animé **DotField** (React Bits).
 - Comparaison Avant / Après, téléchargement et régénération
 
 ### Vidéo — Remplacer un Objet (Kling 3.0 Pro via kie.ai)
-- Upload image source (requis) + image objet de remplacement (optionnel)
+- Upload vidéo source (requis) + photo de l'objet de remplacement (requis)
 - Prompt libre décrivant le remplacement
 - Génération d'une courte vidéo (~5 s) via Kling 3.0 Pro image-to-video
 - Upload sécurisé via `/api/kie/upload` — `KIE_API_KEY` jamais exposée au client

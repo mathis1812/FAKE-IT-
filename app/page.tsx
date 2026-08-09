@@ -496,7 +496,11 @@ export default function Home() {
 
   const generateVideo = useCallback(async () => {
     if (!videoSource) {
-      setVideoError("Veuillez uploader une image source.");
+      setVideoError("Veuillez uploader une vidéo source.");
+      return;
+    }
+    if (!videoObject) {
+      setVideoError("Veuillez uploader une photo de l'objet de remplacement.");
       return;
     }
     const prompt = videoPrompt.trim();
@@ -511,9 +515,7 @@ export default function Home() {
     setVideoUrl("");
     try {
       const sourceImageUrl = await uploadImage(videoSource.file);
-      const objectImageUrl = videoObject
-        ? await uploadImage(videoObject.file)
-        : undefined;
+      const objectImageUrl = await uploadImage(videoObject.file);
       const res = await fetch("/api/generate-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -872,7 +874,7 @@ export default function Home() {
             <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
               <div className="flex-1">
                 <DropZone
-                  label="Image source"
+                  label="Vidéo source"
                   badge="Requis"
                   hint="Cliquez pour uploader"
                   subtext="Votre photo / scène"
@@ -897,7 +899,7 @@ export default function Home() {
               <div className="flex-1">
                 <DropZone
                   label="Objet"
-                  badge="Optionnel"
+                  badge="Requis"
                   hint="Image de l'objet"
                   subtext="JPG, PNG, WebP"
                   upload={videoObject}
@@ -939,7 +941,10 @@ export default function Home() {
                   type="button"
                   onClick={generateVideo}
                   disabled={
-                    videoLoading || !videoSource || !videoPrompt.trim()
+                    videoLoading ||
+                    !videoSource ||
+                    !videoObject ||
+                    !videoPrompt.trim()
                   }
                   className="shrink-0 cursor-pointer rounded-2xl bg-primary px-6 py-3.5 text-sm font-bold text-ink transition hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
                 >
