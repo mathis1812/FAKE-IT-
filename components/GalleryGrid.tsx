@@ -121,7 +121,7 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
           onClick={() => setSelected(null)}
         >
           <div
-            className="relative max-h-[85vh] w-full max-w-3xl"
+            className="flex max-h-[85vh] max-w-[90vw] flex-col items-center"
             onClick={(e) => e.stopPropagation()}
           >
             {selected.mode === "video" ? (
@@ -131,17 +131,17 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
                 autoPlay
                 loop
                 playsInline
-                className="max-h-[85vh] w-full rounded-2xl object-contain"
+                className="max-h-[75vh] max-w-[90vw] rounded-2xl"
               />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={selected.result_url}
                 alt={selected.label}
-                className="max-h-[85vh] w-full rounded-2xl object-contain"
+                className="max-h-[75vh] max-w-[90vw] rounded-2xl object-contain"
               />
             )}
-            <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="mt-3 flex w-full items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-neutral-100">
                   {selected.label}
