@@ -10,11 +10,11 @@ import { createKieTask, pollKieTask } from "@/lib/kie-jobs";
 import { PLANS, type PlanId } from "@/lib/stripe";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 const MODEL_ID = "nano-banana-pro";
 const POLL_INTERVAL_MS = 3_000;
-const POLL_TIMEOUT_MS = 100_000;
+const POLL_TIMEOUT_MS = 280_000;
 
 type GenerateBody = {
   sourceImageUrl?: string;
