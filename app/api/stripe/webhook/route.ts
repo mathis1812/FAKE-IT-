@@ -174,6 +174,50 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  if (event.type === "customer.subscription.updated") {
+    const subscription = event.data.object as Stripe.Subscription;
+    const previousAttributes = (
+      event.data as { previous_attributes?: Record<string, unknown> }
+    ).previous_attributes;
+
+    if (previousAttributes && "items" in previousAttributes) {
+      const priceId = subscription.items.data[0]?.price.id;
+      const resolved = resolvePriceId(priceId);
+      const periodEnd = currentPeriodEndOf(subscription);
+
+      if (resolved) {
+        const { planId, period } = resolved;
+        const { data: updateData, error: updateError } = await supabase
+          .from("profiles")
+          .update({
+            plan: planId,
+            credits: creditsFor(planId, period),
+            current_period_end: periodEnd
+              ? new Date(periodEnd * 1000).toISOString()
+              : null,
+          })
+          .eq("stripe_subscription_id", subscription.id)
+          .select("id");
+
+        if (updateError) {
+          console.error(
+            `[stripe-webhook] échec update profiles pour ${event.type} (event ${event.id}):`,
+            updateError,
+          );
+          dbWriteFailed = true;
+        } else if (!updateData || updateData.length === 0) {
+          console.error(
+            `[stripe-webhook] ${event.type} update matched no rows for event ${event.id} (subscriptionId=${subscription.id} may be stale)`,
+          );
+        }
+      } else {
+        console.error(
+          `[stripe-webhook] resolvePriceId introuvable pour priceId=${priceId} (subscriptionId=${subscription.id}, event ${event.id})`,
+        );
+      }
+    }
+  }
+
   if (event.type === "customer.subscription.deleted") {
     const subscription = event.data.object as Stripe.Subscription;
 
