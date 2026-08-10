@@ -1,8 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import type { PlanId } from "@/lib/stripe";
 
-export default function ManageSubscriptionButton() {
+export default function ManageSubscriptionButton({
+  targetPlan,
+}: {
+  targetPlan?: PlanId;
+}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -11,7 +16,15 @@ export default function ManageSubscriptionButton() {
     setError(null);
 
     try {
-      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+        ...(targetPlan
+          ? {
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ targetPlan }),
+            }
+          : {}),
+      });
       const data = await res.json();
 
       if (!res.ok || !data.url) {
@@ -37,7 +50,11 @@ export default function ManageSubscriptionButton() {
         disabled={loading}
         className="text-sm font-medium text-primary-soft underline underline-offset-2 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {loading ? "Redirection…" : "Gérer mon abonnement"}
+        {loading
+          ? "Redirection…"
+          : targetPlan
+            ? "Passer à ce palier"
+            : "Gérer mon abonnement"}
       </button>
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
     </div>

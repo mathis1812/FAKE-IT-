@@ -138,7 +138,7 @@ export default function PricingGrid({
                   Ton palier actuel
                 </div>
               ) : currentPlan ? (
-                <ManageSubscriptionButton />
+                <ManageSubscriptionButton targetPlan={plan.id} />
               ) : (
                 <SubscribeButton
                   plan={plan.id}
