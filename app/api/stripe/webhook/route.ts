@@ -187,28 +187,50 @@ export async function POST(req: NextRequest) {
 
       if (resolved) {
         const { planId, period } = resolved;
-        const { data: updateData, error: updateError } = await supabase
-          .from("profiles")
-          .update({
-            plan: planId,
-            credits: creditsFor(planId, period),
-            current_period_end: periodEnd
-              ? new Date(periodEnd * 1000).toISOString()
-              : null,
-          })
-          .eq("stripe_subscription_id", subscription.id)
-          .select("id");
 
-        if (updateError) {
+        const { data: currentProfile, error: currentProfileError } =
+          await supabase
+            .from("profiles")
+            .select("credits")
+            .eq("stripe_subscription_id", subscription.id)
+            .maybeSingle();
+
+        if (currentProfileError) {
           console.error(
-            `[stripe-webhook] échec update profiles pour ${event.type} (event ${event.id}):`,
-            updateError,
+            `[stripe-webhook] échec lecture credits actuels pour ${event.type} (event ${event.id}):`,
+            currentProfileError,
           );
           dbWriteFailed = true;
-        } else if (!updateData || updateData.length === 0) {
-          console.error(
-            `[stripe-webhook] ${event.type} update matched no rows for event ${event.id} (subscriptionId=${subscription.id} may be stale)`,
-          );
+        } else {
+          // Never let a plan change lower credits: Stripe prorates plan
+          // switches, so a downgrade-then-upgrade round trip must not reset
+          // credits to the new tier's allotment if the user already has more.
+          const currentCredits = currentProfile?.credits ?? 0;
+          const nextCredits = Math.max(currentCredits, creditsFor(planId, period));
+
+          const { data: updateData, error: updateError } = await supabase
+            .from("profiles")
+            .update({
+              plan: planId,
+              credits: nextCredits,
+              current_period_end: periodEnd
+                ? new Date(periodEnd * 1000).toISOString()
+                : null,
+            })
+            .eq("stripe_subscription_id", subscription.id)
+            .select("id");
+
+          if (updateError) {
+            console.error(
+              `[stripe-webhook] échec update profiles pour ${event.type} (event ${event.id}):`,
+              updateError,
+            );
+            dbWriteFailed = true;
+          } else if (!updateData || updateData.length === 0) {
+            console.error(
+              `[stripe-webhook] ${event.type} update matched no rows for event ${event.id} (subscriptionId=${subscription.id} may be stale)`,
+            );
+          }
         }
       } else {
         console.error(

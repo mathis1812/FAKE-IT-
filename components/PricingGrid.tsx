@@ -138,7 +138,12 @@ export default function PricingGrid({
                   Ton palier actuel
                 </div>
               ) : currentPlan ? (
-                <ManageSubscriptionButton targetPlan={plan.id} />
+                <div>
+                  <ManageSubscriptionButton targetPlan={plan.id} />
+                  <p className="mt-2 text-center text-xs text-neutral-600">
+                    Ta périodicité de facturation actuelle est conservée.
+                  </p>
+                </div>
               ) : (
                 <SubscribeButton
                   plan={plan.id}
