@@ -117,13 +117,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const requestId = await createFalTask(apiKey, MODEL_ID, {
+    const task = await createFalTask(apiKey, MODEL_ID, {
       prompt: finalPrompt,
       image_urls: imageInput,
       resolution,
       output_format: "png",
     });
-    const resultUrl = await pollFalTask(apiKey, MODEL_ID, requestId, {
+    const resultUrl = await pollFalTask(apiKey, task, {
       intervalMs: POLL_INTERVAL_MS,
       timeoutMs: POLL_TIMEOUT_MS,
     });

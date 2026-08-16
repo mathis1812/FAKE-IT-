@@ -2,6 +2,8 @@ const FAL_QUEUE_BASE = "https://queue.fal.run";
 
 type FalSubmitResponse = {
   request_id?: string;
+  status_url?: string;
+  response_url?: string;
 };
 
 type FalStatusResponse = {
@@ -10,6 +12,11 @@ type FalStatusResponse = {
 
 type FalResultResponse = {
   images?: { url?: string }[];
+};
+
+export type FalTask = {
+  statusUrl: string;
+  responseUrl: string;
 };
 
 /**
@@ -29,12 +36,18 @@ async function parseFalJson<T>(res: Response, context: string): Promise<T> {
   }
 }
 
-/** Soumet une tâche à la queue fal.ai et renvoie son request_id. */
+/**
+ * Soumet une tâche à la queue fal.ai. Renvoie les URLs de statut/résultat
+ * fournies par fal.ai lui-même (plutôt que de les reconstruire à partir du
+ * modelPath) : le sous-chemin d'un endpoint (ex. "/edit") ne fait pas partie
+ * du chemin de statut/résultat, seule la réponse de soumission donne les
+ * bonnes URLs de façon fiable.
+ */
 export async function createFalTask(
   apiKey: string,
   modelPath: string,
   input: Record<string, unknown>,
-): Promise<string> {
+): Promise<FalTask> {
   const res = await fetch(`${FAL_QUEUE_BASE}/${modelPath}`, {
     method: "POST",
     headers: {
@@ -49,10 +62,10 @@ export async function createFalTask(
     "à la création de la tâche",
   );
 
-  if (!res.ok || !json.request_id) {
+  if (!res.ok || !json.request_id || !json.status_url || !json.response_url) {
     throw new Error(`Erreur fal.ai (${res.status}) à la création de la tâche.`);
   }
-  return json.request_id;
+  return { statusUrl: json.status_url, responseUrl: json.response_url };
 }
 
 /**
@@ -61,18 +74,14 @@ export async function createFalTask(
  */
 export async function pollFalTask(
   apiKey: string,
-  modelPath: string,
-  requestId: string,
+  task: FalTask,
   options: { intervalMs: number; timeoutMs: number },
 ): Promise<string> {
   const deadline = Date.now() + options.timeoutMs;
   const headers = { Authorization: `Key ${apiKey}` };
 
   while (Date.now() < deadline) {
-    const statusRes = await fetch(
-      `${FAL_QUEUE_BASE}/${modelPath}/requests/${requestId}/status`,
-      { headers },
-    );
+    const statusRes = await fetch(task.statusUrl, { headers });
 
     const statusJson = await parseFalJson<FalStatusResponse>(
       statusRes,
@@ -86,10 +95,7 @@ export async function pollFalTask(
     }
 
     if (statusJson.status === "COMPLETED") {
-      const resultRes = await fetch(
-        `${FAL_QUEUE_BASE}/${modelPath}/requests/${requestId}`,
-        { headers },
-      );
+      const resultRes = await fetch(task.responseUrl, { headers });
       const resultJson = await parseFalJson<FalResultResponse>(
         resultRes,
         "en récupérant le résultat",
