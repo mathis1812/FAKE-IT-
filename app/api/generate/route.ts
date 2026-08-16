@@ -24,12 +24,12 @@ type GenerateBody = {
 };
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.FAL_API_KEY?.trim();
+  const apiKey = process.env.FAL_KEY?.trim();
   if (!apiKey) {
     return NextResponse.json(
       {
         error:
-          "Clé API manquante. Définissez FAL_API_KEY dans vos variables d'environnement.",
+          "Clé API manquante. Définissez FAL_KEY dans vos variables d'environnement.",
       },
       { status: 500 },
     );
