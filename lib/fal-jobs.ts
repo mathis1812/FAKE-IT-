@@ -12,6 +12,23 @@ type FalResultResponse = {
   images?: { url?: string }[];
 };
 
+/**
+ * Lit une réponse fal.ai en JSON. Si le corps n'est pas du JSON valide (page
+ * d'erreur HTML, corps vide…), l'erreur inclut le code HTTP et un extrait du
+ * corps brut plutôt qu'un message générique "illisible" qui masquerait la
+ * vraie cause (mauvaise clé, requête invalide…).
+ */
+async function parseFalJson<T>(res: Response, context: string): Promise<T> {
+  const raw = await res.text();
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    throw new Error(
+      `Réponse fal.ai illisible ${context} (HTTP ${res.status}) : ${raw.slice(0, 300) || "(corps vide)"}`,
+    );
+  }
+}
+
 /** Soumet une tâche à la queue fal.ai et renvoie son request_id. */
 export async function createFalTask(
   apiKey: string,
@@ -27,12 +44,10 @@ export async function createFalTask(
     body: JSON.stringify(input),
   });
 
-  let json: FalSubmitResponse;
-  try {
-    json = await res.json();
-  } catch {
-    throw new Error("Réponse illisible de fal.ai à la création de la tâche.");
-  }
+  const json = await parseFalJson<FalSubmitResponse>(
+    res,
+    "à la création de la tâche",
+  );
 
   if (!res.ok || !json.request_id) {
     throw new Error(`Erreur fal.ai (${res.status}) à la création de la tâche.`);
@@ -59,12 +74,10 @@ export async function pollFalTask(
       { headers },
     );
 
-    let statusJson: FalStatusResponse;
-    try {
-      statusJson = await statusRes.json();
-    } catch {
-      throw new Error("Réponse de statut fal.ai illisible.");
-    }
+    const statusJson = await parseFalJson<FalStatusResponse>(
+      statusRes,
+      "en interrogeant la tâche",
+    );
 
     if (!statusRes.ok) {
       throw new Error(
@@ -77,12 +90,10 @@ export async function pollFalTask(
         `${FAL_QUEUE_BASE}/${modelPath}/requests/${requestId}`,
         { headers },
       );
-      let resultJson: FalResultResponse;
-      try {
-        resultJson = await resultRes.json();
-      } catch {
-        throw new Error("Réponse de résultat fal.ai illisible.");
-      }
+      const resultJson = await parseFalJson<FalResultResponse>(
+        resultRes,
+        "en récupérant le résultat",
+      );
       if (!resultRes.ok) {
         throw new Error(
           `Erreur fal.ai (${resultRes.status}) en récupérant le résultat.`,
