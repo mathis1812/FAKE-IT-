@@ -6,13 +6,13 @@ import {
   spendCredits,
 } from "@/lib/credits";
 import { persistImageResult } from "@/lib/gallery-server";
-import { createKieTask, pollKieTask } from "@/lib/kie-jobs";
+import { createFalTask, pollFalTask } from "@/lib/fal-jobs";
 import { PLANS, type PlanId } from "@/lib/stripe";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const MODEL_ID = "nano-banana-pro";
+const MODEL_ID = "fal-ai/nano-banana-pro/edit";
 const POLL_INTERVAL_MS = 3_000;
 const POLL_TIMEOUT_MS = 280_000;
 
@@ -24,12 +24,12 @@ type GenerateBody = {
 };
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.KIE_API_KEY?.trim();
+  const apiKey = process.env.FAL_API_KEY?.trim();
   if (!apiKey) {
     return NextResponse.json(
       {
         error:
-          "Clé API manquante. Définissez KIE_API_KEY dans vos variables d'environnement.",
+          "Clé API manquante. Définissez FAL_API_KEY dans vos variables d'environnement.",
       },
       { status: 500 },
     );
@@ -117,14 +117,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const taskId = await createKieTask(apiKey, MODEL_ID, {
+    const requestId = await createFalTask(apiKey, MODEL_ID, {
       prompt: finalPrompt,
-      image_input: imageInput,
-      aspect_ratio: "auto",
+      image_urls: imageInput,
       resolution,
       output_format: "png",
     });
-    const resultUrl = await pollKieTask(apiKey, taskId, {
+    const resultUrl = await pollFalTask(apiKey, MODEL_ID, requestId, {
       intervalMs: POLL_INTERVAL_MS,
       timeoutMs: POLL_TIMEOUT_MS,
     });
@@ -150,7 +149,7 @@ export async function POST(req: NextRequest) {
         ? err.message
         : "Erreur inconnue lors de la génération de l'image.";
     return NextResponse.json(
-      { error: `Erreur du service de génération kie.ai. ${message}` },
+      { error: `Erreur du service de génération fal.ai. ${message}` },
       { status: 502 },
     );
   }
