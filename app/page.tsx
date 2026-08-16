@@ -232,8 +232,43 @@ const GENERATION_LOADING_MESSAGES = [
   "Analyse de la lumière…",
   "Ajustement des reflets…",
   "Intégration du luxe…",
+  "Calcul des ombres portées…",
+  "Harmonisation des couleurs…",
+  "Affinage des textures…",
+  "Vérification de la cohérence…",
+  "Rendu haute fidélité…",
+  "Derniers détails…",
   "Finalisation du rendu…",
 ];
+
+const LOADING_MESSAGE_INTERVAL_MS = 4_000;
+
+/**
+ * Progression purement perçue, sans lien avec l'état réel côté kie.ai :
+ * grimpe vite au début puis ralentit et plafonne à 92%, pour ne jamais
+ * laisser croire que c'est fini avant que ça le soit vraiment.
+ */
+function useElapsedProgress(active: boolean) {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!active) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setElapsedSeconds((s) => s + 1);
+    }, 1_000);
+    return () => clearInterval(interval);
+  }, [active]);
+
+  const progressPercent = Math.min(
+    92,
+    Math.round(100 * (1 - Math.exp(-elapsedSeconds / 70))),
+  );
+
+  return { elapsedSeconds, progressPercent };
+}
 
 export default function Home() {
   const [mode, setMode] = useState<Mode>("image");
@@ -307,9 +342,14 @@ export default function Home() {
       setLoadingMessageIndex(
         (i) => (i + 1) % GENERATION_LOADING_MESSAGES.length,
       );
-    }, 1800);
+    }, LOADING_MESSAGE_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [loading, videoLoading]);
+
+  const { elapsedSeconds: imageElapsed, progressPercent: imageProgress } =
+    useElapsedProgress(loading);
+  const { elapsedSeconds: videoElapsed, progressPercent: videoProgress } =
+    useElapsedProgress(videoLoading);
 
   const handleFile = useCallback(async (file: File) => {
     setError("");
@@ -648,6 +688,15 @@ export default function Home() {
                     <p className="text-xs text-neutral-400">
                       {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
                     </p>
+                    <div className="h-1 w-40 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-primary transition-[width] duration-1000 ease-linear"
+                        style={{ width: `${imageProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] tabular-nums text-neutral-600">
+                      {imageElapsed}s
+                    </p>
                   </div>
                 ) : result ? (
                   <div className="animate-reveal relative h-full">
@@ -805,7 +854,7 @@ export default function Home() {
                   disabled={loading || !prepared || !customPrompt.trim()}
                   className="flex-1 cursor-pointer rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {loading ? "Génération… (~15-30s)" : "Générer"}
+                  {loading ? "Génération…" : "Générer"}
                 </button>
               )}
               {prepared && (
@@ -985,6 +1034,15 @@ export default function Home() {
                 <div className="h-14 w-14 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
                 <p className="text-sm text-neutral-400">
                   {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
+                </p>
+                <div className="h-1 w-48 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width] duration-1000 ease-linear"
+                    style={{ width: `${videoProgress}%` }}
+                  />
+                </div>
+                <p className="text-[10px] tabular-nums text-neutral-600">
+                  {videoElapsed}s
                 </p>
               </div>
             )}
