@@ -5,16 +5,12 @@ import {
   refundCredits,
   spendCredits,
 } from "@/lib/credits";
-import { persistImageResult } from "@/lib/gallery-server";
-import { createKieTask, pollKieTask } from "@/lib/kie-jobs";
+import { persistImageBytes } from "@/lib/gallery-server";
+import { generateGeminiImage } from "@/lib/gemini-jobs";
 import { PLANS, type PlanId } from "@/lib/stripe";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
-
-const MODEL_ID = "nano-banana-pro";
-const POLL_INTERVAL_MS = 3_000;
-const POLL_TIMEOUT_MS = 280_000;
 
 type GenerateBody = {
   sourceImageUrl?: string;
@@ -24,12 +20,12 @@ type GenerateBody = {
 };
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.KIE_API_KEY?.trim();
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
     return NextResponse.json(
       {
         error:
-          "Clé API manquante. Définissez KIE_API_KEY dans vos variables d'environnement.",
+          "Clé API manquante. Définissez GEMINI_API_KEY dans vos variables d'environnement.",
       },
       { status: 500 },
     );
@@ -117,40 +113,26 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const taskId = await createKieTask(apiKey, MODEL_ID, {
+    const { bytes, mimeType } = await generateGeminiImage(apiKey, {
       prompt: finalPrompt,
-      image_input: imageInput,
-      aspect_ratio: "auto",
+      imageUrls: imageInput,
       resolution,
-      output_format: "png",
     });
-    const resultUrl = await pollKieTask(apiKey, taskId, {
-      intervalMs: POLL_INTERVAL_MS,
-      timeoutMs: POLL_TIMEOUT_MS,
-    });
-    const imageUrl = await persistImageResult(
+    const imageUrl = await persistImageBytes(
       user.id,
-      resultUrl,
+      bytes,
+      mimeType,
       label?.trim() || "Génération image",
     );
     return NextResponse.json({ imageUrl });
   } catch (err) {
     await refundCredits(user.id, IMAGE_GENERATION_COST);
-    if (err instanceof Error && err.message === "TIMEOUT") {
-      return NextResponse.json(
-        {
-          error:
-            "La génération a dépassé le délai imparti. Réessayez dans quelques instants.",
-        },
-        { status: 504 },
-      );
-    }
     const message =
       err instanceof Error
         ? err.message
         : "Erreur inconnue lors de la génération de l'image.";
     return NextResponse.json(
-      { error: `Erreur du service de génération kie.ai. ${message}` },
+      { error: `Erreur du service de génération Gemini. ${message}` },
       { status: 502 },
     );
   }

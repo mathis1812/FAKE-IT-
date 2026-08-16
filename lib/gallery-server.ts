@@ -8,12 +8,48 @@ function extensionForMimeType(mimeType: string): string {
 }
 
 /**
- * Télécharge un résultat image hébergé temporairement par kie.ai (les URLs
- * kie.ai expirent après ~24h), le réhéberge durablement dans notre bucket
- * Storage, et enregistre l'entrée de galerie. Renvoie l'URL permanente à
- * afficher/stocker. Si la persistance échoue, journalise l'erreur et
- * retombe sur l'URL source kie.ai plutôt que de faire échouer une
- * génération que l'utilisateur vient de payer.
+ * Uploade des octets d'image déjà en mémoire vers notre bucket Storage et
+ * enregistre l'entrée de galerie. Renvoie l'URL permanente à
+ * afficher/stocker. Utilisé directement par les fournisseurs qui renvoient
+ * l'image en base64 (ex. l'API Gemini directe) plutôt qu'une URL à
+ * télécharger.
+ */
+export async function persistImageBytes(
+  userId: string,
+  bytes: Buffer,
+  mimeType: string,
+  label: string,
+): Promise<string> {
+  const service = createServiceClient();
+  const path = `${userId}/${crypto.randomUUID()}.${extensionForMimeType(mimeType)}`;
+
+  const { error: uploadError } = await service.storage
+    .from(BUCKET)
+    .upload(path, bytes, { contentType: mimeType });
+  if (uploadError) throw uploadError;
+
+  const {
+    data: { publicUrl },
+  } = service.storage.from(BUCKET).getPublicUrl(path);
+
+  const { error: insertError } = await service.from("gallery_entries").insert({
+    user_id: userId,
+    mode: "image",
+    result_url: publicUrl,
+    label,
+  });
+  if (insertError) throw insertError;
+
+  return publicUrl;
+}
+
+/**
+ * Télécharge un résultat image hébergé temporairement par le fournisseur
+ * (les URLs de résultat expirent généralement après ~24h), le réhéberge
+ * durablement dans notre bucket Storage, et enregistre l'entrée de
+ * galerie. Renvoie l'URL permanente à afficher/stocker. Si la persistance
+ * échoue, journalise l'erreur et retombe sur l'URL source plutôt que de
+ * faire échouer une génération que l'utilisateur vient de payer.
  */
 export async function persistImageResult(
   userId: string,
@@ -27,28 +63,7 @@ export async function persistImageResult(
     }
     const mimeType = res.headers.get("content-type") || "image/png";
     const bytes = Buffer.from(await res.arrayBuffer());
-
-    const service = createServiceClient();
-    const path = `${userId}/${crypto.randomUUID()}.${extensionForMimeType(mimeType)}`;
-
-    const { error: uploadError } = await service.storage
-      .from(BUCKET)
-      .upload(path, bytes, { contentType: mimeType });
-    if (uploadError) throw uploadError;
-
-    const {
-      data: { publicUrl },
-    } = service.storage.from(BUCKET).getPublicUrl(path);
-
-    const { error: insertError } = await service.from("gallery_entries").insert({
-      user_id: userId,
-      mode: "image",
-      result_url: publicUrl,
-      label,
-    });
-    if (insertError) throw insertError;
-
-    return publicUrl;
+    return await persistImageBytes(userId, bytes, mimeType, label);
   } catch (err) {
     console.error("Échec de la persistance du résultat image en galerie :", err);
     return sourceUrl;
