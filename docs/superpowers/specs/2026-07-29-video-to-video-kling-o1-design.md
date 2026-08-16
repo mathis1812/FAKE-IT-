@@ -1,7 +1,32 @@
 # Passage à Kling O1 video-to-video — Design
 
 Date : 2026-07-29
-Statut : Approuvé
+Statut : Approuvé, **mais toute cette spec est obsolète** — le projet a
+depuis migré de fal.ai vers kie.ai (2026-08-07). Conservée pour
+l'historique de la recherche, pas comme plan valide.
+
+## Suite (2026-08-10) : re-tentative côté kie.ai, toujours bloquée
+
+Même besoin reformulé côté utilisateur ("je veux que ce soit des vidéo"
+sur le champ source de l'onglet Vidéo, actuellement une photo). Le modèle
+vidéo actuel du projet, `kling-3.0/video` sur kie.ai
+(`app/api/generate-video/route.ts:14`), confirmé via
+`docs.kie.ai/market/kling/kling-3-0` : **pas de video-to-video** — accepte
+uniquement image(s)/texte en entrée, plus un `kling_elements` limité à une
+vidéo de *référence* (style/mouvement), pas la vidéo à éditer elle-même.
+
+Un vrai modèle d'édition vidéo-vers-vidéo existe côté Kling
+("Kling 3.0 Omni Edit", `video_url` + prompt + mode Reference/Transform),
+confirmé via des agrégateurs tiers (Replicate, Unifically) — mais
+**impossible de confirmer si/comment kie.ai l'expose** : 404 sur toutes les
+URLs de doc kie.ai plausibles, 403 sur leur page marketplace. Même type de
+blocage que la tentative fal.ai d'origine.
+
+Décision utilisateur : on s'arrête là pour l'instant, pas de tentative
+best-effort avec un nom de modèle deviné (risque de dépenser des crédits
+kie.ai pour un appel qui échoue). À reprendre si kie.ai documente
+"Kling 3.0 Omni Edit" plus clairement, ou via confirmation directe auprès
+de leur support.
 
 ## Contexte
 
