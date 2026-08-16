@@ -491,8 +491,26 @@ export default function Home() {
     }
   }, [prepared, customPrompt, fileName, secondaryImage, refreshCredits]);
 
-  const download = useCallback(() => {
+  const download = useCallback(async () => {
     if (!result) return;
+
+    try {
+      const blob = await fetch(result).then((r) => r.blob());
+      const file = new File([blob], "bluminoo-result.png", {
+        type: blob.type || "image/png",
+      });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file] });
+        return;
+      }
+    } catch (err) {
+      // L'utilisateur a annulé le partage (AbortError) : ne pas basculer
+      // sur le téléchargement fichier, il a fait un choix délibéré.
+      if (err instanceof Error && err.name === "AbortError") return;
+      // Sinon (API indisponible, fetch échoué…) : on retombe sur le
+      // téléchargement classique ci-dessous.
+    }
+
     const a = document.createElement("a");
     a.href = result;
     a.download = "bluminoo-result.png";
@@ -595,8 +613,22 @@ export default function Home() {
     }
   }, [videoSource, videoObject, videoPrompt, refreshCredits]);
 
-  const downloadVideo = useCallback(() => {
+  const downloadVideo = useCallback(async () => {
     if (!videoUrl) return;
+
+    try {
+      const blob = await fetch(videoUrl).then((r) => r.blob());
+      const file = new File([blob], "bluminoo-result.mp4", {
+        type: blob.type || "video/mp4",
+      });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file] });
+        return;
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+    }
+
     const a = document.createElement("a");
     a.href = videoUrl;
     a.download = "bluminoo-result.mp4";
