@@ -282,6 +282,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
+  const [resultFile, setResultFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const secondaryInputRef = useRef<HTMLInputElement>(null);
@@ -292,6 +293,7 @@ export default function Home() {
   const [videoLoading, setVideoLoading] = useState(false);
   const [videoError, setVideoError] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const [credits, setCredits] = useState<number | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -476,6 +478,21 @@ export default function Home() {
       }
       if (data.imageUrl) {
         setResult(data.imageUrl);
+        setResultFile(null);
+        // Préchargé dès que possible (pas au clic sur "Télécharger") pour que
+        // navigator.share() puisse être appelé sans await préalable — sur
+        // Android Chrome, un await avant share() casse l'activation
+        // utilisateur et fait échouer le partage silencieusement.
+        fetch(data.imageUrl)
+          .then((r) => r.blob())
+          .then((blob) =>
+            setResultFile(
+              new File([blob], "bluminoo-result.png", {
+                type: blob.type || "image/png",
+              }),
+            ),
+          )
+          .catch(() => {});
         void refreshCredits();
       } else {
         setError("Réponse inattendue du serveur. Réessayez.");
@@ -495,10 +512,19 @@ export default function Home() {
     if (!result) return;
 
     try {
-      const blob = await fetch(result).then((r) => r.blob());
-      const file = new File([blob], "bluminoo-result.png", {
-        type: blob.type || "image/png",
-      });
+      // resultFile est préchargé dès la fin de la génération : on l'utilise
+      // ici tel quel, sans await avant navigator.share(), pour ne pas perdre
+      // l'activation utilisateur sur Android Chrome. S'il n'est pas encore
+      // prêt (course rare entre fin de fetch et clic), on le récupère ici en
+      // dernier recours — le partage peut alors échouer sur Chrome Android,
+      // mais on retombe proprement sur le téléchargement classique.
+      const file =
+        resultFile ??
+        new File(
+          [await fetch(result).then((r) => r.blob())],
+          "bluminoo-result.png",
+          { type: "image/png" },
+        );
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file] });
         return;
@@ -519,13 +545,14 @@ export default function Home() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-  }, [result]);
+  }, [result, resultFile]);
 
   const reset = useCallback(() => {
     setPrepared(null);
     setFileName("");
     setSecondaryImage(null);
     setResult("");
+    setResultFile(null);
     setError("");
     setCustomPrompt("");
     if (inputRef.current) inputRef.current.value = "";
@@ -598,6 +625,17 @@ export default function Home() {
       }
       if (data.videoUrl) {
         setVideoUrl(data.videoUrl);
+        setVideoFile(null);
+        fetch(data.videoUrl)
+          .then((r) => r.blob())
+          .then((blob) =>
+            setVideoFile(
+              new File([blob], "bluminoo-result.mp4", {
+                type: blob.type || "video/mp4",
+              }),
+            ),
+          )
+          .catch(() => {});
         void refreshCredits();
       } else {
         setVideoError("Réponse inattendue du serveur. Réessayez.");
@@ -617,10 +655,13 @@ export default function Home() {
     if (!videoUrl) return;
 
     try {
-      const blob = await fetch(videoUrl).then((r) => r.blob());
-      const file = new File([blob], "bluminoo-result.mp4", {
-        type: blob.type || "video/mp4",
-      });
+      const file =
+        videoFile ??
+        new File(
+          [await fetch(videoUrl).then((r) => r.blob())],
+          "bluminoo-result.mp4",
+          { type: "video/mp4" },
+        );
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file] });
         return;
@@ -637,13 +678,14 @@ export default function Home() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-  }, [videoUrl]);
+  }, [videoUrl, videoFile]);
 
   const resetVideo = useCallback(() => {
     setVideoSource(null);
     setVideoObject(null);
     setVideoPrompt("");
     setVideoUrl("");
+    setVideoFile(null);
     setVideoError("");
   }, []);
 
