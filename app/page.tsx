@@ -14,6 +14,7 @@ const VIDEO_PROMPT_PLACEHOLDER =
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_FILE_BYTES = 4 * 1024 * 1024;
+const MAX_VIDEO_SOURCE_BYTES = 50 * 1024 * 1024;
 const COMPRESS_THRESHOLD_BYTES = 2 * 1024 * 1024;
 const MAX_DIMENSION = 1536;
 const JPEG_QUALITY = 0.9;
@@ -90,6 +91,37 @@ async function prepareImage(file: File): Promise<PreparedImage> {
   return { previewUrl: dataUrl, base64, mimeType };
 }
 
+function validateVideoFile(file: File): string | null {
+  if (!["video/mp4", "video/quicktime"].includes(file.type)) {
+    return "Fichier non pris en charge. Veuillez sélectionner une vidéo MP4 ou MOV.";
+  }
+  if (file.size > MAX_VIDEO_SOURCE_BYTES) {
+    return "Fichier trop volumineux (max 50 Mo).";
+  }
+  return null;
+}
+
+/**
+ * Upload direct navigateur → Supabase Storage, sans passer par notre route
+ * API (qui serait limitée par la taille de requête des fonctions
+ * serverless Vercel, ~4,5 Mo — trop petit pour une vidéo source).
+ */
+async function uploadVideoDirect(file: File, userId: string): Promise<string> {
+  const supabase = createClient();
+  const extension = file.name.split(".").pop() || "mp4";
+  const path = `${userId}/${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabase.storage
+    .from("video-uploads")
+    .upload(path, file, { contentType: file.type });
+  if (error) {
+    throw new Error(`Échec de l'upload de la vidéo : ${error.message}`);
+  }
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("video-uploads").getPublicUrl(path);
+  return publicUrl;
+}
+
 function validateImageFile(file: File): string | null {
   if (!file.type.startsWith("image/")) {
     return "Fichier non pris en charge. Veuillez sélectionner une image.";
@@ -122,6 +154,7 @@ function DropZone({
   upload,
   onPick,
   disabled,
+  accept = "image/*",
 }: {
   label: string;
   badge?: string;
@@ -130,6 +163,7 @@ function DropZone({
   upload: VideoUpload | null;
   onPick: (file: File) => void;
   disabled?: boolean;
+  accept?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -182,7 +216,7 @@ function DropZone({
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept={accept}
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -192,12 +226,21 @@ function DropZone({
         />
         {upload ? (
           <div className="relative h-full">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={upload.previewUrl}
-              alt={label}
-              className="h-full w-full object-cover"
-            />
+            {upload.file.type.startsWith("video/") ? (
+              <video
+                src={upload.previewUrl}
+                controls
+                playsInline
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={upload.previewUrl}
+                alt={label}
+                className="h-full w-full object-cover"
+              />
+            )}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2">
               <p className="truncate text-[11px] text-neutral-300">
                 {upload.name}
@@ -562,13 +605,10 @@ export default function Home() {
     async (file: File, kind: "source" | "object") => {
       setVideoError("");
       setVideoUrl("");
-      const validationError = validateImageFile(file);
+      const validationError =
+        kind === "source" ? validateVideoFile(file) : validateImageFile(file);
       if (validationError) {
         setVideoError(validationError);
-        return;
-      }
-      if (file.size > MAX_VIDEO_FILE_BYTES) {
-        setVideoError("Fichier trop volumineux pour la vidéo (max 4 Mo).");
         return;
       }
       const previewUrl = URL.createObjectURL(file);
@@ -599,13 +639,21 @@ export default function Home() {
     setVideoError("");
     setVideoUrl("");
     try {
-      const sourceImageUrl = await uploadImage(videoSource.file);
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setVideoError("Connectez-vous pour générer une vidéo.");
+        return;
+      }
+      const sourceVideoUrl = await uploadVideoDirect(videoSource.file, user.id);
       const objectImageUrl = await uploadImage(videoObject.file);
       const res = await fetch("/api/generate-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sourceImageUrl,
+          sourceVideoUrl,
           objectImageUrl,
           prompt,
           label: "Remplacement d'objet",
@@ -1000,10 +1048,11 @@ export default function Home() {
                   label="Vidéo source"
                   badge="Requis"
                   hint="Cliquez pour uploader"
-                  subtext="Votre photo / scène"
+                  subtext="MP4, MOV — max 50 Mo"
                   upload={videoSource}
                   onPick={(file) => void pickVideoUpload(file, "source")}
                   disabled={videoLoading}
+                  accept="video/mp4,video/quicktime"
                 />
               </div>
               <div className="hidden shrink-0 items-center justify-center sm:flex">

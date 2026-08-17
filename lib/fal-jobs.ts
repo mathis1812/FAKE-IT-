@@ -12,6 +12,7 @@ type FalStatusResponse = {
 
 type FalResultResponse = {
   images?: { url?: string }[];
+  video?: { url?: string };
 };
 
 export type FalTask = {
@@ -105,7 +106,7 @@ export async function pollFalTask(
           `Erreur fal.ai (${resultRes.status}) en récupérant le résultat.`,
         );
       }
-      const url = resultJson.images?.[0]?.url;
+      const url = resultJson.images?.[0]?.url ?? resultJson.video?.url;
       if (!url) {
         throw new Error("La tâche a réussi mais aucun résultat n'a été renvoyé.");
       }

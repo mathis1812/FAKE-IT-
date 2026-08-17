@@ -6,36 +6,30 @@ import {
   spendCredits,
 } from "@/lib/credits";
 import { saveVideoGalleryEntry } from "@/lib/gallery-server";
-import { createKieTask, pollKieTask } from "@/lib/kie-jobs";
+import { createFalTask, pollFalTask } from "@/lib/fal-jobs";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const MODEL_ID = "kling-3.0/video";
-const OBJECT_ELEMENT_NAME = "element_1";
+const MODEL_ID = "fal-ai/kling-video/o1/video-to-video/edit";
+const OBJECT_ELEMENT_NAME = "Element1";
 const POLL_INTERVAL_MS = 4_000;
 const POLL_TIMEOUT_MS = 280_000;
 
 type GenerateVideoBody = {
-  sourceImageUrl?: string;
+  sourceVideoUrl?: string;
   objectImageUrl?: string;
   prompt?: string;
   label?: string;
 };
 
-type KieKlingElement = {
-  name: string;
-  description: string;
-  element_input_urls: string[];
-};
-
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.KIE_API_KEY?.trim();
+  const apiKey = process.env.FAL_KEY?.trim();
   if (!apiKey) {
     return NextResponse.json(
       {
         error:
-          "Clé API manquante. Définissez KIE_API_KEY dans vos variables d'environnement.",
+          "Clé API manquante. Définissez FAL_KEY dans vos variables d'environnement.",
       },
       { status: 500 },
     );
@@ -51,9 +45,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { sourceImageUrl, objectImageUrl, prompt, label } = body;
+  const { sourceVideoUrl, objectImageUrl, prompt, label } = body;
 
-  if (!sourceImageUrl || typeof sourceImageUrl !== "string") {
+  if (!sourceVideoUrl || typeof sourceVideoUrl !== "string") {
     return NextResponse.json(
       { error: "Vidéo source manquante. Uploadez un fichier puis réessayez." },
       { status: 400 },
@@ -112,40 +106,26 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let finalPrompt = prompt.trim();
-  const klingElements: KieKlingElement[] = [];
-  if (objectImageUrl && typeof objectImageUrl === "string") {
-    klingElements.push({
-      name: OBJECT_ELEMENT_NAME,
-      description: "Luxury replacement object to integrate into the scene.",
-      element_input_urls: [objectImageUrl],
-    });
-    finalPrompt +=
-      ` Integrate the luxury replacement object shown in @${OBJECT_ELEMENT_NAME} photorealistically, ` +
-      "while preserving the subject, pose, lighting and background.";
-  }
+  const finalPrompt =
+    `${prompt.trim()} Integrate the luxury replacement object shown in @${OBJECT_ELEMENT_NAME} photorealistically, ` +
+    "while preserving the original motion, camera angles, lighting and background.";
 
   try {
-    const taskId = await createKieTask(apiKey, MODEL_ID, {
+    const task = await createFalTask(apiKey, MODEL_ID, {
       prompt: finalPrompt,
-      image_urls: [sourceImageUrl],
-      mode: "pro",
-      duration: "5",
-      sound: false,
-      multi_shots: false,
-      multi_prompt: [],
-      ...(klingElements.length > 0 ? { kling_elements: klingElements } : {}),
+      video_url: sourceVideoUrl,
+      image_urls: [objectImageUrl],
     });
-    const videoUrl = await pollKieTask(apiKey, taskId, {
+    const resultUrl = await pollFalTask(apiKey, task, {
       intervalMs: POLL_INTERVAL_MS,
       timeoutMs: POLL_TIMEOUT_MS,
     });
     await saveVideoGalleryEntry(
       user.id,
-      videoUrl,
+      resultUrl,
       label?.trim() || "Remplacement d'objet",
     );
-    return NextResponse.json({ videoUrl });
+    return NextResponse.json({ videoUrl: resultUrl });
   } catch (err) {
     await refundCredits(user.id, VIDEO_GENERATION_COST);
     if (err instanceof Error && err.message === "TIMEOUT") {
@@ -162,7 +142,7 @@ export async function POST(req: NextRequest) {
         ? err.message
         : "Erreur inconnue lors de la génération vidéo.";
     return NextResponse.json(
-      { error: `Erreur du service vidéo kie.ai. ${message}` },
+      { error: `Erreur du service vidéo fal.ai. ${message}` },
       { status: 502 },
     );
   }
