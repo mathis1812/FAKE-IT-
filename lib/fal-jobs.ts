@@ -21,15 +21,20 @@ export type FalTask = {
 };
 
 /**
- * Lit une réponse fal.ai en JSON. Si le corps n'est pas du JSON valide (page
- * d'erreur HTML, corps vide…), l'erreur inclut le code HTTP et un extrait du
- * corps brut plutôt qu'un message générique "illisible" qui masquerait la
- * vraie cause (mauvaise clé, requête invalide…).
+ * Lit une réponse fal.ai en JSON, quel que soit son code HTTP. Si le corps
+ * n'est pas du JSON valide (page d'erreur HTML, corps vide…), l'erreur
+ * inclut le code HTTP et un extrait du corps brut. Le texte brut est
+ * toujours renvoyé aussi, pour que l'appelant puisse l'inclure dans ses
+ * propres messages d'erreur (ex. détail d'une validation refusée par
+ * fal.ai) plutôt que de se limiter au code HTTP nu.
  */
-async function parseFalJson<T>(res: Response, context: string): Promise<T> {
+async function parseFalJson<T>(
+  res: Response,
+  context: string,
+): Promise<{ json: T; raw: string }> {
   const raw = await res.text();
   try {
-    return JSON.parse(raw) as T;
+    return { json: JSON.parse(raw) as T, raw };
   } catch {
     throw new Error(
       `Réponse fal.ai illisible ${context} (HTTP ${res.status}) : ${raw.slice(0, 300) || "(corps vide)"}`,
@@ -58,13 +63,15 @@ export async function createFalTask(
     body: JSON.stringify(input),
   });
 
-  const json = await parseFalJson<FalSubmitResponse>(
+  const { json, raw } = await parseFalJson<FalSubmitResponse>(
     res,
     "à la création de la tâche",
   );
 
   if (!res.ok || !json.request_id || !json.status_url || !json.response_url) {
-    throw new Error(`Erreur fal.ai (${res.status}) à la création de la tâche.`);
+    throw new Error(
+      `Erreur fal.ai (${res.status}) à la création de la tâche : ${raw.slice(0, 300)}`,
+    );
   }
   return { statusUrl: json.status_url, responseUrl: json.response_url };
 }
@@ -84,26 +91,22 @@ export async function pollFalTask(
   while (Date.now() < deadline) {
     const statusRes = await fetch(task.statusUrl, { headers });
 
-    const statusJson = await parseFalJson<FalStatusResponse>(
-      statusRes,
-      "en interrogeant la tâche",
-    );
+    const { json: statusJson, raw: statusRaw } =
+      await parseFalJson<FalStatusResponse>(statusRes, "en interrogeant la tâche");
 
     if (!statusRes.ok) {
       throw new Error(
-        `Erreur fal.ai (${statusRes.status}) en interrogeant la tâche.`,
+        `Erreur fal.ai (${statusRes.status}) en interrogeant la tâche : ${statusRaw.slice(0, 300)}`,
       );
     }
 
     if (statusJson.status === "COMPLETED") {
       const resultRes = await fetch(task.responseUrl, { headers });
-      const resultJson = await parseFalJson<FalResultResponse>(
-        resultRes,
-        "en récupérant le résultat",
-      );
+      const { json: resultJson, raw: resultRaw } =
+        await parseFalJson<FalResultResponse>(resultRes, "en récupérant le résultat");
       if (!resultRes.ok) {
         throw new Error(
-          `Erreur fal.ai (${resultRes.status}) en récupérant le résultat.`,
+          `Erreur fal.ai (${resultRes.status}) en récupérant le résultat : ${resultRaw.slice(0, 300)}`,
         );
       }
       const url = resultJson.images?.[0]?.url ?? resultJson.video?.url;
