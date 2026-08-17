@@ -34,6 +34,9 @@ type VideoUpload = {
   file: File;
   previewUrl: string;
   name: string;
+  /** Renseigné uniquement pour la vidéo source (lu à la validation). */
+  width?: number;
+  height?: number;
 };
 
 function stripDataUrlPrefix(dataUrl: string): {
@@ -102,12 +105,17 @@ async function prepareImage(file: File): Promise<PreparedImage> {
  * uploadé plusieurs dizaines de Mo et débité des crédits (remboursés, mais
  * l'attente est inutile).
  */
-async function validateVideoFile(file: File): Promise<string | null> {
+async function validateVideoFile(
+  file: File,
+): Promise<{ error: string | null; width?: number; height?: number }> {
   if (!["video/mp4", "video/quicktime"].includes(file.type)) {
-    return "Fichier non pris en charge. Veuillez sélectionner une vidéo MP4 ou MOV.";
+    return {
+      error:
+        "Fichier non pris en charge. Veuillez sélectionner une vidéo MP4 ou MOV.",
+    };
   }
   if (file.size > MAX_VIDEO_SOURCE_BYTES) {
-    return "Fichier trop volumineux (max 50 Mo).";
+    return { error: "Fichier trop volumineux (max 50 Mo)." };
   }
 
   const objectUrl = URL.createObjectURL(file);
@@ -130,20 +138,26 @@ async function validateVideoFile(file: File): Promise<string | null> {
     });
 
     if (meta.width < MIN_VIDEO_WIDTH) {
-      return `Vidéo trop basse résolution : ${meta.width} px de large, alors qu'il en faut au moins ${MIN_VIDEO_WIDTH}. Réexportez-la en qualité supérieure (720p minimum).`;
+      return {
+        error: `Vidéo trop basse résolution : ${meta.width} px de large, alors qu'il en faut au moins ${MIN_VIDEO_WIDTH}. Réexportez-la en qualité supérieure (720p minimum).`,
+      };
     }
     if (meta.width > MAX_VIDEO_WIDTH) {
-      return `Vidéo trop grande : ${meta.width} px de large, alors que le maximum est ${MAX_VIDEO_WIDTH}.`;
+      return {
+        error: `Vidéo trop grande : ${meta.width} px de large, alors que le maximum est ${MAX_VIDEO_WIDTH}.`,
+      };
     }
     if (
       meta.duration < MIN_VIDEO_DURATION_S ||
       meta.duration > MAX_VIDEO_DURATION_S
     ) {
-      return `Durée non prise en charge : ${Math.round(meta.duration)} s, alors qu'il faut entre ${MIN_VIDEO_DURATION_S} et ${MAX_VIDEO_DURATION_S} s.`;
+      return {
+        error: `Durée non prise en charge : ${Math.round(meta.duration)} s, alors qu'il faut entre ${MIN_VIDEO_DURATION_S} et ${MAX_VIDEO_DURATION_S} s.`,
+      };
     }
-    return null;
+    return { error: null, width: meta.width, height: meta.height };
   } catch {
-    return "Vidéo illisible. Essayez un autre fichier MP4 ou MOV.";
+    return { error: "Vidéo illisible. Essayez un autre fichier MP4 ou MOV." };
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
@@ -653,16 +667,22 @@ export default function Home() {
     async (file: File, kind: "source" | "object") => {
       setVideoError("");
       setVideoUrl("");
-      const validationError =
+      const videoCheck =
         kind === "source"
           ? await validateVideoFile(file)
-          : validateImageFile(file);
-      if (validationError) {
-        setVideoError(validationError);
+          : { error: validateImageFile(file) };
+      if (videoCheck.error) {
+        setVideoError(videoCheck.error);
         return;
       }
       const previewUrl = URL.createObjectURL(file);
-      const upload: VideoUpload = { file, previewUrl, name: file.name };
+      const upload: VideoUpload = {
+        file,
+        previewUrl,
+        name: file.name,
+        width: "width" in videoCheck ? videoCheck.width : undefined,
+        height: "height" in videoCheck ? videoCheck.height : undefined,
+      };
       if (kind === "source") setVideoSource(upload);
       else setVideoObject(upload);
     },
@@ -718,6 +738,8 @@ export default function Home() {
           objectImageUrl,
           prompt,
           label: "Remplacement d'objet",
+          sourceVideoWidth: videoSource.width,
+          sourceVideoHeight: videoSource.height,
         }),
       });
       const data = await res.json().catch(() => null);
