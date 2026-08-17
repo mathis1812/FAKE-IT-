@@ -6,15 +6,16 @@ import {
   spendCredits,
 } from "@/lib/credits";
 import { saveVideoGalleryEntry } from "@/lib/gallery-server";
-import {
-  createAlephTask,
-  pollAlephTask,
-  nearestAspectRatio,
-} from "@/lib/aleph-jobs";
+import { createFalTask, pollFalTask } from "@/lib/fal-jobs";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
+const MODEL_ID = "fal-ai/kling-video/o1/video-to-video/edit";
+// La photo de l'objet est transmise via `image_urls`, que Kling référence
+// par `@Image1` dans le prompt (`@Element1` correspond au champ `elements`,
+// que nous n'utilisons pas).
+const OBJECT_REFERENCE_TAG = "Image1";
 const POLL_INTERVAL_MS = 4_000;
 const POLL_TIMEOUT_MS = 280_000;
 
@@ -23,17 +24,15 @@ type GenerateVideoBody = {
   objectImageUrl?: string;
   prompt?: string;
   label?: string;
-  sourceVideoWidth?: number;
-  sourceVideoHeight?: number;
 };
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.KIE_API_KEY?.trim();
+  const apiKey = process.env.FAL_KEY?.trim();
   if (!apiKey) {
     return NextResponse.json(
       {
         error:
-          "Clé API manquante. Définissez KIE_API_KEY dans vos variables d'environnement.",
+          "Clé API manquante. Définissez FAL_KEY dans vos variables d'environnement.",
       },
       { status: 500 },
     );
@@ -49,14 +48,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const {
-    sourceVideoUrl,
-    objectImageUrl,
-    prompt,
-    label,
-    sourceVideoWidth,
-    sourceVideoHeight,
-  } = body;
+  const { sourceVideoUrl, objectImageUrl, prompt, label } = body;
 
   if (!sourceVideoUrl || typeof sourceVideoUrl !== "string") {
     return NextResponse.json(
@@ -118,20 +110,16 @@ export async function POST(req: NextRequest) {
   }
 
   const finalPrompt =
-    `${prompt.trim()} Integrate the luxury replacement object from the reference image photorealistically, ` +
+    `${prompt.trim()} Integrate the luxury replacement object shown in @${OBJECT_REFERENCE_TAG} photorealistically, ` +
     "while preserving the original motion, camera angles, lighting and background.";
 
   try {
-    const taskId = await createAlephTask(apiKey, {
+    const task = await createFalTask(apiKey, MODEL_ID, {
       prompt: finalPrompt,
-      videoUrl: sourceVideoUrl,
-      referenceImage: objectImageUrl,
-      aspectRatio: nearestAspectRatio(
-        sourceVideoWidth ?? 0,
-        sourceVideoHeight ?? 0,
-      ),
+      video_url: sourceVideoUrl,
+      image_urls: [objectImageUrl],
     });
-    const resultUrl = await pollAlephTask(apiKey, taskId, {
+    const resultUrl = await pollFalTask(apiKey, task, {
       intervalMs: POLL_INTERVAL_MS,
       timeoutMs: POLL_TIMEOUT_MS,
     });
@@ -157,7 +145,7 @@ export async function POST(req: NextRequest) {
         ? err.message
         : "Erreur inconnue lors de la génération vidéo.";
     return NextResponse.json(
-      { error: `Erreur du service vidéo Runway Aleph. ${message}` },
+      { error: `Erreur du service vidéo fal.ai. ${message}` },
       { status: 502 },
     );
   }
