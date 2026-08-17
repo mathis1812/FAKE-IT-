@@ -648,7 +648,18 @@ export default function Home() {
         return;
       }
       const sourceVideoUrl = await uploadVideoDirect(videoSource.file, user.id);
-      const objectImageUrl = await uploadImage(videoObject.file);
+      const preparedObject = await prepareImage(videoObject.file);
+      const objectBlob = await (await fetch(preparedObject.previewUrl)).blob();
+      if (objectBlob.size > MAX_VIDEO_FILE_BYTES) {
+        setVideoError(
+          "Photo de l'objet trop volumineuse après compression (max 4 Mo). Essayez une photo plus simple.",
+        );
+        return;
+      }
+      const objectFile = new File([objectBlob], "reference.jpg", {
+        type: preparedObject.mimeType,
+      });
+      const objectImageUrl = await uploadImage(objectFile);
       const res = await fetch("/api/generate-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
