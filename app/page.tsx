@@ -15,6 +15,11 @@ const VIDEO_PROMPT_PLACEHOLDER =
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_FILE_BYTES = 4 * 1024 * 1024;
 const MAX_VIDEO_SOURCE_BYTES = 50 * 1024 * 1024;
+// Contraintes imposées par le modèle Kling O1 sur fal.ai.
+const MIN_VIDEO_WIDTH = 720;
+const MAX_VIDEO_WIDTH = 2160;
+const MIN_VIDEO_DURATION_S = 3;
+const MAX_VIDEO_DURATION_S = 10;
 const COMPRESS_THRESHOLD_BYTES = 2 * 1024 * 1024;
 const MAX_DIMENSION = 1536;
 const JPEG_QUALITY = 0.9;
@@ -91,14 +96,57 @@ async function prepareImage(file: File): Promise<PreparedImage> {
   return { previewUrl: dataUrl, base64, mimeType };
 }
 
-function validateVideoFile(file: File): string | null {
+/**
+ * Contraintes du modèle Kling O1 (fal.ai) sur la vidéo source, vérifiées
+ * côté client avant l'upload : sans ça, le refus ne remonte qu'après avoir
+ * uploadé plusieurs dizaines de Mo et débité des crédits (remboursés, mais
+ * l'attente est inutile).
+ */
+async function validateVideoFile(file: File): Promise<string | null> {
   if (!["video/mp4", "video/quicktime"].includes(file.type)) {
     return "Fichier non pris en charge. Veuillez sélectionner une vidéo MP4 ou MOV.";
   }
   if (file.size > MAX_VIDEO_SOURCE_BYTES) {
     return "Fichier trop volumineux (max 50 Mo).";
   }
-  return null;
+
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const meta = await new Promise<{
+      width: number;
+      height: number;
+      duration: number;
+    }>((resolve, reject) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.onloadedmetadata = () =>
+        resolve({
+          width: video.videoWidth,
+          height: video.videoHeight,
+          duration: video.duration,
+        });
+      video.onerror = () => reject(new Error("Vidéo illisible."));
+      video.src = objectUrl;
+    });
+
+    if (meta.width < MIN_VIDEO_WIDTH) {
+      return `Vidéo trop basse résolution : ${meta.width} px de large, alors qu'il en faut au moins ${MIN_VIDEO_WIDTH}. Réexportez-la en qualité supérieure (720p minimum).`;
+    }
+    if (meta.width > MAX_VIDEO_WIDTH) {
+      return `Vidéo trop grande : ${meta.width} px de large, alors que le maximum est ${MAX_VIDEO_WIDTH}.`;
+    }
+    if (
+      meta.duration < MIN_VIDEO_DURATION_S ||
+      meta.duration > MAX_VIDEO_DURATION_S
+    ) {
+      return `Durée non prise en charge : ${Math.round(meta.duration)} s, alors qu'il faut entre ${MIN_VIDEO_DURATION_S} et ${MAX_VIDEO_DURATION_S} s.`;
+    }
+    return null;
+  } catch {
+    return "Vidéo illisible. Essayez un autre fichier MP4 ou MOV.";
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
 /**
@@ -606,7 +654,9 @@ export default function Home() {
       setVideoError("");
       setVideoUrl("");
       const validationError =
-        kind === "source" ? validateVideoFile(file) : validateImageFile(file);
+        kind === "source"
+          ? await validateVideoFile(file)
+          : validateImageFile(file);
       if (validationError) {
         setVideoError(validationError);
         return;
@@ -1059,7 +1109,7 @@ export default function Home() {
                   label="Vidéo source"
                   badge="Requis"
                   hint="Cliquez pour uploader"
-                  subtext="MP4, MOV — max 50 Mo"
+                  subtext="MP4/MOV · 3-10 s · 720p min · max 50 Mo"
                   upload={videoSource}
                   onPick={(file) => void pickVideoUpload(file, "source")}
                   disabled={videoLoading}

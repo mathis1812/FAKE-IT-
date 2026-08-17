@@ -12,7 +12,10 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 const MODEL_ID = "fal-ai/kling-video/o1/video-to-video/edit";
-const OBJECT_ELEMENT_NAME = "Element1";
+// La photo de l'objet est transmise via `image_urls`, que Kling référence
+// par `@Image1` dans le prompt (`@Element1` correspond au champ `elements`,
+// que nous n'utilisons pas).
+const OBJECT_REFERENCE_TAG = "Image1";
 const POLL_INTERVAL_MS = 4_000;
 const POLL_TIMEOUT_MS = 280_000;
 
@@ -107,7 +110,7 @@ export async function POST(req: NextRequest) {
   }
 
   const finalPrompt =
-    `${prompt.trim()} Integrate the luxury replacement object shown in @${OBJECT_ELEMENT_NAME} photorealistically, ` +
+    `${prompt.trim()} Integrate the luxury replacement object shown in @${OBJECT_REFERENCE_TAG} photorealistically, ` +
     "while preserving the original motion, camera angles, lighting and background.";
 
   try {
