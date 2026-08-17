@@ -1191,7 +1191,10 @@ export default function Home() {
                   <span className="text-primary">✦</span>
                   <span>
                     Astuce : la photo de référence est automatiquement
-                    intégrée à la scène décrite dans le prompt.
+                    intégrée à la scène décrite dans le prompt. Filmez avec
+                    votre application Caméra puis choisissez la vidéo dans
+                    votre galerie — l&apos;enregistrement direct depuis le
+                    navigateur réduit fortement la qualité.
                   </span>
                 </p>
                 {(videoSource || videoObject || videoPrompt) && (
