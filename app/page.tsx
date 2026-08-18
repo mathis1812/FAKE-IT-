@@ -925,17 +925,17 @@ export default function Home() {
                         Comment envoyer un Snap Rouge
                       </p>
                       <ol className="list-decimal space-y-2 pl-5">
-                        <li>Télécharge la photo avec le bouton "Télécharger" ci-dessus.</li>
-                        <li>Ouvre Snapchat et appuie sur l'icône des filtres à côté du bouton photo.</li>
+                        <li>Télécharge la photo avec le bouton «Télécharger» ci-dessus.</li>
+                        <li>Ouvre Snapchat et appuie sur l&rsquo;icône des filtres à côté du bouton photo.</li>
                         <li>Dans la barre de recherche des filtres, tape : UP</li>
-                        <li>Sélectionne le premier filtre "Camera Roll" qui apparaît.</li>
+                        <li>Sélectionne le premier filtre «Camera Roll» qui apparaît.</li>
                         <li>Choisis la photo Bluminoo que tu viens de télécharger dans ta galerie.</li>
-                        <li>Appuie sur le bouton de capture pour la "prendre en photo" avec Snapchat.</li>
-                        <li>Relance l'application si nécessaire pour valider le filtre.</li>
-                        <li>Appuie sur "Envoyer à" et choisis tes destinataires.</li>
+                        <li>Appuie sur le bouton de capture pour la «prendre en photo» avec Snapchat.</li>
+                        <li>Relance l&rsquo;application si nécessaire pour valider le filtre.</li>
+                        <li>Appuie sur «Envoyer à» et choisis tes destinataires.</li>
                         <li>
-                          C'est prêt : le snap part comme un vrai Snap rouge, sans filtre
-                          visible, indétectable !
+                          C&rsquo;est prêt : le snap part comme un vrai Snap rouge, sans
+                          filtre visible, indétectable !
                         </li>
                       </ol>
                     </div>
