@@ -296,6 +296,7 @@ export default function Home() {
   const [result, setResult] = useState("");
   const [sharing, setSharing] = useState(false);
   const [canShareToSnap, setCanShareToSnap] = useState(false);
+  const [showSnapRougeGuide, setShowSnapRougeGuide] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const secondaryInputRef = useRef<HTMLInputElement>(null);
@@ -907,6 +908,38 @@ export default function Home() {
                   >
                     {loading ? "…" : "Régénérer"}
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowSnapRougeGuide((v) => !v)}
+                    className="w-full cursor-pointer text-left text-xs font-semibold text-red-400 underline decoration-red-400/40 underline-offset-4 transition hover:text-red-300 sm:w-auto"
+                  >
+                    {showSnapRougeGuide
+                      ? "Masquer l'astuce Snap Rouge"
+                      : "💡 Envoyer comme un vrai Snap (indétectable) →"}
+                  </button>
+
+                  {showSnapRougeGuide && (
+                    <div className="w-full rounded-2xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-neutral-200">
+                      <p className="mb-3 font-bold text-red-400">
+                        Comment envoyer un Snap Rouge
+                      </p>
+                      <ol className="list-decimal space-y-2 pl-5">
+                        <li>Télécharge la photo avec le bouton "Télécharger" ci-dessus.</li>
+                        <li>Ouvre Snapchat et appuie sur l'icône des filtres à côté du bouton photo.</li>
+                        <li>Dans la barre de recherche des filtres, tape : UP</li>
+                        <li>Sélectionne le premier filtre "Camera Roll" qui apparaît.</li>
+                        <li>Choisis la photo Bluminoo que tu viens de télécharger dans ta galerie.</li>
+                        <li>Appuie sur le bouton de capture pour la "prendre en photo" avec Snapchat.</li>
+                        <li>Relance l'application si nécessaire pour valider le filtre.</li>
+                        <li>Appuie sur "Envoyer à" et choisis tes destinataires.</li>
+                        <li>
+                          C'est prêt : le snap part comme un vrai Snap rouge, sans filtre
+                          visible, indétectable !
+                        </li>
+                      </ol>
+                    </div>
+                  )}
                 </>
               ) : (
                 <button
