@@ -234,3 +234,5 @@ en compte.
   `supabase/migrations/0003_credit_functions.sql` et `0004_gallery.sql`) —
   un client authentifié ne peut ni modifier son propre solde, ni celui d'un
   autre utilisateur, ni écrire dans le bucket `gallery`
+
+<!-- trigger redeploy -->
