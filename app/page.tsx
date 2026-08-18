@@ -247,6 +247,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
+  const [sharing, setSharing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const secondaryInputRef = useRef<HTMLInputElement>(null);
@@ -461,6 +462,50 @@ export default function Home() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  }, [result]);
+
+  const shareToSnapchat = useCallback(async () => {
+    if (!result) return;
+    if (!navigator.share) {
+      setError(
+        "Le partage direct est disponible depuis un téléphone compatible. Téléchargez l'image si nécessaire.",
+      );
+      return;
+    }
+
+    setSharing(true);
+    setError("");
+    try {
+      const response = await fetch(result);
+      if (!response.ok) {
+        throw new Error("Le résultat ne peut pas être préparé pour le partage.");
+      }
+      const blob = await response.blob();
+      const file = new File([blob], "bluminoo-result.png", {
+        type: blob.type || "image/png",
+      });
+
+      if (navigator.canShare && !navigator.canShare({ files: [file] })) {
+        throw new Error(
+          "Le partage de fichiers n'est pas pris en charge par ce navigateur.",
+        );
+      }
+
+      await navigator.share({
+        files: [file],
+        title: "Photo créée avec Bluminoo",
+        text: "Photo créée avec Bluminoo",
+      });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Le partage de la photo est impossible pour le moment.",
+      );
+    } finally {
+      setSharing(false);
+    }
   }, [result]);
 
   const reset = useCallback(() => {
@@ -788,6 +833,14 @@ export default function Home() {
                     className="flex-1 cursor-pointer rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft"
                   >
                     Télécharger
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void shareToSnapchat()}
+                    disabled={sharing}
+                    className="flex-1 cursor-pointer rounded-2xl border border-primary/30 bg-primary/10 px-5 py-3.5 text-sm font-bold text-primary transition duration-200 hover:border-primary/50 hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {sharing ? "Préparation…" : "Partager sur Snapchat"}
                   </button>
                   <button
                     type="button"
