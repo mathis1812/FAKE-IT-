@@ -6,8 +6,10 @@ import { createClient } from "@/lib/supabase/client";
 
 type Mode = "image" | "video";
 
-const IMAGE_PROMPT_PLACEHOLDER =
-  "Décrivez précisément votre photo (ex : remplace la montre au poignet par une Rolex Submariner en acier, conserve le visage, la pose et le fond)…";
+const IMAGE_NOTE_PLACEHOLDER =
+  "Note optionnelle (ex : assis à la table près de la fenêtre, ambiance soirée)…";
+
+const MAX_PLACE_IMAGES = 3;
 
 const VIDEO_PROMPT_PLACEHOLDER =
   "Ex : Remplace la montre au poignet par une Rolex Submariner en acier, mouvements naturels, conserve le visage, la pose et le fond…";
@@ -293,10 +295,8 @@ export default function Home() {
 
   const [prepared, setPrepared] = useState<PreparedImage | null>(null);
   const [fileName, setFileName] = useState("");
-  const [secondaryImage, setSecondaryImage] = useState<PreparedImage | null>(
-    null,
-  );
-  const [customPrompt, setCustomPrompt] = useState("");
+  const [placeImages, setPlaceImages] = useState<PreparedImage[]>([]);
+  const [userNote, setUserNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
@@ -407,15 +407,20 @@ export default function Home() {
     [handleFile],
   );
 
-  const handleSecondaryFile = useCallback(async (file: File) => {
+  const handlePlaceFiles = useCallback(async (files: File[]) => {
     setError("");
-    const validationError = validateImageFile(file);
-    if (validationError) {
-      setError(validationError);
-      return;
+    for (const file of files) {
+      const validationError = validateImageFile(file);
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
     }
     try {
-      setSecondaryImage(await prepareImage(file));
+      const prepared = await Promise.all(files.map((f) => prepareImage(f)));
+      setPlaceImages((current) =>
+        [...current, ...prepared].slice(0, MAX_PLACE_IMAGES),
+      );
     } catch (err) {
       setError(
         err instanceof Error
@@ -440,9 +445,8 @@ export default function Home() {
       setError("Veuillez d'abord uploader une image.");
       return;
     }
-    const prompt = customPrompt.trim();
-    if (!prompt) {
-      setError("Décrivez la transformation souhaitée.");
+    if (placeImages.length === 0) {
+      setError("Ajoutez au moins une photo du lieu où vous voulez apparaître.");
       return;
     }
     setLoading(true);
@@ -461,19 +465,21 @@ export default function Home() {
       });
       const sourceImageUrl = await uploadImage(file);
 
-      let objectImageUrl: string | undefined;
-      if (secondaryImage) {
-        const objectBlob = await (await fetch(secondaryImage.previewUrl)).blob();
-        if (objectBlob.size > MAX_VIDEO_FILE_BYTES) {
+      const placeImageUrls: string[] = [];
+      for (let i = 0; i < placeImages.length; i++) {
+        const placeBlob = await (
+          await fetch(placeImages[i].previewUrl)
+        ).blob();
+        if (placeBlob.size > MAX_VIDEO_FILE_BYTES) {
           setError(
-            "Photo de référence trop volumineuse après compression (max 4 Mo).",
+            "Photo du lieu trop volumineuse après compression (max 4 Mo).",
           );
           return;
         }
-        const objectFile = new File([objectBlob], "reference.jpg", {
-          type: secondaryImage.mimeType,
+        const placeFile = new File([placeBlob], `lieu-${i + 1}.jpg`, {
+          type: placeImages[i].mimeType,
         });
-        objectImageUrl = await uploadImage(objectFile);
+        placeImageUrls.push(await uploadImage(placeFile));
       }
 
       const res = await fetch("/api/generate", {
@@ -481,8 +487,8 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sourceImageUrl,
-          objectImageUrl,
-          prompt,
+          placeImageUrls,
+          userNote: userNote.trim() || undefined,
           label: "Génération image",
         }),
       });
@@ -513,7 +519,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [prepared, customPrompt, fileName, secondaryImage, refreshCredits]);
+  }, [prepared, userNote, fileName, placeImages, refreshCredits]);
 
   const download = useCallback(() => {
     if (!result) return;
@@ -622,10 +628,10 @@ export default function Home() {
   const reset = useCallback(() => {
     setPrepared(null);
     setFileName("");
-    setSecondaryImage(null);
+    setPlaceImages([]);
     setResult("");
     setError("");
-    setCustomPrompt("");
+    setUserNote("");
     if (inputRef.current) inputRef.current.value = "";
   }, []);
 
@@ -868,64 +874,79 @@ export default function Home() {
               ref={secondaryInputRef}
               type="file"
               accept="image/*"
+              multiple
               className="hidden"
               onChange={(e) => {
-                const file = e.target.files?.[0];
+                const files = Array.from(e.target.files ?? []);
                 e.target.value = "";
-                if (file) void handleSecondaryFile(file);
+                if (files.length) void handlePlaceFiles(files);
               }}
             />
-            <button
-              type="button"
-              onClick={() => secondaryInputRef.current?.click()}
-              className="mb-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm font-medium text-neutral-300 transition hover:border-white/20 hover:text-neutral-100"
-            >
-              {secondaryImage ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={secondaryImage.previewUrl}
-                    alt="Référence"
-                    className="h-6 w-6 rounded-md object-cover"
-                  />
-                  <span className="truncate">Photo de référence ajoutée</span>
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    aria-label="Retirer la photo de référence"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSecondaryImage(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setSecondaryImage(null);
-                      }
-                    }}
-                    className="ml-1 cursor-pointer text-neutral-500 hover:text-neutral-200"
-                  >
-                    ✕
-                  </span>
-                </>
-              ) : (
-                <>
+            <div className="mb-4">
+              <div className="mb-2 flex items-center gap-2">
+                <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-neutral-500">
+                  Le lieu où tu veux apparaître
+                </p>
+                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary-soft">
+                  1 à 3 photos
+                </span>
+              </div>
+              {placeImages.length > 0 && (
+                <div className="mb-2 grid grid-cols-3 gap-2">
+                  {placeImages.map((img, i) => (
+                    <div
+                      key={img.previewUrl}
+                      className="relative aspect-square overflow-hidden rounded-xl border border-white/10"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img.previewUrl}
+                        alt={`Lieu ${i + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        aria-label={`Retirer la photo du lieu ${i + 1}`}
+                        onClick={() =>
+                          setPlaceImages((current) =>
+                            current.filter((_, j) => j !== i),
+                          )
+                        }
+                        className="absolute right-1.5 top-1.5 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-black/70 text-xs text-neutral-300 transition hover:text-white"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {placeImages.length < MAX_PLACE_IMAGES && (
+                <button
+                  type="button"
+                  onClick={() => secondaryInputRef.current?.click()}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-3 text-sm font-medium text-neutral-300 transition hover:border-white/20 hover:text-neutral-100"
+                >
                   <span className="text-base leading-none">+</span>
                   <span>
-                    Ajouter photo{" "}
-                    <span className="text-neutral-600">(optionnel)</span>
+                    {placeImages.length === 0
+                      ? "Ajouter la photo du lieu (restaurant, rooftop…)"
+                      : "Ajouter un autre angle du lieu"}
                   </span>
-                </>
+                </button>
               )}
-            </button>
+              <p className="mt-2 text-[11px] text-neutral-600">
+                1 photo suffit — 2 à 3 angles différents du même lieu améliorent
+                la fidélité du décor et de la lumière. Le prompt est généré
+                automatiquement à partir de tes photos.
+              </p>
+            </div>
 
             <textarea
-              id="custom-prompt"
-              value={customPrompt}
-              onChange={(e) => setCustomPrompt(e.target.value)}
-              rows={3}
-              placeholder={IMAGE_PROMPT_PLACEHOLDER}
+              id="user-note"
+              value={userNote}
+              onChange={(e) => setUserNote(e.target.value)}
+              rows={2}
+              placeholder={IMAGE_NOTE_PLACEHOLDER}
               className="mb-4 w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-700 focus:border-primary/50"
             />
 
@@ -958,7 +979,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={generate}
-                    disabled={loading || !customPrompt.trim()}
+                    disabled={loading || placeImages.length === 0}
                     className="cursor-pointer rounded-2xl border border-white/10 px-4 py-3.5 text-sm font-medium text-neutral-300 transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {loading ? "…" : "Régénérer"}
@@ -1077,7 +1098,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={generate}
-                  disabled={loading || !prepared || !customPrompt.trim()}
+                  disabled={loading || !prepared || placeImages.length === 0}
                   className="flex-1 cursor-pointer rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {loading ? "Génération… (~15-30s)" : "Générer"}

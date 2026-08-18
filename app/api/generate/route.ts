@@ -7,6 +7,7 @@ import {
 } from "@/lib/credits";
 import { persistImageResult } from "@/lib/gallery-server";
 import { createKieTask, pollKieTask } from "@/lib/kie-jobs";
+import { buildPlacePrompt } from "@/lib/place-prompt";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -15,8 +16,15 @@ const MODEL_ID = "nano-banana-pro";
 const POLL_INTERVAL_MS = 3_000;
 const POLL_TIMEOUT_MS = 100_000;
 
+const MAX_PLACE_IMAGES = 3;
+
 type GenerateBody = {
   sourceImageUrl?: string;
+  /** 1 à 3 photos du lieu réel où intégrer le sujet. */
+  placeImageUrls?: string[];
+  /** Note libre optionnelle de l'utilisateur, intégrée au prompt généré. */
+  userNote?: string;
+  /** Ancien flux (objet + prompt libre) — conservé pour compatibilité. */
   objectImageUrl?: string;
   prompt?: string;
   label?: string;
@@ -44,7 +52,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { sourceImageUrl, objectImageUrl, prompt, label } = body;
+  const { sourceImageUrl, placeImageUrls, userNote, objectImageUrl, prompt, label } =
+    body;
 
   if (!sourceImageUrl || typeof sourceImageUrl !== "string") {
     return NextResponse.json(
@@ -53,9 +62,25 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!prompt || !prompt.trim()) {
+  const placeUrls = Array.isArray(placeImageUrls)
+    ? placeImageUrls.filter((u): u is string => typeof u === "string" && !!u.trim())
+    : [];
+
+  if (placeUrls.length > MAX_PLACE_IMAGES) {
     return NextResponse.json(
-      { error: "Prompt manquant. Décrivez la transformation souhaitée." },
+      { error: `Maximum ${MAX_PLACE_IMAGES} photos du lieu.` },
+      { status: 400 },
+    );
+  }
+
+  // Nouveau flux : au moins une photo du lieu, prompt généré automatiquement.
+  // Ancien flux (compatibilité) : prompt libre obligatoire.
+  if (placeUrls.length === 0 && (!prompt || !prompt.trim())) {
+    return NextResponse.json(
+      {
+        error:
+          "Ajoutez au moins une photo du lieu où vous voulez apparaître.",
+      },
       { status: 400 },
     );
   }
@@ -93,12 +118,26 @@ export async function POST(req: NextRequest) {
   }
 
   const imageInput = [sourceImageUrl];
-  let finalPrompt = prompt.trim();
-  if (objectImageUrl && typeof objectImageUrl === "string") {
-    imageInput.push(objectImageUrl);
-    finalPrompt +=
-      " Integrate the reference object shown in the second image photorealistically, " +
-      "while preserving the subject, pose, lighting and background from the first image.";
+  let finalPrompt: string;
+  if (placeUrls.length > 0) {
+    imageInput.push(...placeUrls);
+    // Étape d'analyse : un modèle vision examine les photos du lieu
+    // (éclairage, matériaux, ambiance, angle) et produit un prompt structuré.
+    // En cas d'échec, un prompt de secours structuré est utilisé — jamais de blocage.
+    finalPrompt = await buildPlacePrompt(
+      apiKey,
+      sourceImageUrl,
+      placeUrls,
+      typeof userNote === "string" ? userNote : undefined,
+    );
+  } else {
+    finalPrompt = (prompt as string).trim();
+    if (objectImageUrl && typeof objectImageUrl === "string") {
+      imageInput.push(objectImageUrl);
+      finalPrompt +=
+        " Integrate the reference object shown in the second image photorealistically, " +
+        "while preserving the subject, pose, lighting and background from the first image.";
+    }
   }
 
   try {
