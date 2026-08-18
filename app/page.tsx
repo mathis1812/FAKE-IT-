@@ -964,14 +964,24 @@ export default function Home() {
                   </button>
 
                   {canShareToSnap && (
-                    <button
-                      type="button"
-                      onClick={() => void sendAsRedSnap()}
-                      disabled={sendingRedSnap}
-                      className="w-full cursor-pointer rounded-2xl border-2 border-red-600 bg-black px-5 py-3.5 text-sm font-bold text-red-500 transition duration-200 hover:bg-red-950 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-                    >
-                      {sendingRedSnap ? "Préparation…" : "🔴 Envoyer en Snap Rouge"}
-                    </button>
+                    <div className="w-full space-y-2 sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={() => void sendAsRedSnap()}
+                        disabled={sendingRedSnap}
+                        className="group relative flex w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-red-600 bg-gradient-to-b from-neutral-950 to-black px-5 py-3.5 text-sm font-black uppercase tracking-wide text-red-500 shadow-[0_0_20px_-4px_rgba(220,38,38,0.6)] transition duration-200 hover:shadow-[0_0_28px_-2px_rgba(220,38,38,0.85)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                      >
+                        <span
+                          aria-hidden
+                          className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-red-600"
+                        />
+                        {sendingRedSnap ? "Préparation…" : "Envoyer en Snap Rouge"}
+                      </button>
+                      <p className="text-center text-[11px] text-neutral-400 sm:text-left">
+                        1 seul tap manuel restant (sur 9 étapes) &mdash; le reste est
+                        automatique.
+                      </p>
+                    </div>
                   )}
 
                   <button
@@ -985,29 +995,80 @@ export default function Home() {
                   </button>
 
                   {showSnapRougeGuide && (
-                    <div className="w-full rounded-2xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-neutral-200">
-                      <p className="mb-3 font-bold text-red-400">
-                        En appuyant sur «🔴 Envoyer en Snap Rouge» :
+                    <div className="w-full rounded-2xl border border-red-500/20 bg-gradient-to-b from-red-500/5 to-transparent p-4">
+                      <p className="mb-4 text-center text-lg font-black uppercase tracking-wide text-red-500">
+                        Snap Rouge
                       </p>
-                      <ol className="list-decimal space-y-2 pl-5">
-                        <li>
-                          Un menu de partage s&rsquo;ouvre : choisis «Enregistrer
-                          l&rsquo;image» pour la sauvegarder dans ta pellicule (Apple et
-                          Snapchat interdisent à tout site de le faire automatiquement,
-                          c&rsquo;est le seul tap manuel obligatoire).
-                        </li>
-                        <li>
-                          Snapchat s&rsquo;ouvre alors directement sur son filtre officiel
-                          «Upload Photo» &mdash; plus besoin de chercher un filtre à la
-                          main.
-                        </li>
-                        <li>Choisis la photo Bluminoo que tu viens d&rsquo;enregistrer.</li>
-                        <li>Appuie sur le bouton de capture pour la «prendre en photo».</li>
-                        <li>
-                          Appuie sur «Envoyer à», choisis tes destinataires : le snap part
-                          comme un vrai Snap rouge, indétectable !
-                        </li>
-                      </ol>
+                      <p className="mb-4 text-center text-xs text-neutral-400">
+                        5 étapes pour envoyer ta photo Bluminoo comme un vrai Snap pris en
+                        direct, indétectable.
+                      </p>
+                      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                        {[
+                          {
+                            n: 1,
+                            title: "Enregistrer",
+                            desc: "Choisis «Enregistrer l'image» dans le menu qui s'ouvre.",
+                            auto: false,
+                          },
+                          {
+                            n: 2,
+                            title: "Filtre ouvert",
+                            desc: "Snapchat s'ouvre déjà sur le bon filtre «Upload Photo».",
+                            auto: true,
+                          },
+                          {
+                            n: 3,
+                            title: "Choix de la photo",
+                            desc: "Sélectionne la photo Bluminoo dans ta pellicule.",
+                            auto: false,
+                          },
+                          {
+                            n: 4,
+                            title: "Capture",
+                            desc: "Appuie sur le déclencheur pour la «prendre en photo».",
+                            auto: false,
+                          },
+                          {
+                            n: 5,
+                            title: "Envoi",
+                            desc: "Appuie sur «Envoyer à» et choisis tes destinataires.",
+                            auto: false,
+                          },
+                        ].map((step) => (
+                          <div
+                            key={step.n}
+                            className="relative flex flex-col rounded-xl border border-red-500/15 bg-black/40 p-3"
+                          >
+                            <div className="mb-2 flex items-center justify-between">
+                              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-[11px] font-bold text-white">
+                                {step.n}
+                              </span>
+                              <span
+                                className={
+                                  step.auto
+                                    ? "rounded-full bg-red-600/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-red-400"
+                                    : "rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-neutral-400"
+                                }
+                              >
+                                {step.auto ? "Auto" : "Manuel"}
+                              </span>
+                            </div>
+                            <p className="text-xs font-bold text-neutral-100">
+                              {step.title}
+                            </p>
+                            <p className="mt-1 text-[11px] leading-snug text-neutral-400">
+                              {step.desc}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-4 text-center text-[11px] text-neutral-500">
+                        Les étapes «Manuel» se passent à l&rsquo;intérieur de Snapchat :
+                        aucun site (même chez les concurrents) ne peut les remplacer,
+                        Apple et Snapchat l&rsquo;interdisent pour la sécurité des
+                        utilisateurs.
+                      </p>
                     </div>
                   )}
                 </>
