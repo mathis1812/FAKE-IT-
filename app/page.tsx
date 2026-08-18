@@ -17,6 +17,8 @@ const MAX_VIDEO_FILE_BYTES = 4 * 1024 * 1024;
 const COMPRESS_THRESHOLD_BYTES = 2 * 1024 * 1024;
 const MAX_DIMENSION = 1536;
 const JPEG_QUALITY = 0.9;
+const SNAP_SHARE_MAX_DIMENSION = 1600;
+const SNAP_SHARE_JPEG_QUALITY = 0.85;
 
 type PreparedImage = {
   previewUrl: string;
@@ -76,6 +78,51 @@ async function compressImage(file: File): Promise<PreparedImage> {
     const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
     const { base64, mimeType } = stripDataUrlPrefix(dataUrl);
     return { previewUrl: dataUrl, base64, mimeType };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+/**
+ * Convertit le résultat (souvent un PNG haute résolution) en JPEG
+ * redimensionné avant un navigator.share(). Les extensions de partage de
+ * Snapchat sur iOS ont peu de mémoire et affichent un écran noir/plantent
+ * avec de gros PNG ; un JPEG plus léger règle le problème.
+ */
+async function prepareShareFile(blob: Blob): Promise<File> {
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("Image illisible."));
+      image.src = objectUrl;
+    });
+
+    const { width, height } = img;
+    const longSide = Math.max(width, height);
+    const scale =
+      longSide > SNAP_SHARE_MAX_DIMENSION ? SNAP_SHARE_MAX_DIMENSION / longSide : 1;
+    const targetW = Math.round(width * scale);
+    const targetH = Math.round(height * scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Préparation du partage impossible.");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, targetW, targetH);
+    ctx.drawImage(img, 0, 0, targetW, targetH);
+
+    const shareBlob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", SNAP_SHARE_JPEG_QUALITY),
+    );
+    if (!shareBlob) throw new Error("Préparation du partage impossible.");
+
+    return new File([shareBlob], "bluminoo-result.jpg", {
+      type: "image/jpeg",
+    });
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
@@ -489,9 +536,10 @@ export default function Home() {
         throw new Error("Le résultat ne peut pas être préparé pour le partage.");
       }
       const blob = await response.blob();
-      const file = new File([blob], "bluminoo-result.png", {
-        type: blob.type || "image/png",
-      });
+      // Snapchat plante ou affiche un écran noir quand on lui partage un PNG
+      // volumineux (ses extensions de partage ont peu de mémoire). On
+      // reconvertit en JPEG redimensionné pour rester léger et compatible.
+      const file = await prepareShareFile(blob);
 
       if (navigator.canShare && !navigator.canShare({ files: [file] })) {
         throw new Error(
