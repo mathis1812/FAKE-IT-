@@ -19,6 +19,11 @@ const MAX_DIMENSION = 1536;
 const JPEG_QUALITY = 0.9;
 const SNAP_SHARE_MAX_DIMENSION = 1600;
 const SNAP_SHARE_JPEG_QUALITY = 0.85;
+// Lens officiel Snapchat "Upload Photo" (import direct depuis la pellicule).
+// Ouvrir ce lien sur mobile bascule directement sur ce filtre dans la caméra
+// Snapchat, sans avoir à chercher "UP" à la main dans les filtres.
+const SNAP_UPLOAD_LENS_URL =
+  "https://www.snapchat.com/lens/64adab3c04c548479ca1c11b6667a068";
 
 type PreparedImage = {
   previewUrl: string;
@@ -297,6 +302,7 @@ export default function Home() {
   const [sharing, setSharing] = useState(false);
   const [canShareToSnap, setCanShareToSnap] = useState(false);
   const [showSnapRougeGuide, setShowSnapRougeGuide] = useState(false);
+  const [sendingRedSnap, setSendingRedSnap] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const secondaryInputRef = useRef<HTMLInputElement>(null);
@@ -561,6 +567,54 @@ export default function Home() {
       );
     } finally {
       setSharing(false);
+    }
+  }, [result]);
+
+  const sendAsRedSnap = useCallback(async () => {
+    if (!result) return;
+    if (!navigator.share) {
+      setError(
+        "Cette fonction est disponible depuis un téléphone compatible.",
+      );
+      return;
+    }
+
+    setSendingRedSnap(true);
+    setError("");
+    try {
+      const response = await fetch(result);
+      if (!response.ok) {
+        throw new Error("Le résultat ne peut pas être préparé.");
+      }
+      const blob = await response.blob();
+      const file = await prepareShareFile(blob);
+
+      if (navigator.canShare && !navigator.canShare({ files: [file] })) {
+        throw new Error(
+          "Le partage de fichiers n'est pas pris en charge par ce navigateur.",
+        );
+      }
+
+      // Étape 1 (automatique) : on ouvre le menu de partage du téléphone ;
+      // l'utilisateur choisit "Enregistrer l'image" pour la mettre dans sa
+      // pellicule (aucune API web ne peut faire cette sauvegarde toute
+      // seule, Apple/Google l'interdisent pour des raisons de sécurité).
+      await navigator.share({ files: [file] });
+
+      // Étape 2 (automatique) : on bascule directement Snapchat sur son
+      // filtre officiel "Upload Photo", qui permet d'importer une photo de
+      // la pellicule et de la reprendre avec l'appareil photo. Ça évite
+      // d'avoir à chercher le filtre à la main dans Snapchat.
+      window.location.href = SNAP_UPLOAD_LENS_URL;
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      setError(
+        err instanceof Error
+          ? err.message
+          : "L'envoi en Snap Rouge est impossible pour le moment.",
+      );
+    } finally {
+      setSendingRedSnap(false);
     }
   }, [result]);
 
@@ -909,33 +963,49 @@ export default function Home() {
                     {loading ? "…" : "Régénérer"}
                   </button>
 
+                  {canShareToSnap && (
+                    <button
+                      type="button"
+                      onClick={() => void sendAsRedSnap()}
+                      disabled={sendingRedSnap}
+                      className="w-full cursor-pointer rounded-2xl border-2 border-red-600 bg-black px-5 py-3.5 text-sm font-bold text-red-500 transition duration-200 hover:bg-red-950 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                    >
+                      {sendingRedSnap ? "Préparation…" : "🔴 Envoyer en Snap Rouge"}
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => setShowSnapRougeGuide((v) => !v)}
                     className="w-full cursor-pointer text-left text-xs font-semibold text-red-400 underline decoration-red-400/40 underline-offset-4 transition hover:text-red-300 sm:w-auto"
                   >
                     {showSnapRougeGuide
-                      ? "Masquer l'astuce Snap Rouge"
-                      : "💡 Envoyer comme un vrai Snap (indétectable) →"}
+                      ? "Masquer les explications"
+                      : "Comment ça marche, le Snap Rouge ? →"}
                   </button>
 
                   {showSnapRougeGuide && (
                     <div className="w-full rounded-2xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-neutral-200">
                       <p className="mb-3 font-bold text-red-400">
-                        Comment envoyer un Snap Rouge
+                        En appuyant sur «🔴 Envoyer en Snap Rouge» :
                       </p>
                       <ol className="list-decimal space-y-2 pl-5">
-                        <li>Télécharge la photo avec le bouton «Télécharger» ci-dessus.</li>
-                        <li>Ouvre Snapchat et appuie sur l&rsquo;icône des filtres à côté du bouton photo.</li>
-                        <li>Dans la barre de recherche des filtres, tape : UP</li>
-                        <li>Sélectionne le premier filtre «Camera Roll» qui apparaît.</li>
-                        <li>Choisis la photo Bluminoo que tu viens de télécharger dans ta galerie.</li>
-                        <li>Appuie sur le bouton de capture pour la «prendre en photo» avec Snapchat.</li>
-                        <li>Relance l&rsquo;application si nécessaire pour valider le filtre.</li>
-                        <li>Appuie sur «Envoyer à» et choisis tes destinataires.</li>
                         <li>
-                          C&rsquo;est prêt : le snap part comme un vrai Snap rouge, sans
-                          filtre visible, indétectable !
+                          Un menu de partage s&rsquo;ouvre : choisis «Enregistrer
+                          l&rsquo;image» pour la sauvegarder dans ta pellicule (Apple et
+                          Snapchat interdisent à tout site de le faire automatiquement,
+                          c&rsquo;est le seul tap manuel obligatoire).
+                        </li>
+                        <li>
+                          Snapchat s&rsquo;ouvre alors directement sur son filtre officiel
+                          «Upload Photo» &mdash; plus besoin de chercher un filtre à la
+                          main.
+                        </li>
+                        <li>Choisis la photo Bluminoo que tu viens d&rsquo;enregistrer.</li>
+                        <li>Appuie sur le bouton de capture pour la «prendre en photo».</li>
+                        <li>
+                          Appuie sur «Envoyer à», choisis tes destinataires : le snap part
+                          comme un vrai Snap rouge, indétectable !
                         </li>
                       </ol>
                     </div>
