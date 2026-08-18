@@ -248,9 +248,17 @@ export default function Home() {
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
   const [sharing, setSharing] = useState(false);
+  const [canShareToSnap, setCanShareToSnap] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const secondaryInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const isMobileUserAgent = /Android|iPhone|iPad|iPod/i.test(
+      navigator.userAgent,
+    );
+    setCanShareToSnap(isMobileUserAgent && typeof navigator.share === "function");
+  }, []);
 
   const [videoSource, setVideoSource] = useState<VideoUpload | null>(null);
   const [videoObject, setVideoObject] = useState<VideoUpload | null>(null);
@@ -834,14 +842,16 @@ export default function Home() {
                   >
                     Télécharger
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => void shareToSnapchat()}
-                    disabled={sharing}
-                    className="flex-1 cursor-pointer rounded-2xl border border-primary/30 bg-primary/10 px-5 py-3.5 text-sm font-bold text-primary transition duration-200 hover:border-primary/50 hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {sharing ? "Préparation…" : "Partager sur Snapchat"}
-                  </button>
+                  {canShareToSnap && (
+                    <button
+                      type="button"
+                      onClick={() => void shareToSnapchat()}
+                      disabled={sharing}
+                      className="flex-1 cursor-pointer rounded-2xl bg-red-600 px-5 py-3.5 text-sm font-bold text-white transition duration-200 hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {sharing ? "Préparation…" : "Envoyer sur Snapchat"}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={generate}
