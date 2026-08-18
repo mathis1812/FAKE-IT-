@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Déploie FakeIt sur Vercel sans étape de link interactive.
+# Déploie Bluminoo Studio sur Vercel sans étape de link interactive.
 # Usage : VERCEL_TOKEN=xxx bash scripts/deploy.sh [production|preview]
 set -euo pipefail
 
