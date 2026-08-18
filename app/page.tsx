@@ -19,11 +19,12 @@ const MAX_DIMENSION = 1536;
 const JPEG_QUALITY = 0.9;
 const SNAP_SHARE_MAX_DIMENSION = 1600;
 const SNAP_SHARE_JPEG_QUALITY = 0.85;
-// Lens officiel Snapchat "Upload Photo" (import direct depuis la pellicule).
-// Ouvrir ce lien sur mobile bascule directement sur ce filtre dans la caméra
-// Snapchat, sans avoir à chercher "UP" à la main dans les filtres.
+// Lens officiel Snapchat "Camera Roll" (exactement celui qu'on trouve en
+// tapant "UP" dans la barre de recherche des filtres). Ouvrir ce lien sur
+// mobile bascule directement dessus dans la caméra Snapchat, sans avoir à
+// chercher le filtre à la main.
 const SNAP_UPLOAD_LENS_URL =
-  "https://www.snapchat.com/lens/64adab3c04c548479ca1c11b6667a068";
+  "https://www.snapchat.com/lens/a9cd4b5d2687457eb0be82bd332a2a74";
 
 type PreparedImage = {
   previewUrl: string;
@@ -602,7 +603,7 @@ export default function Home() {
       await navigator.share({ files: [file] });
 
       // Étape 2 (automatique) : on bascule directement Snapchat sur son
-      // filtre officiel "Upload Photo", qui permet d'importer une photo de
+      // filtre officiel "Camera Roll", qui permet d'importer une photo de
       // la pellicule et de la reprendre avec l'appareil photo. Ça évite
       // d'avoir à chercher le filtre à la main dans Snapchat.
       window.location.href = SNAP_UPLOAD_LENS_URL;
@@ -1014,7 +1015,7 @@ export default function Home() {
                           {
                             n: 2,
                             title: "Filtre ouvert",
-                            desc: "Snapchat s'ouvre déjà sur le bon filtre «Upload Photo».",
+                            desc: "Snapchat s'ouvre déjà sur le bon filtre «Camera Roll».",
                             auto: true,
                           },
                           {
