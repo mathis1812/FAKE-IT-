@@ -547,11 +547,10 @@ export default function Home() {
         );
       }
 
-      await navigator.share({
-        files: [file],
-        title: "Photo créée avec Bluminoo",
-        text: "Photo créée avec Bluminoo",
-      });
+      // On ne passe QUE le fichier : ajouter un titre/texte en plus d'une
+      // image fait planter/reste noir l'extension de partage de Snapchat
+      // sur iOS (bug connu de compositing de légende chez plusieurs apps).
+      await navigator.share({ files: [file] });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
       setError(
