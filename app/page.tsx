@@ -19,14 +19,13 @@ const MAX_VIDEO_FILE_BYTES = 4 * 1024 * 1024;
 const COMPRESS_THRESHOLD_BYTES = 2 * 1024 * 1024;
 const MAX_DIMENSION = 1536;
 const JPEG_QUALITY = 0.9;
-const SNAP_SHARE_MAX_DIMENSION = 1600;
-const SNAP_SHARE_JPEG_QUALITY = 0.85;
-// Lens officiel Snapchat "Camera Roll" (exactement celui qu'on trouve en
-// tapant "UP" dans la barre de recherche des filtres). Ouvrir ce lien sur
-// mobile bascule directement dessus dans la caméra Snapchat, sans avoir à
-// chercher le filtre à la main.
-const SNAP_UPLOAD_LENS_URL =
-  "https://www.snapchat.com/lens/a9cd4b5d2687457eb0be82bd332a2a74";
+// Format Story 9:16 pour Instagram et TikTok
+const STORY_WIDTH = 1080;
+const STORY_HEIGHT = 1920;
+const STORY_JPEG_QUALITY = 0.88;
+// Légende lifestyle glissée dans le partage (best-effort selon l'app)
+const STORY_CAPTION =
+  "❆ Lifestyle ultra-réaliste — généré avec Bluminoo";
 
 type PreparedImage = {
   previewUrl: string;
@@ -92,12 +91,10 @@ async function compressImage(file: File): Promise<PreparedImage> {
 }
 
 /**
- * Convertit le résultat (souvent un PNG haute résolution) en JPEG
- * redimensionné avant un navigator.share(). Les extensions de partage de
- * Snapchat sur iOS ont peu de mémoire et affichent un écran noir/plantent
- * avec de gros PNG ; un JPEG plus léger règle le problème.
+ * Convertit le résultat en JPEG 9:16 (1080×1920) centré sur fond noir,
+ * prêt à poster directement en Story Instagram ou TikTok sans recadrage.
  */
-async function prepareShareFile(blob: Blob): Promise<File> {
+async function prepareStoryFile(blob: Blob): Promise<File> {
   const objectUrl = URL.createObjectURL(blob);
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -107,28 +104,27 @@ async function prepareShareFile(blob: Blob): Promise<File> {
       image.src = objectUrl;
     });
 
-    const { width, height } = img;
-    const longSide = Math.max(width, height);
-    const scale =
-      longSide > SNAP_SHARE_MAX_DIMENSION ? SNAP_SHARE_MAX_DIMENSION / longSide : 1;
-    const targetW = Math.round(width * scale);
-    const targetH = Math.round(height * scale);
-
     const canvas = document.createElement("canvas");
-    canvas.width = targetW;
-    canvas.height = targetH;
+    canvas.width = STORY_WIDTH;
+    canvas.height = STORY_HEIGHT;
     const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Préparation du partage impossible.");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, targetW, targetH);
-    ctx.drawImage(img, 0, 0, targetW, targetH);
+    if (!ctx) throw new Error("Préparation Story impossible.");
+    ctx.fillStyle = "#0a0810";
+    ctx.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
+
+    const scale = Math.min(STORY_WIDTH / img.width, STORY_HEIGHT / img.height);
+    const drawW = Math.round(img.width * scale);
+    const drawH = Math.round(img.height * scale);
+    const drawX = Math.round((STORY_WIDTH - drawW) / 2);
+    const drawY = Math.round((STORY_HEIGHT - drawH) / 2);
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
 
     const shareBlob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", SNAP_SHARE_JPEG_QUALITY),
+      canvas.toBlob(resolve, "image/jpeg", STORY_JPEG_QUALITY),
     );
-    if (!shareBlob) throw new Error("Préparation du partage impossible.");
+    if (!shareBlob) throw new Error("Préparation Story impossible.");
 
-    return new File([shareBlob], "bluminoo-result.jpg", {
+    return new File([shareBlob], "bluminoo-story.jpg", {
       type: "image/jpeg",
     });
   } finally {
@@ -301,9 +297,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
   const [sharing, setSharing] = useState(false);
-  const [canShareToSnap, setCanShareToSnap] = useState(false);
-  const [showSnapRougeGuide, setShowSnapRougeGuide] = useState(false);
-  const [sendingRedSnap, setSendingRedSnap] = useState(false);
+  const [canShareToStory, setCanShareToStory] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const secondaryInputRef = useRef<HTMLInputElement>(null);
@@ -312,7 +306,7 @@ export default function Home() {
     const isMobileUserAgent = /Android|iPhone|iPad|iPod/i.test(
       navigator.userAgent,
     );
-    setCanShareToSnap(isMobileUserAgent && typeof navigator.share === "function");
+    setCanShareToStory(isMobileUserAgent && typeof navigator.share === "function");
   }, []);
 
   const [videoSource, setVideoSource] = useState<VideoUpload | null>(null);
@@ -533,11 +527,11 @@ export default function Home() {
     document.body.removeChild(a);
   }, [result]);
 
-  const shareToSnapchat = useCallback(async () => {
+  const shareToStory = useCallback(async () => {
     if (!result) return;
     if (!navigator.share) {
       setError(
-        "Le partage direct est disponible depuis un téléphone compatible. Téléchargez l'image si nécessaire.",
+        "Le partage direct est disponible depuis un téléphone compatible. Téléchargez l’image si nécessaire.",
       );
       return;
     }
@@ -550,21 +544,18 @@ export default function Home() {
         throw new Error("Le résultat ne peut pas être préparé pour le partage.");
       }
       const blob = await response.blob();
-      // Snapchat plante ou affiche un écran noir quand on lui partage un PNG
-      // volumineux (ses extensions de partage ont peu de mémoire). On
-      // reconvertit en JPEG redimensionné pour rester léger et compatible.
-      const file = await prepareShareFile(blob);
+      const file = await prepareStoryFile(blob);
 
       if (navigator.canShare && !navigator.canShare({ files: [file] })) {
         throw new Error(
-          "Le partage de fichiers n'est pas pris en charge par ce navigateur.",
+          "Le partage de fichiers n’est pas pris en charge par ce navigateur.",
         );
       }
 
-      // On ne passe QUE le fichier : ajouter un titre/texte en plus d'une
-      // image fait planter/reste noir l'extension de partage de Snapchat
-      // sur iOS (bug connu de compositing de légende chez plusieurs apps).
-      await navigator.share({ files: [file] });
+      // On inclut le texte en best-effort : certaines apps (Android) le récupèrent,
+      // d’autres (iOS) l’ignorent pour les partages avec fichier.
+      const shareData: ShareData = { files: [file], text: STORY_CAPTION };
+      await navigator.share(shareData);
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
       setError(
@@ -574,54 +565,6 @@ export default function Home() {
       );
     } finally {
       setSharing(false);
-    }
-  }, [result]);
-
-  const sendAsRedSnap = useCallback(async () => {
-    if (!result) return;
-    if (!navigator.share) {
-      setError(
-        "Cette fonction est disponible depuis un téléphone compatible.",
-      );
-      return;
-    }
-
-    setSendingRedSnap(true);
-    setError("");
-    try {
-      const response = await fetch(result);
-      if (!response.ok) {
-        throw new Error("Le résultat ne peut pas être préparé.");
-      }
-      const blob = await response.blob();
-      const file = await prepareShareFile(blob);
-
-      if (navigator.canShare && !navigator.canShare({ files: [file] })) {
-        throw new Error(
-          "Le partage de fichiers n'est pas pris en charge par ce navigateur.",
-        );
-      }
-
-      // Étape 1 (automatique) : on ouvre le menu de partage du téléphone ;
-      // l'utilisateur choisit "Enregistrer l'image" pour la mettre dans sa
-      // pellicule (aucune API web ne peut faire cette sauvegarde toute
-      // seule, Apple/Google l'interdisent pour des raisons de sécurité).
-      await navigator.share({ files: [file] });
-
-      // Étape 2 (automatique) : on bascule directement Snapchat sur son
-      // filtre officiel "Camera Roll", qui permet d'importer une photo de
-      // la pellicule et de la reprendre avec l'appareil photo. Ça évite
-      // d'avoir à chercher le filtre à la main dans Snapchat.
-      window.location.href = SNAP_UPLOAD_LENS_URL;
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      setError(
-        err instanceof Error
-          ? err.message
-          : "L'envoi en Snap Rouge est impossible pour le moment.",
-      );
-    } finally {
-      setSendingRedSnap(false);
     }
   }, [result]);
 
@@ -966,14 +909,15 @@ export default function Home() {
                   >
                     Télécharger
                   </button>
-                  {canShareToSnap && (
+
+                  {canShareToStory && (
                     <button
                       type="button"
-                      onClick={() => void shareToSnapchat()}
+                      onClick={() => void shareToStory()}
                       disabled={sharing}
-                      className="flex-1 cursor-pointer rounded-2xl bg-red-600 px-5 py-3.5 text-sm font-bold text-white transition duration-200 hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex-1 cursor-pointer rounded-2xl bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] px-5 py-3.5 text-sm font-bold text-white transition duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {sharing ? "Préparation…" : "Envoyer sur Snapchat"}
+                      {sharing ? "Préparation…" : "Poster en Story ↗"}
                     </button>
                   )}
                   <button
@@ -985,114 +929,6 @@ export default function Home() {
                     {loading ? "…" : "Régénérer"}
                   </button>
 
-                  {canShareToSnap && (
-                    <div className="w-full space-y-2 sm:w-auto">
-                      <button
-                        type="button"
-                        onClick={() => void sendAsRedSnap()}
-                        disabled={sendingRedSnap}
-                        className="group relative flex w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-red-600 bg-gradient-to-b from-neutral-950 to-black px-5 py-3.5 text-sm font-black uppercase tracking-wide text-red-500 shadow-[0_0_20px_-4px_rgba(220,38,38,0.6)] transition duration-200 hover:shadow-[0_0_28px_-2px_rgba(220,38,38,0.85)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-                      >
-                        <span
-                          aria-hidden
-                          className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-red-600"
-                        />
-                        {sendingRedSnap ? "Préparation…" : "Envoyer en Snap Rouge"}
-                      </button>
-                      <p className="text-center text-[11px] text-neutral-400 sm:text-left">
-                        1 seul tap manuel restant (sur 9 étapes) &mdash; le reste est
-                        automatique.
-                      </p>
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => setShowSnapRougeGuide((v) => !v)}
-                    className="w-full cursor-pointer text-left text-xs font-semibold text-red-400 underline decoration-red-400/40 underline-offset-4 transition hover:text-red-300 sm:w-auto"
-                  >
-                    {showSnapRougeGuide
-                      ? "Masquer les explications"
-                      : "Comment ça marche, le Snap Rouge ? →"}
-                  </button>
-
-                  {showSnapRougeGuide && (
-                    <div className="w-full rounded-2xl border border-red-500/20 bg-gradient-to-b from-red-500/5 to-transparent p-4">
-                      <p className="mb-4 text-center text-lg font-black uppercase tracking-wide text-red-500">
-                        Snap Rouge
-                      </p>
-                      <p className="mb-4 text-center text-xs text-neutral-400">
-                        5 étapes pour envoyer ta photo Bluminoo comme un vrai Snap pris en
-                        direct, indétectable.
-                      </p>
-                      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-                        {[
-                          {
-                            n: 1,
-                            title: "Enregistrer",
-                            desc: "Choisis «Enregistrer l'image» dans le menu qui s'ouvre.",
-                            auto: false,
-                          },
-                          {
-                            n: 2,
-                            title: "Filtre ouvert",
-                            desc: "Snapchat s'ouvre déjà sur le bon filtre «Camera Roll».",
-                            auto: true,
-                          },
-                          {
-                            n: 3,
-                            title: "Choix de la photo",
-                            desc: "Sélectionne la photo Bluminoo dans ta pellicule.",
-                            auto: false,
-                          },
-                          {
-                            n: 4,
-                            title: "Capture",
-                            desc: "Appuie sur le déclencheur pour la «prendre en photo».",
-                            auto: false,
-                          },
-                          {
-                            n: 5,
-                            title: "Envoi",
-                            desc: "Appuie sur «Envoyer à» et choisis tes destinataires.",
-                            auto: false,
-                          },
-                        ].map((step) => (
-                          <div
-                            key={step.n}
-                            className="relative flex flex-col rounded-xl border border-red-500/15 bg-black/40 p-3"
-                          >
-                            <div className="mb-2 flex items-center justify-between">
-                              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-[11px] font-bold text-white">
-                                {step.n}
-                              </span>
-                              <span
-                                className={
-                                  step.auto
-                                    ? "rounded-full bg-red-600/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-red-400"
-                                    : "rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-neutral-400"
-                                }
-                              >
-                                {step.auto ? "Auto" : "Manuel"}
-                              </span>
-                            </div>
-                            <p className="text-xs font-bold text-neutral-100">
-                              {step.title}
-                            </p>
-                            <p className="mt-1 text-[11px] leading-snug text-neutral-400">
-                              {step.desc}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="mt-4 text-center text-[11px] text-neutral-500">
-                        Les étapes «Manuel» se passent à l&rsquo;intérieur de Snapchat :
-                        aucun site (même chez les concurrents) ne peut les remplacer,
-                        Apple et Snapchat l&rsquo;interdisent pour la sécurité des
-                        utilisateurs.
-                      </p>
-                    </div>
-                  )}
                 </>
               ) : (
                 <button
