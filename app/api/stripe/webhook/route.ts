@@ -186,51 +186,37 @@ export async function POST(req: NextRequest) {
       const periodEnd = currentPeriodEndOf(subscription);
 
       if (resolved) {
-        const { planId, period } = resolved;
+        const { planId } = resolved;
 
-        const { data: currentProfile, error: currentProfileError } =
-          await supabase
-            .from("profiles")
-            .select("credits")
-            .eq("stripe_subscription_id", subscription.id)
-            .maybeSingle();
+        // Un changement de palier ne touche JAMAIS la colonne `credits`.
+        // Stripe ne facture qu'un prorata sur un changement d'items : si on
+        // recréditait le forfait du palier cible ici, un aller-retour
+        // Ultimate → Découverte → Ultimate rechargerait 12 000 crédits pour
+        // quelques centimes, autant de fois que voulu. L'utilisateur obtient
+        // immédiatement la résolution d'image de son nouveau palier (lue
+        // depuis `plan`), et le forfait du nouveau palier lui arrive au
+        // renouvellement suivant via `invoice.paid`.
+        const { data: updateData, error: updateError } = await supabase
+          .from("profiles")
+          .update({
+            plan: planId,
+            current_period_end: periodEnd
+              ? new Date(periodEnd * 1000).toISOString()
+              : null,
+          })
+          .eq("stripe_subscription_id", subscription.id)
+          .select("id");
 
-        if (currentProfileError) {
+        if (updateError) {
           console.error(
-            `[stripe-webhook] échec lecture credits actuels pour ${event.type} (event ${event.id}):`,
-            currentProfileError,
+            `[stripe-webhook] échec update profiles pour ${event.type} (event ${event.id}):`,
+            updateError,
           );
           dbWriteFailed = true;
-        } else {
-          // Never let a plan change lower credits: Stripe prorates plan
-          // switches, so a downgrade-then-upgrade round trip must not reset
-          // credits to the new tier's allotment if the user already has more.
-          const currentCredits = currentProfile?.credits ?? 0;
-          const nextCredits = Math.max(currentCredits, creditsFor(planId, period));
-
-          const { data: updateData, error: updateError } = await supabase
-            .from("profiles")
-            .update({
-              plan: planId,
-              credits: nextCredits,
-              current_period_end: periodEnd
-                ? new Date(periodEnd * 1000).toISOString()
-                : null,
-            })
-            .eq("stripe_subscription_id", subscription.id)
-            .select("id");
-
-          if (updateError) {
-            console.error(
-              `[stripe-webhook] échec update profiles pour ${event.type} (event ${event.id}):`,
-              updateError,
-            );
-            dbWriteFailed = true;
-          } else if (!updateData || updateData.length === 0) {
-            console.error(
-              `[stripe-webhook] ${event.type} update matched no rows for event ${event.id} (subscriptionId=${subscription.id} may be stale)`,
-            );
-          }
+        } else if (!updateData || updateData.length === 0) {
+          console.error(
+            `[stripe-webhook] ${event.type} update matched no rows for event ${event.id} (subscriptionId=${subscription.id} may be stale)`,
+          );
         }
       } else {
         console.error(
