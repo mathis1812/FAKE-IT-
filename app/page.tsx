@@ -337,6 +337,33 @@ const GENERATION_LOADING_MESSAGES = [
   "Finalisation du rendu…",
 ];
 
+/**
+ * Progression purement perçue, sans lien avec l'état réel côté kie.ai :
+ * grimpe vite au début puis ralentit et plafonne à 92%, pour ne jamais
+ * laisser croire que c'est fini avant que ça le soit vraiment.
+ */
+function useElapsedProgress(active: boolean) {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!active) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setElapsedSeconds((s) => s + 1);
+    }, 1_000);
+    return () => clearInterval(interval);
+  }, [active]);
+
+  const progressPercent = Math.min(
+    92,
+    Math.round(100 * (1 - Math.exp(-elapsedSeconds / 70))),
+  );
+
+  return { elapsedSeconds, progressPercent };
+}
+
 export default function Home() {
   const [mode, setMode] = useState<Mode>("image");
 
@@ -374,6 +401,11 @@ export default function Home() {
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const [credits, setCredits] = useState<number | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const { elapsedSeconds: imageElapsed, progressPercent: imageProgress } =
+    useElapsedProgress(loading);
+  const { elapsedSeconds: videoElapsed, progressPercent: videoProgress } =
+    useElapsedProgress(videoLoading);
 
   const refreshCredits = useCallback(async () => {
     const supabase = createClient();
@@ -837,6 +869,15 @@ export default function Home() {
                     <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
                     <p className="text-xs text-neutral-400">
                       {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
+                    </p>
+                    <div className="h-1 w-40 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-primary transition-[width] duration-1000 ease-linear"
+                        style={{ width: `${imageProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] tabular-nums text-neutral-600">
+                      {imageElapsed}s
                     </p>
                   </div>
                 ) : result ? (
@@ -1311,6 +1352,15 @@ export default function Home() {
                 <div className="h-14 w-14 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
                 <p className="text-sm text-neutral-400">
                   {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
+                </p>
+                <div className="h-1 w-48 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width] duration-1000 ease-linear"
+                    style={{ width: `${videoProgress}%` }}
+                  />
+                </div>
+                <p className="text-[10px] tabular-nums text-neutral-600">
+                  {videoElapsed}s
                 </p>
               </div>
             )}
