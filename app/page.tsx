@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Panel from "@/components/Panel";
+import { SparkleFrame, RevealBurst } from "@/components/MagicSparkles";
+import { playRevealChime } from "@/lib/reveal-chime";
 import { createClient } from "@/lib/supabase/client";
 import {
   prepareShareFile,
@@ -309,6 +311,15 @@ export default function Home() {
   useEffect(() => {
     void refreshCredits();
   }, [refreshCredits]);
+
+  // Chime cristallin au moment de la révélation du résultat (image et vidéo).
+  useEffect(() => {
+    if (result) playRevealChime();
+  }, [result]);
+
+  useEffect(() => {
+    if (videoUrl) playRevealChime();
+  }, [videoUrl]);
 
   // Un effet par upload : l'URL est libérée quand l'upload change ou que la
   // page est démontée. L'ancienne version dépendait d'un tableau de deps vide
@@ -732,20 +743,22 @@ export default function Home() {
                   onChange={onInputChange}
                 />
                 {loading ? (
-                  <div className="flex h-full flex-col items-center justify-center gap-3 px-4 text-center">
+                  <div className="relative flex h-full flex-col items-center justify-center gap-3 px-4 text-center">
+                    <SparkleFrame />
                     <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
                     <p className="text-xs text-neutral-400">
                       {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
                     </p>
                   </div>
                 ) : result ? (
-                  <div className="animate-reveal relative h-full">
+                  <div key={result} className="animate-magic-reveal relative h-full">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={result}
                       alt="Résultat généré"
                       className="h-full w-full object-cover"
                     />
+                    <RevealBurst />
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
                       <p className="truncate text-xs text-neutral-300">
                         Résultat · touche pour changer de photo
@@ -1204,7 +1217,8 @@ export default function Home() {
             )}
 
             {videoLoading && (
-              <div className="mt-8 flex min-h-[200px] flex-col items-center justify-center gap-4">
+              <div className="relative mt-8 flex min-h-[200px] flex-col items-center justify-center gap-4 rounded-2xl">
+                <SparkleFrame />
                 <div className="h-14 w-14 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
                 <p className="text-sm text-neutral-400">
                   {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
@@ -1213,13 +1227,16 @@ export default function Home() {
             )}
 
             {videoUrl && (
-              <section className="mt-8 animate-reveal">
-                <video
-                  src={videoUrl}
-                  controls
-                  playsInline
-                  className="w-full rounded-2xl border border-white/10"
-                />
+              <section key={videoUrl} className="mt-8 animate-magic-reveal">
+                <div className="relative">
+                  <video
+                    src={videoUrl}
+                    controls
+                    playsInline
+                    className="w-full rounded-2xl border border-white/10"
+                  />
+                  <RevealBurst />
+                </div>
                 <div className="mt-4 flex flex-wrap gap-3">
                   <button
                     type="button"
