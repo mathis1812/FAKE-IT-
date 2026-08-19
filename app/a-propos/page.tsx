@@ -41,8 +41,8 @@ export default function AProposPage() {
           image ou en vidéo.
         </p>
         <p className="mt-3 text-sm leading-relaxed text-neutral-400">
-          Propulsé par Nano Banana Pro (Gemini 3 Pro Image, via kie.ai) pour
-          l&apos;image, et Kling 3.0 Pro (via kie.ai) pour la vidéo.
+          Propulsé par Gemini 3 Pro Image (API Google) pour l&apos;image, et
+          par Kling O1 (via fal.ai) pour la vidéo.
         </p>
       </Panel>
 
