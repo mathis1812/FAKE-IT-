@@ -747,28 +747,59 @@ export default function Home() {
     setSharing(true);
     setVideoError("");
     try {
-      const response = await fetch(videoUrl);
-      if (!response.ok) {
-        throw new Error("La vidéo ne peut pas être préparée pour le partage.");
+      // Fetch the video — wrapped separately to detect CORS / expired-URL errors
+      // and surface a download-oriented message rather than a generic one.
+      let blob: Blob;
+      try {
+        const response = await fetch(videoUrl);
+        if (!response.ok) {
+          throw new Error("http_error");
+        }
+        blob = await response.blob();
+      } catch {
+        setVideoError(
+          "La vidéo n'a pas pu être chargée pour le partage (lien expiré ou accès refusé). Utilisez le bouton Télécharger à la place.",
+        );
+        return;
       }
-      const blob = await response.blob();
+
       const file = new File([blob], "bluminoo-story.mp4", {
         type: "video/mp4",
       });
 
       if (navigator.canShare && !navigator.canShare({ files: [file] })) {
-        throw new Error(
-          "Le partage de fichiers vidéo n'est pas pris en charge par ce navigateur.",
+        setVideoError(
+          "Le partage de fichiers vidéo n'est pas pris en charge par votre navigateur. Téléchargez la vidéo directement.",
         );
+        return;
       }
 
       await navigator.share({ files: [file], text: STORY_CAPTION });
     } catch (err) {
+      // User dismissed the share sheet — not an error.
       if (err instanceof DOMException && err.name === "AbortError") return;
+
+      // iOS Safari: share() was called outside a user-gesture context, or was
+      // blocked by a content policy (common on older iOS versions).
+      if (err instanceof DOMException && err.name === "NotAllowedError") {
+        setVideoError(
+          "Le partage a été refusé par iOS. Appuyez directement sur le bouton (sans autre action avant), ou téléchargez la vidéo.",
+        );
+        return;
+      }
+
+      // iOS Safari: the browser or OS does not support sharing this file type.
+      if (err instanceof DOMException && err.name === "NotSupportedError") {
+        setVideoError(
+          "Le partage de vidéo n'est pas pris en charge sur cette version d'iOS. Téléchargez la vidéo directement.",
+        );
+        return;
+      }
+
       setVideoError(
         err instanceof Error
           ? err.message
-          : "Le partage de la vidéo est impossible pour le moment.",
+          : "Le partage de la vidéo est impossible pour le moment. Téléchargez-la si nécessaire.",
       );
     } finally {
       setSharing(false);
