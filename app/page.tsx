@@ -227,6 +227,7 @@ function DropZone({
   upload,
   onPick,
   disabled,
+  accept = "image/*",
 }: {
   label: string;
   badge?: string;
@@ -235,6 +236,7 @@ function DropZone({
   upload: VideoUpload | null;
   onPick: (file: File) => void;
   disabled?: boolean;
+  accept?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -287,7 +289,7 @@ function DropZone({
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept={accept}
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -297,12 +299,21 @@ function DropZone({
         />
         {upload ? (
           <div className="relative h-full">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={upload.previewUrl}
-              alt={label}
-              className="h-full w-full object-cover"
-            />
+            {upload.file.type.startsWith("video/") ? (
+              <video
+                src={upload.previewUrl}
+                controls
+                playsInline
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={upload.previewUrl}
+                alt={label}
+                className="h-full w-full object-cover"
+              />
+            )}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2">
               <p className="truncate text-[11px] text-neutral-300">
                 {upload.name}
@@ -682,6 +693,8 @@ export default function Home() {
   );
 
   const generateVideo = useCallback(async () => {
+    // Amorce l'AudioContext dans le geste utilisateur pour iOS Safari.
+    unlockAudioContext();
     if (!videoSource) {
       setVideoError("Veuillez uploader une vidéo source.");
       return;
@@ -1274,6 +1287,7 @@ export default function Home() {
                   upload={videoSource}
                   onPick={(file) => void pickVideoUpload(file, "source")}
                   disabled={videoLoading}
+                  accept="video/mp4,video/quicktime"
                 />
               </div>
               <div className="hidden shrink-0 items-center justify-center sm:flex">
