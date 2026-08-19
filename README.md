@@ -6,30 +6,33 @@ haut de gamme), en préservant la personne, la pose, la lumière et le cadrage
 d'origine — en **image** ou en **vidéo**. Génération verrouillée par compte et
 crédits, abonnements Stripe mensuels ou annuels.
 
-Propulsée par **kie.ai** (Nano Banana Pro / Gemini 3 Pro Image pour l'image,
-Kling 3.0 Pro pour la vidéo), **Supabase** (auth, base de données, stockage),
-**Stripe** (abonnements), Next.js 14 (App Router), TypeScript et Tailwind CSS.
-Fond animé **DotField** (React Bits).
+Propulsée par l'**API Gemini** directe (`gemini-3-pro-image-preview` pour
+l'image), **fal.ai** (Kling 3.0 Pro pour la vidéo), **kie.ai** (hébergement
+des uploads et analyse vision du lieu), **Supabase** (auth, base de données,
+stockage), **Stripe** (abonnements), Next.js 14 (App Router), TypeScript et
+Tailwind CSS. Fond animé **DotField** (React Bits).
 
 > Le projet Vercel et le dépôt s'appellent toujours `bluminoo` : seule
 > l'interface a été rebaptisée.
 
 ## Fonctionnalités
 
-### Image (Nano Banana Pro via kie.ai)
+### Image (API Gemini directe, `gemini-3-pro-image-preview`)
 - Upload par glisser-déposer ou clic, avec aperçu immédiat de l'original
-- Prompt libre obligatoire décrivant la transformation souhaitée
-- Photo de référence secondaire optionnelle (objet à intégrer), envoyée en
-  second élément de `image_input` à nano-banana-pro
+- Photo(s) du lieu réel analysées par un modèle vision kie.ai
+  (`lib/place-prompt.ts`) pour produire un prompt structuré automatiquement ;
+  ancien flux (prompt libre + photo d'objet) conservé pour compatibilité
 - Compression/redimensionnement automatique côté client (> 2 Mo → max 1536 px, JPEG 0.9)
-- Upload sécurisé via `/api/kie/upload`, génération via le modèle `nano-banana-pro`
+- Upload sécurisé via `/api/kie/upload` (hébergement kie.ai), génération via
+  l'API Gemini directe (`GEMINI_API_KEY`)
 - Comparaison Avant / Après, téléchargement et régénération
 
-### Vidéo — Remplacer un Objet (Kling 3.0 Pro via kie.ai)
+### Vidéo — Remplacer un Objet (Kling 3.0 Pro via fal.ai)
 - Upload vidéo source (requis) + photo de l'objet de remplacement (requis)
 - Prompt libre décrivant le remplacement
-- Génération d'une courte vidéo (~5 s) via Kling 3.0 Pro image-to-video
-- Upload sécurisé via `/api/kie/upload` — `KIE_API_KEY` jamais exposée au client
+- Génération d'une courte vidéo (~5 s) via `fal-ai/kling-video/o1/video-to-video/edit`
+- Upload sécurisé via `/api/kie/upload` (hébergement kie.ai) — `KIE_API_KEY`
+  et `FAL_KEY` jamais exposées au client
 
 ### Comptes & crédits (Supabase)
 - Inscription / connexion par email + mot de passe
@@ -85,8 +88,8 @@ app/
   a-propos/                FAQ
   mentions-legales/ cgv/ confidentialite/
   api/
-    generate/              Image → kie.ai nano-banana-pro
-    generate-video/        Vidéo → kie.ai Kling 3.0 Pro
+    generate/              Image → API Gemini directe (gemini-3-pro-image-preview)
+    generate-video/        Vidéo → fal.ai Kling 3.0 Pro
     kie/upload/            Upload d'image vers kie.ai (proxy)
     stripe/checkout/       Création de session Stripe Checkout
     stripe/portal/         Portail de facturation Stripe
@@ -94,7 +97,9 @@ app/
 lib/
   credits.ts               spend/refund credits (RPC service_role)
   gallery-server.ts        Persistance des résultats en galerie
-  kie-jobs.ts              createTask/recordInfo kie.ai (partagé image+vidéo)
+  gemini-jobs.ts           Génération d'image via l'API Gemini directe
+  fal-jobs.ts              createTask/pollTask fal.ai (vidéo)
+  place-prompt.ts          Analyse vision du lieu (kie.ai) → prompt structuré
   stripe.ts                Config Stripe, paliers, prix mensuel/annuel
   supabase/                Clients Supabase (browser/server/service)
 supabase/migrations/       Schéma Postgres + policies RLS
@@ -102,7 +107,11 @@ supabase/migrations/       Schéma Postgres + policies RLS
 
 ## 1. Obtenir les clés API
 
-- kie.ai : [kie.ai/api-key](https://kie.ai/api-key)
+- kie.ai (hébergement des uploads + analyse vision du lieu) :
+  [kie.ai/api-key](https://kie.ai/api-key)
+- Gemini (génération d'image) :
+  [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+- fal.ai (génération vidéo) : [fal.ai/dashboard/keys](https://fal.ai/dashboard/keys)
 - Supabase : créer un projet sur [supabase.com](https://supabase.com), récupérer
   l'URL, la clé `anon` et la clé `service_role` (**Project Settings → API**)
 - Stripe : [dashboard.stripe.com/apikeys](https://dashboard.stripe.com/apikeys)
@@ -136,6 +145,8 @@ Créez un fichier `.env.local` à la racine (basé sur `.env.example`) :
 
 ```bash
 KIE_API_KEY=votre_cle_kie
+GEMINI_API_KEY=votre_cle_gemini
+FAL_KEY=votre_cle_fal
 NEXT_PUBLIC_SUPABASE_URL=https://votre-projet.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=votre_cle_anon
 SUPABASE_SERVICE_ROLE_KEY=votre_cle_service_role
@@ -206,8 +217,9 @@ en compte.
 
 ## Coût
 
-- Image Nano Banana Pro (kie.ai, résolution 1K) : environ **~0,12 $ / image**
-- Vidéo Kling 3.0 Pro (kie.ai, mode pro sans audio) : environ **~0,45 $
+- Image `gemini-3-pro-image-preview` (API Gemini, résolution 1K) : environ
+  **~0,12 $ / image**
+- Vidéo Kling 3.0 Pro (fal.ai, mode pro sans audio) : environ **~0,45 $
   pour 5 s**
 - Facturé à l'utilisateur : 150 crédits/image, 400 crédits/vidéo — voir
   `lib/credits.ts` pour le détail du calcul de marge par palier
@@ -222,8 +234,12 @@ en compte.
 
 ## Sécurité
 
-- `KIE_API_KEY` : utilisée côté serveur uniquement (`app/api/generate`,
-  `app/api/generate-video`, `app/api/kie/upload`) — jamais exposée au client
+- `KIE_API_KEY` : utilisée côté serveur uniquement (`app/api/generate` pour
+  l'analyse vision du lieu, `app/api/kie/upload`) — jamais exposée au client
+- `GEMINI_API_KEY` : utilisée côté serveur uniquement (`app/api/generate`) —
+  jamais exposée au client
+- `FAL_KEY` : utilisée côté serveur uniquement (`app/api/generate-video`) —
+  jamais exposée au client
 - `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` : côté serveur uniquement
   (`app/api/stripe/*`)
 - `SUPABASE_SERVICE_ROLE_KEY` : côté serveur uniquement (`lib/supabase/service.ts`,
