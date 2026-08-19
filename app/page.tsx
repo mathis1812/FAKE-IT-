@@ -34,7 +34,7 @@ const COMPRESS_THRESHOLD_BYTES = 2 * 1024 * 1024;
 const MAX_DIMENSION = 1536;
 const JPEG_QUALITY = 0.9;
 // SNAP_SHARE_MAX_DIMENSION, SNAP_SHARE_JPEG_QUALITY, SNAP_UPLOAD_LENS_URL and
-// prepareShareFile are now imported from @workspace/share-utils.
+// prepareShareFile are now imported from @/lib/share-utils.
 
 // Légende lifestyle glissée dans le partage (best-effort selon l'app)
 const STORY_CAPTION = "❆ Lifestyle ultra-réaliste — généré avec Bluminoo";
@@ -105,7 +105,7 @@ async function compressImage(file: File): Promise<PreparedImage> {
   }
 }
 
-// prepareShareFile is imported from @workspace/share-utils above.
+// prepareShareFile is imported from @/lib/share-utils above.
 
 async function prepareImage(file: File): Promise<PreparedImage> {
   if (file.size > COMPRESS_THRESHOLD_BYTES) {
@@ -352,9 +352,10 @@ const GENERATION_LOADING_MESSAGES = [
 ];
 
 /**
- * Progression purement perçue, sans lien avec l'état réel côté kie.ai :
- * grimpe vite au début puis ralentit et plafonne à 92%, pour ne jamais
- * laisser croire que c'est fini avant que ça le soit vraiment.
+ * Progression purement perçue, sans lien avec l'état réel côté Gemini
+ * (image) ou fal.ai (vidéo) : grimpe vite au début puis ralentit et
+ * plafonne à 92%, pour ne jamais laisser croire que c'est fini avant que
+ * ça le soit vraiment.
  */
 function useElapsedProgress(active: boolean) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -640,7 +641,7 @@ export default function Home() {
     document.body.removeChild(a);
   }, [result]);
 
-  // Delegate to @workspace/share-utils — the canonical implementation also
+  // Delegate to @/lib/share-utils — the canonical implementation also
   // imported by the Vitest regression suite in __tests__/share-button.test.tsx.
   const shareToSnapchat = useCallback(async () => {
     await shareToSnapchatFn(result, (patch) => {

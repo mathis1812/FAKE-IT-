@@ -44,35 +44,10 @@ export async function persistImageBytes(
 }
 
 /**
- * Télécharge un résultat image hébergé temporairement par le fournisseur
- * (les URLs de résultat expirent généralement après ~24h), le réhéberge
- * durablement dans notre bucket Storage, et enregistre l'entrée de
- * galerie. Renvoie l'URL permanente à afficher/stocker. Si la persistance
- * échoue, journalise l'erreur et retombe sur l'URL source plutôt que de
- * faire échouer une génération que l'utilisateur vient de payer.
- */
-export async function persistImageResult(
-  userId: string,
-  sourceUrl: string,
-  label: string,
-): Promise<string> {
-  try {
-    const res = await fetch(sourceUrl);
-    if (!res.ok) {
-      throw new Error(`Téléchargement du résultat échoué (${res.status}).`);
-    }
-    const mimeType = res.headers.get("content-type") || "image/png";
-    const bytes = Buffer.from(await res.arrayBuffer());
-    return await persistImageBytes(userId, bytes, mimeType, label);
-  } catch (err) {
-    console.error("Échec de la persistance du résultat image en galerie :", err);
-    return sourceUrl;
-  }
-}
-
-/**
- * Enregistre une entrée de galerie pour une vidéo déjà hébergée par kie.ai
- * (pas de re-upload). Best-effort, mêmes garanties que ci-dessus.
+ * Enregistre une entrée de galerie pour une vidéo déjà hébergée par fal.ai
+ * (pas de re-upload). Best-effort : contrairement à persistImageBytes, qui
+ * réhéberge durablement l'image dans Supabase Storage, ceci ne stocke que
+ * l'URL fal.ai telle quelle — elle est temporaire et finira par expirer.
  */
 export async function saveVideoGalleryEntry(
   userId: string,

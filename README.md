@@ -7,7 +7,7 @@ d'origine — en **image** ou en **vidéo**. Génération verrouillée par compt
 crédits, abonnements Stripe mensuels ou annuels.
 
 Propulsée par l'**API Gemini** directe (`gemini-3-pro-image-preview` pour
-l'image), **fal.ai** (Kling 3.0 Pro pour la vidéo), **kie.ai** (hébergement
+l'image), **fal.ai** (Kling O1 pour la vidéo), **kie.ai** (hébergement
 des uploads et analyse vision du lieu), **Supabase** (auth, base de données,
 stockage), **Stripe** (abonnements), Next.js 14 (App Router), TypeScript et
 Tailwind CSS. Fond animé **DotField** (React Bits).
@@ -27,7 +27,7 @@ Tailwind CSS. Fond animé **DotField** (React Bits).
   l'API Gemini directe (`GEMINI_API_KEY`)
 - Comparaison Avant / Après, téléchargement et régénération
 
-### Vidéo — Remplacer un Objet (Kling 3.0 Pro via fal.ai)
+### Vidéo — Remplacer un Objet (Kling O1 via fal.ai)
 - Upload vidéo source (requis) + photo de l'objet de remplacement (requis)
 - Prompt libre décrivant le remplacement
 - Génération d'une courte vidéo (~5 s) via `fal-ai/kling-video/o1/video-to-video/edit`
@@ -89,7 +89,7 @@ app/
   mentions-legales/ cgv/ confidentialite/
   api/
     generate/              Image → API Gemini directe (gemini-3-pro-image-preview)
-    generate-video/        Vidéo → fal.ai Kling 3.0 Pro
+    generate-video/        Vidéo → fal.ai Kling O1
     kie/upload/            Upload d'image vers kie.ai (proxy)
     stripe/checkout/       Création de session Stripe Checkout
     stripe/portal/         Portail de facturation Stripe
@@ -211,16 +211,21 @@ Production **et** Preview — mêmes noms que `.env.local` ci-dessus.
 Redéployez après tout ajout/modification pour que les variables soient prises
 en compte.
 
-> La route vidéo utilise `maxDuration = 300` et la route image `maxDuration = 120`.
+> La route vidéo et la route image utilisent toutes deux `maxDuration = 300`
+> (la route image est passée de 120 s à 300 s le 10/08 après des
+> dépassements réels — voir le commentaire dans
+> `app/api/generate/route.ts` : ne pas y revenir).
 > Sur Vercel, un plan permettant des fonctions longues (Pro / Fluid) est
 > recommandé — sinon la génération peut timeout.
 
 ## Coût
 
-- Image `gemini-3-pro-image-preview` (API Gemini, résolution 1K) : environ
-  **~0,12 $ / image**
-- Vidéo Kling 3.0 Pro (fal.ai, mode pro sans audio) : environ **~0,45 $
-  pour 5 s**
+- Image `gemini-3-pro-image-preview` (API Gemini, résolution dépendant du
+  palier de l'utilisateur — voir `imageResolution` dans `PLANS`,
+  `lib/stripe.ts`) : environ **~0,12 $ / image** en résolution 1K, plus pour
+  les paliers en résolution supérieure
+- Vidéo Kling O1 (fal.ai, `fal-ai/kling-video/o1/video-to-video/edit`) :
+  environ **~0,45 $ pour 5 s**
 - Facturé à l'utilisateur : 150 crédits/image, 400 crédits/vidéo — voir
   `lib/credits.ts` pour le détail du calcul de marge par palier
 
