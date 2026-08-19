@@ -7,6 +7,10 @@ import {
 } from "@/lib/credits";
 import { saveVideoGalleryEntry } from "@/lib/gallery-server";
 import { createFalTask, pollFalTask } from "@/lib/fal-jobs";
+import {
+  DISALLOWED_ASSET_URL_MESSAGE,
+  isAllowedAssetUrl,
+} from "@/lib/url-allowlist";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -73,6 +77,17 @@ export async function POST(req: NextRequest) {
         error:
           "Prompt manquant. Décrivez le remplacement d'objet à réaliser dans la vidéo.",
       },
+      { status: 400 },
+    );
+  }
+
+  // Anti-SSRF : ces URLs sont transmises telles quelles au fournisseur et
+  // peuvent être téléchargées côté serveur. Elles doivent provenir de nos
+  // hôtes d'hébergement (Supabase Storage pour la vidéo source, kie.ai pour
+  // la photo de l'objet). Contrôle effectué avant tout débit de crédits.
+  if (![sourceVideoUrl, objectImageUrl].every(isAllowedAssetUrl)) {
+    return NextResponse.json(
+      { error: DISALLOWED_ASSET_URL_MESSAGE },
       { status: 400 },
     );
   }

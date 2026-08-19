@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+// L'endpoint vit dans lib/url-allowlist.ts : la liste blanche des hôtes de
+// téléchargement en dérive son hostname, les deux ne peuvent pas diverger.
+import { KIE_UPLOAD_URL } from "@/lib/url-allowlist";
 
 export const runtime = "nodejs";
-
-const KIE_UPLOAD_URL =
-  "https://kieai.redpandaai.co/api/file-stream-upload";
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.KIE_API_KEY?.trim();

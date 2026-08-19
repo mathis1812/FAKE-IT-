@@ -9,6 +9,10 @@ import { persistImageBytes } from "@/lib/gallery-server";
 import { generateGeminiImage } from "@/lib/gemini-jobs";
 import { buildPlacePrompt } from "@/lib/place-prompt";
 import { PLANS, type PlanId } from "@/lib/stripe";
+import {
+  DISALLOWED_ASSET_URL_MESSAGE,
+  isAllowedAssetUrl,
+} from "@/lib/url-allowlist";
 
 export const runtime = "nodejs";
 // 300 s : la génération photo avait été passée de 100 s à 280 s le
@@ -81,6 +85,21 @@ export async function POST(req: NextRequest) {
   if (placeUrls.length > MAX_PLACE_IMAGES) {
     return NextResponse.json(
       { error: `Maximum ${MAX_PLACE_IMAGES} photos du lieu.` },
+      { status: 400 },
+    );
+  }
+
+  // Anti-SSRF : c'est notre fonction Vercel qui télécharge ces URLs pour les
+  // envoyer inline à Gemini. Toutes doivent pointer vers un hôte
+  // d'hébergement connu, et le contrôle a lieu ici — avant toute
+  // authentification et surtout avant tout débit de crédits.
+  const candidateUrls = [sourceImageUrl, ...placeUrls];
+  if (objectImageUrl && typeof objectImageUrl === "string") {
+    candidateUrls.push(objectImageUrl);
+  }
+  if (!candidateUrls.every(isAllowedAssetUrl)) {
+    return NextResponse.json(
+      { error: DISALLOWED_ASSET_URL_MESSAGE },
       { status: 400 },
     );
   }
