@@ -551,20 +551,32 @@ export default function Home() {
     setSharing(true);
     setError("");
     try {
-      const response = await fetch(result);
-      if (!response.ok) {
-        throw new Error("Le résultat ne peut pas être préparé pour le partage.");
+      // Fetch enveloppé séparément : erreur CORS ou lien expiré → message
+      // orienté téléchargement plutôt qu'une erreur générique.
+      let blob: Blob;
+      try {
+        const response = await fetch(result);
+        if (!response.ok) {
+          throw new Error("http_error");
+        }
+        blob = await response.blob();
+      } catch {
+        setError(
+          "L'image n'a pas pu être chargée pour le partage (lien expiré ou accès refusé). Téléchargez-la directement.",
+        );
+        return;
       }
-      const blob = await response.blob();
+
       // Snapchat plante ou affiche un écran noir quand on lui partage un PNG
       // volumineux (ses extensions de partage ont peu de mémoire). On
       // reconvertit en JPEG redimensionné pour rester léger et compatible.
       const file = await prepareShareFile(blob);
 
       if (navigator.canShare && !navigator.canShare({ files: [file] })) {
-        throw new Error(
-          "Le partage de fichiers n'est pas pris en charge par ce navigateur.",
+        setError(
+          "Le partage de fichiers n'est pas pris en charge par votre navigateur. Téléchargez l'image directement.",
         );
+        return;
       }
 
       // On ne passe QUE le fichier : ajouter un titre/texte en plus d'une
@@ -573,10 +585,28 @@ export default function Home() {
       await navigator.share({ files: [file] });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
+
+      // iOS Safari : share() appelé hors geste utilisateur ou bloqué par
+      // une politique de contenu (fréquent sur anciennes versions iOS).
+      if (err instanceof DOMException && err.name === "NotAllowedError") {
+        setError(
+          "Le partage a été refusé par iOS. Appuyez directement sur le bouton (sans autre action avant), ou téléchargez l'image.",
+        );
+        return;
+      }
+
+      // iOS Safari : le navigateur ou l'OS ne supporte pas ce type de fichier.
+      if (err instanceof DOMException && err.name === "NotSupportedError") {
+        setError(
+          "Le partage d'image n'est pas pris en charge sur cette version d'iOS. Téléchargez l'image directement.",
+        );
+        return;
+      }
+
       setError(
         err instanceof Error
           ? err.message
-          : "Le partage de la photo est impossible pour le moment.",
+          : "Le partage de la photo est impossible pour le moment. Téléchargez-la si nécessaire.",
       );
     } finally {
       setSharing(false);
@@ -595,17 +625,29 @@ export default function Home() {
     setSendingRedSnap(true);
     setError("");
     try {
-      const response = await fetch(result);
-      if (!response.ok) {
-        throw new Error("Le résultat ne peut pas être préparé.");
+      // Fetch enveloppé séparément : erreur CORS ou lien expiré → message
+      // orienté téléchargement plutôt qu'une erreur générique.
+      let blob: Blob;
+      try {
+        const response = await fetch(result);
+        if (!response.ok) {
+          throw new Error("http_error");
+        }
+        blob = await response.blob();
+      } catch {
+        setError(
+          "L'image n'a pas pu être chargée pour le partage (lien expiré ou accès refusé). Téléchargez-la directement.",
+        );
+        return;
       }
-      const blob = await response.blob();
+
       const file = await prepareShareFile(blob);
 
       if (navigator.canShare && !navigator.canShare({ files: [file] })) {
-        throw new Error(
-          "Le partage de fichiers n'est pas pris en charge par ce navigateur.",
+        setError(
+          "Le partage de fichiers n'est pas pris en charge par votre navigateur. Téléchargez l'image directement.",
         );
+        return;
       }
 
       // Étape 1 (automatique) : on ouvre le menu de partage du téléphone ;
@@ -621,10 +663,28 @@ export default function Home() {
       window.location.href = SNAP_UPLOAD_LENS_URL;
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
+
+      // iOS Safari : share() appelé hors geste utilisateur ou bloqué par
+      // une politique de contenu (fréquent sur anciennes versions iOS).
+      if (err instanceof DOMException && err.name === "NotAllowedError") {
+        setError(
+          "Le partage a été refusé par iOS. Appuyez directement sur le bouton (sans autre action avant), ou téléchargez l'image.",
+        );
+        return;
+      }
+
+      // iOS Safari : le navigateur ou l'OS ne supporte pas ce type de fichier.
+      if (err instanceof DOMException && err.name === "NotSupportedError") {
+        setError(
+          "Le partage d'image n'est pas pris en charge sur cette version d'iOS. Téléchargez l'image directement.",
+        );
+        return;
+      }
+
       setError(
         err instanceof Error
           ? err.message
-          : "L'envoi en Snap Rouge est impossible pour le moment.",
+          : "L'envoi en Snap Rouge est impossible pour le moment. Téléchargez l'image si nécessaire.",
       );
     } finally {
       setSendingRedSnap(false);
