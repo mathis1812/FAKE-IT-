@@ -49,6 +49,9 @@ type VideoUpload = {
   file: File;
   previewUrl: string;
   name: string;
+  /** Renseigné uniquement pour la vidéo source (lu à la validation). */
+  width?: number;
+  height?: number;
 };
 
 function stripDataUrlPrefix(dataUrl: string): {
@@ -656,17 +659,22 @@ export default function Home() {
     async (file: File, kind: "source" | "object") => {
       setVideoError("");
       setVideoUrl("");
-      const validationError = validateImageFile(file);
-      if (validationError) {
-        setVideoError(validationError);
-        return;
-      }
-      if (file.size > MAX_VIDEO_FILE_BYTES) {
-        setVideoError("Fichier trop volumineux pour la vidéo (max 4 Mo).");
+      const videoCheck =
+        kind === "source"
+          ? await validateVideoFile(file)
+          : { error: validateImageFile(file) };
+      if (videoCheck.error) {
+        setVideoError(videoCheck.error);
         return;
       }
       const previewUrl = URL.createObjectURL(file);
-      const upload: VideoUpload = { file, previewUrl, name: file.name };
+      const upload: VideoUpload = {
+        file,
+        previewUrl,
+        name: file.name,
+        width: "width" in videoCheck ? videoCheck.width : undefined,
+        height: "height" in videoCheck ? videoCheck.height : undefined,
+      };
       if (kind === "source") setVideoSource(upload);
       else setVideoObject(upload);
     },
@@ -674,8 +682,6 @@ export default function Home() {
   );
 
   const generateVideo = useCallback(async () => {
-    // Amorce l'AudioContext dans le geste utilisateur pour iOS Safari.
-    unlockAudioContext();
     if (!videoSource) {
       setVideoError("Veuillez uploader une vidéo source.");
       return;
@@ -695,16 +701,37 @@ export default function Home() {
     setVideoError("");
     setVideoUrl("");
     try {
-      const sourceImageUrl = await uploadImage(videoSource.file);
-      const objectImageUrl = await uploadImage(videoObject.file);
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setVideoError("Connectez-vous pour générer une vidéo.");
+        return;
+      }
+      const sourceVideoUrl = await uploadVideoDirect(videoSource.file, user.id);
+      const preparedObject = await prepareImage(videoObject.file);
+      const objectBlob = await (await fetch(preparedObject.previewUrl)).blob();
+      if (objectBlob.size > MAX_VIDEO_FILE_BYTES) {
+        setVideoError(
+          "Photo de l'objet trop volumineuse après compression (max 4 Mo). Essayez une photo plus simple.",
+        );
+        return;
+      }
+      const objectFile = new File([objectBlob], "reference.jpg", {
+        type: preparedObject.mimeType,
+      });
+      const objectImageUrl = await uploadImage(objectFile);
       const res = await fetch("/api/generate-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sourceImageUrl,
+          sourceVideoUrl,
           objectImageUrl,
           prompt,
           label: "Remplacement d'objet",
+          sourceVideoWidth: videoSource.width,
+          sourceVideoHeight: videoSource.height,
         }),
       });
       const data = await res.json().catch(() => null);
@@ -1197,7 +1224,7 @@ export default function Home() {
               Vidéo courte, intégration réaliste
             </h2>
             <p className="mt-2 text-sm text-neutral-500">
-              ~5 s de vidéo · génération ~90 s · Kling 3.0 Pro via kie.ai
+              ~5 s de vidéo · génération ~90 s · Kling O1 via fal.ai
             </p>
           </Panel>
 
@@ -1243,7 +1270,7 @@ export default function Home() {
                   label="Vidéo source"
                   badge="Requis"
                   hint="Cliquez pour uploader"
-                  subtext="Votre photo / scène"
+                  subtext="MP4/MOV · 3-10 s · 720p min · max 50 Mo"
                   upload={videoSource}
                   onPick={(file) => void pickVideoUpload(file, "source")}
                   disabled={videoLoading}
@@ -1324,7 +1351,10 @@ export default function Home() {
                   <span className="text-primary">✦</span>
                   <span>
                     Astuce : la photo de référence est automatiquement
-                    intégrée à la scène décrite dans le prompt.
+                    intégrée à la scène décrite dans le prompt. Filmez avec
+                    votre application Caméra puis choisissez la vidéo dans
+                    votre galerie — l&apos;enregistrement direct depuis le
+                    navigateur réduit fortement la qualité.
                   </span>
                 </p>
                 {(videoSource || videoObject || videoPrompt) && (
