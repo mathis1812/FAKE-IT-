@@ -77,9 +77,9 @@ Inchangé par rapport à la version locale : validation côté client
 (720–2160 px de large, 3 à 10 s, 50 Mo maximum) → upload direct Supabase
 Storage → fal.ai Kling O1, photo de l'objet référencée par `@Image1`.
 
-`app/api/generate-video/route.ts` et `lib/kie-jobs.ts` n'ont pas été
-modifiés par Replit ; le merge prend donc automatiquement la version
-locale de la route vidéo, sans conflit.
+Replit n'a pas touché `app/api/generate-video/route.ts` ; le merge prend
+donc automatiquement la version locale de cette route, sans conflit et
+sans réinjection manuelle.
 
 ## Résolution des conflits
 
@@ -171,9 +171,9 @@ la mise en production :
 
 ## Vérification
 
-Le travail se fait sur une **branche dédiée** créée depuis `main`, jamais
-directement sur `main` : un push sur `main` déclenche le déploiement
-production automatiquement.
+Le travail se fait sur une **branche dédiée** `reconciliation-replit`
+créée depuis `main`, jamais directement sur `main` : un push sur `main`
+déclenche le déploiement production automatiquement.
 
 **Porte de vérification**, les trois obligatoires dans cet ordre :
 `npx tsc --noEmit`, `npm run build`, `npm test`. La leçon du 30/07 tient :
