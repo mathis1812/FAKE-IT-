@@ -104,8 +104,8 @@ export default async function ComptePage() {
               Recharger mes crédits
             </h3>
             <p className="mt-1 text-xs text-neutral-500">
-              Passe à un palier supérieur ou renouvelle ton abonnement pour
-              obtenir plus de crédits.
+              Renouvelle ton abonnement pour recharger tes crédits, ou passe à
+              un palier supérieur pour débloquer une meilleure résolution.
             </p>
             <Link
               href="/tarifs"

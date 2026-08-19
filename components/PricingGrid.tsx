@@ -149,7 +149,12 @@ export default function PricingGrid({
                 <div>
                   <ManageSubscriptionButton targetPlan={plan.id} />
                   <p className="mt-2 text-center text-xs text-neutral-600">
-                    Ta périodicité de facturation actuelle est conservée.
+                    Prix affichés en référence mensuelle — ta facturation
+                    actuelle (mensuelle ou annuelle) est conservée.
+                  </p>
+                  <p className="mt-1 text-center text-xs text-neutral-600">
+                    Le nouveau forfait de crédits s&apos;applique à ton
+                    prochain renouvellement.
                   </p>
                 </div>
               ) : (
