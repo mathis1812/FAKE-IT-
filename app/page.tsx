@@ -297,6 +297,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
   const [sharing, setSharing] = useState(false);
+  const [downloadingStory, setDownloadingStory] = useState(false);
   const [canShareToStory, setCanShareToStory] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -525,6 +526,40 @@ export default function Home() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  }, [result]);
+
+  const downloadStory = useCallback(async () => {
+    if (!result) return;
+
+    setDownloadingStory(true);
+    setError("");
+    try {
+      const response = await fetch(result);
+      if (!response.ok) {
+        throw new Error(
+          "Le résultat ne peut pas être préparé pour le téléchargement.",
+        );
+      }
+
+      const blob = await response.blob();
+      const file = await prepareStoryFile(blob);
+      const url = URL.createObjectURL(file);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Le téléchargement au format Story est impossible pour le moment.",
+      );
+    } finally {
+      setDownloadingStory(false);
+    }
   }, [result]);
 
   const shareToStory = useCallback(async () => {
@@ -904,10 +939,11 @@ export default function Home() {
                 <>
                   <button
                     type="button"
-                    onClick={download}
-                    className="flex-1 cursor-pointer rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft"
+                    onClick={() => void downloadStory()}
+                    disabled={downloadingStory}
+                    className="flex-1 cursor-pointer rounded-2xl border border-primary/40 bg-primary/10 px-5 py-3.5 text-sm font-bold text-primary-soft transition duration-200 hover:border-primary/60 hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Télécharger
+                    {downloadingStory ? "Préparation…" : "Télécharger en Story"}
                   </button>
 
                   {canShareToStory && (
