@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Panel from "@/components/Panel";
 import { SparkleFrame, RevealBurst } from "@/components/MagicSparkles";
-import { playRevealChime } from "@/lib/reveal-chime";
+import { playRevealChime, unlockAudioContext } from "@/lib/reveal-chime";
 import { createClient } from "@/lib/supabase/client";
 import {
   prepareShareFile,
@@ -415,6 +415,8 @@ export default function Home() {
   );
 
   const generate = useCallback(async () => {
+    // Amorce l'AudioContext dans le geste utilisateur pour iOS Safari.
+    unlockAudioContext();
     if (!prepared) {
       setError("Veuillez d'abord uploader une image.");
       return;
@@ -555,6 +557,8 @@ export default function Home() {
   );
 
   const generateVideo = useCallback(async () => {
+    // Amorce l'AudioContext dans le geste utilisateur pour iOS Safari.
+    unlockAudioContext();
     if (!videoSource) {
       setVideoError("Veuillez uploader une vidéo source.");
       return;
