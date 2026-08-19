@@ -187,19 +187,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  let bytes: Buffer;
+  let mimeType: string;
   try {
-    const { bytes, mimeType } = await generateGeminiImage(geminiApiKey, {
+    const generated = await generateGeminiImage(geminiApiKey, {
       prompt: finalPrompt,
       imageUrls: imageInput,
       resolution,
     });
-    const imageUrl = await persistImageBytes(
-      user.id,
-      bytes,
-      mimeType,
-      label?.trim() || "Génération image",
-    );
-    return NextResponse.json({ imageUrl });
+    bytes = generated.bytes;
+    mimeType = generated.mimeType;
   } catch (err) {
     await refundCredits(user.id, IMAGE_GENERATION_COST);
     const message =
@@ -208,6 +205,30 @@ export async function POST(req: NextRequest) {
         : "Erreur inconnue lors de la génération de l'image.";
     return NextResponse.json(
       { error: `Erreur du service de génération Gemini. ${message}` },
+      { status: 502 },
+    );
+  }
+
+  // Étape séparée : Gemini a déjà généré (et facturé) l'image à ce stade.
+  // Une panne ici est un problème de stockage Supabase, pas une erreur
+  // Gemini — ne pas la faire passer pour telle, et ne pas exposer le détail
+  // d'infra brut au client.
+  try {
+    const imageUrl = await persistImageBytes(
+      user.id,
+      bytes,
+      mimeType,
+      label?.trim() || "Génération image",
+    );
+    return NextResponse.json({ imageUrl });
+  } catch (err) {
+    console.error("Échec de la persistance de l'image générée :", err);
+    await refundCredits(user.id, IMAGE_GENERATION_COST);
+    return NextResponse.json(
+      {
+        error:
+          "L'image a bien été générée mais son enregistrement a échoué. Réessayez dans quelques instants.",
+      },
       { status: 502 },
     );
   }
