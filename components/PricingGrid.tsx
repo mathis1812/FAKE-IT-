@@ -31,35 +31,43 @@ export default function PricingGrid({
   isLoggedIn: boolean;
 }) {
   const [period, setPeriod] = useState<BillingPeriod>("monthly");
+  // Un abonné existant change de palier via ManageSubscriptionButton, qui ne
+  // transmet que targetPlan : la périodicité en cours est réutilisée côté
+  // serveur (voir app/api/stripe/portal/route.ts) et ne peut pas être
+  // changée depuis cet écran. Masquer le sélecteur évite d'afficher un prix
+  // annuel alors que le clic souscrirait au mensuel (ou l'inverse).
+  const canChoosePeriod = !currentPlan;
 
   return (
     <div>
-      <div className="mb-8 flex justify-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 p-1 text-xs font-semibold uppercase tracking-[0.1em]">
-          <button
-            type="button"
-            onClick={() => setPeriod("monthly")}
-            className={`rounded-full px-4 py-1.5 transition ${
-              period === "monthly"
-                ? "bg-primary text-ink"
-                : "text-neutral-400 hover:text-neutral-100"
-            }`}
-          >
-            Mensuel
-          </button>
-          <button
-            type="button"
-            onClick={() => setPeriod("annual")}
-            className={`rounded-full px-4 py-1.5 transition ${
-              period === "annual"
-                ? "bg-primary text-ink"
-                : "text-neutral-400 hover:text-neutral-100"
-            }`}
-          >
-            Annuel · -20%
-          </button>
+      {canChoosePeriod && (
+        <div className="mb-8 flex justify-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 p-1 text-xs font-semibold uppercase tracking-[0.1em]">
+            <button
+              type="button"
+              onClick={() => setPeriod("monthly")}
+              className={`rounded-full px-4 py-1.5 transition ${
+                period === "monthly"
+                  ? "bg-primary text-ink"
+                  : "text-neutral-400 hover:text-neutral-100"
+              }`}
+            >
+              Mensuel
+            </button>
+            <button
+              type="button"
+              onClick={() => setPeriod("annual")}
+              className={`rounded-full px-4 py-1.5 transition ${
+                period === "annual"
+                  ? "bg-primary text-ink"
+                  : "text-neutral-400 hover:text-neutral-100"
+              }`}
+            >
+              Annuel · -20%
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
         {plans.map((plan) => {

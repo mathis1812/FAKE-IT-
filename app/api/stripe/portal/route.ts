@@ -99,8 +99,19 @@ export async function POST(req: NextRequest) {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
     const currentItem = subscription.items.data[0];
     const resolved = resolvePriceId(currentItem?.price.id);
-    const period = resolved?.period ?? "monthly";
-    const targetPriceId = priceIdFor(targetPlan, period);
+    if (!resolved) {
+      console.error(
+        `Prix Stripe non reconnu (${currentItem?.price.id}) pour l'abonnement ${subscriptionId} de l'utilisateur ${user.id}.`,
+      );
+      return NextResponse.json(
+        {
+          error:
+            "Impossible de déterminer ta périodicité de facturation actuelle. Contacte le support pour changer de palier.",
+        },
+        { status: 500 },
+      );
+    }
+    const targetPriceId = priceIdFor(targetPlan, resolved.period);
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
