@@ -24,6 +24,12 @@ const VIDEO_PROMPT_PLACEHOLDER =
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_FILE_BYTES = 4 * 1024 * 1024;
+const MAX_VIDEO_SOURCE_BYTES = 50 * 1024 * 1024;
+// Contraintes imposées par le modèle Kling O1 sur fal.ai.
+const MIN_VIDEO_WIDTH = 720;
+const MAX_VIDEO_WIDTH = 2160;
+const MIN_VIDEO_DURATION_S = 3;
+const MAX_VIDEO_DURATION_S = 10;
 const COMPRESS_THRESHOLD_BYTES = 2 * 1024 * 1024;
 const MAX_DIMENSION = 1536;
 const JPEG_QUALITY = 0.9;
@@ -105,6 +111,85 @@ async function prepareImage(file: File): Promise<PreparedImage> {
   const dataUrl = await readFileAsDataUrl(file);
   const { base64, mimeType } = stripDataUrlPrefix(dataUrl);
   return { previewUrl: dataUrl, base64, mimeType };
+}
+
+async function validateVideoFile(
+  file: File,
+): Promise<{ error: string | null; width?: number; height?: number }> {
+  if (!["video/mp4", "video/quicktime"].includes(file.type)) {
+    return {
+      error:
+        "Fichier non pris en charge. Veuillez sélectionner une vidéo MP4 ou MOV.",
+    };
+  }
+  if (file.size > MAX_VIDEO_SOURCE_BYTES) {
+    return { error: "Fichier trop volumineux (max 50 Mo)." };
+  }
+
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const meta = await new Promise<{
+      width: number;
+      height: number;
+      duration: number;
+    }>((resolve, reject) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.onloadedmetadata = () =>
+        resolve({
+          width: video.videoWidth,
+          height: video.videoHeight,
+          duration: video.duration,
+        });
+      video.onerror = () => reject(new Error("Vidéo illisible."));
+      video.src = objectUrl;
+    });
+
+    if (meta.width < MIN_VIDEO_WIDTH) {
+      return {
+        error: `Vidéo trop basse résolution : ${meta.width} px de large, alors qu'il en faut au moins ${MIN_VIDEO_WIDTH}. Réexportez-la en qualité supérieure (720p minimum).`,
+      };
+    }
+    if (meta.width > MAX_VIDEO_WIDTH) {
+      return {
+        error: `Vidéo trop grande : ${meta.width} px de large, alors que le maximum est ${MAX_VIDEO_WIDTH}.`,
+      };
+    }
+    if (
+      meta.duration < MIN_VIDEO_DURATION_S ||
+      meta.duration > MAX_VIDEO_DURATION_S
+    ) {
+      return {
+        error: `Durée non prise en charge : ${Math.round(meta.duration)} s, alors qu'il faut entre ${MIN_VIDEO_DURATION_S} et ${MAX_VIDEO_DURATION_S} s.`,
+      };
+    }
+    return { error: null, width: meta.width, height: meta.height };
+  } catch {
+    return { error: "Vidéo illisible. Essayez un autre fichier MP4 ou MOV." };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+/**
+ * Upload direct navigateur → Supabase Storage, sans passer par notre route
+ * API (qui serait limitée par la taille de requête des fonctions
+ * serverless Vercel, ~4,5 Mo — trop petit pour une vidéo source).
+ */
+async function uploadVideoDirect(file: File, userId: string): Promise<string> {
+  const supabase = createClient();
+  const extension = file.name.split(".").pop() || "mp4";
+  const path = `${userId}/${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabase.storage
+    .from("video-uploads")
+    .upload(path, file, { contentType: file.type });
+  if (error) {
+    throw new Error(`Échec de l'upload de la vidéo : ${error.message}`);
+  }
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("video-uploads").getPublicUrl(path);
+  return publicUrl;
 }
 
 function validateImageFile(file: File): string | null {
