@@ -31,6 +31,36 @@ async function downloadEntry(entry: GalleryEntry) {
   URL.revokeObjectURL(objectUrl);
 }
 
+async function shareEntry(entry: GalleryEntry): Promise<void> {
+  if (entry.mode !== "image") return;
+  if (!navigator.share) {
+    throw new Error(
+      "Le partage direct est disponible depuis un téléphone compatible.",
+    );
+  }
+
+  const response = await fetch(entry.result_url);
+  if (!response.ok) {
+    throw new Error("La photo ne peut pas être préparée pour le partage.");
+  }
+  const blob = await response.blob();
+  const file = new File([blob], `bluminoo-${entry.id}.${extensionFor(entry)}`, {
+    type: blob.type || "image/png",
+  });
+
+  if (navigator.canShare && !navigator.canShare({ files: [file] })) {
+    throw new Error(
+      "Le partage de fichiers n'est pas pris en charge par ce navigateur.",
+    );
+  }
+
+  await navigator.share({
+    files: [file],
+    title: "Photo créée avec Bluminoo",
+    text: "Photo créée avec Bluminoo",
+  });
+}
+
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-FR", {
     day: "2-digit",
@@ -41,6 +71,25 @@ function formatDate(iso: string): string {
 
 export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
   const [selected, setSelected] = useState<GalleryEntry | null>(null);
+  const [sharingId, setSharingId] = useState<string | null>(null);
+  const [shareError, setShareError] = useState("");
+
+  async function handleShare(entry: GalleryEntry) {
+    setSharingId(entry.id);
+    setShareError("");
+    try {
+      await shareEntry(entry);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      setShareError(
+        err instanceof Error
+          ? err.message
+          : "Le partage de la photo est impossible pour le moment.",
+      );
+    } finally {
+      setSharingId(null);
+    }
+  }
 
   useEffect(() => {
     if (!selected) return;
@@ -141,7 +190,7 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
                 className="max-h-[75vh] max-w-[90vw] rounded-2xl object-contain"
               />
             )}
-            <div className="mt-3 flex w-full items-center justify-between gap-3">
+            <div className="mt-3 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-medium text-neutral-100">
                   {selected.label}
@@ -150,7 +199,20 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
                   {formatDate(selected.created_at)}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap justify-end gap-2">
+                {shareError && (
+                  <p className="basis-full text-right text-xs text-red-300">{shareError}</p>
+                )}
+                {selected.mode === "image" && (
+                  <button
+                    type="button"
+                    onClick={() => void handleShare(selected)}
+                    disabled={sharingId === selected.id}
+                    className="rounded-xl border border-primary/30 bg-primary/10 px-3.5 py-2 text-xs font-bold text-primary transition hover:border-primary/50 hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {sharingId === selected.id ? "Préparation…" : "Partager sur Snapchat"}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => void downloadEntry(selected)}

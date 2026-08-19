@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Déploie FakeIt sur Vercel sans étape de link interactive.
+# Déploie Bluminoo Studio sur Vercel sans étape de link interactive.
 # Usage : VERCEL_TOKEN=xxx bash scripts/deploy.sh [production|preview]
 set -euo pipefail
 
@@ -42,10 +42,6 @@ VERCEL="npx --yes vercel@latest"
 echo "==> Récupération de la config ($ENVIRONMENT)"
 $VERCEL pull --yes --environment="$ENVIRONMENT" --token="$VERCEL_TOKEN"
 
-echo "==> Build"
+echo "==> Déploiement (build exécuté à distance par Vercel, pour que les variables Sensitive soient bien déchiffrées)"
 # shellcheck disable=SC2086
-$VERCEL build $PROD_FLAG --token="$VERCEL_TOKEN"
-
-echo "==> Déploiement"
-# shellcheck disable=SC2086
-$VERCEL deploy --prebuilt $PROD_FLAG --token="$VERCEL_TOKEN"
+$VERCEL deploy $PROD_FLAG --token="$VERCEL_TOKEN"

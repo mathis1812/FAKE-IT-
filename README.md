@@ -11,7 +11,7 @@ Kling 3.0 Pro pour la vidéo), **Supabase** (auth, base de données, stockage),
 **Stripe** (abonnements), Next.js 14 (App Router), TypeScript et Tailwind CSS.
 Fond animé **DotField** (React Bits).
 
-> Le projet Vercel et le dépôt s'appellent toujours `fakeit` : seule
+> Le projet Vercel et le dépôt s'appellent toujours `bluminoo` : seule
 > l'interface a été rebaptisée.
 
 ## Fonctionnalités
@@ -164,7 +164,7 @@ Ouvrez [http://localhost:3000](http://localhost:3000).
 
 ## 4. Déployer sur Vercel
 
-Le projet Vercel existe déjà (`fakeit`, team `mathisvrg's projects`) et sert
+Le projet Vercel existe déjà (`bluminoo`, team `mathisvrg's projects`) et sert
 https://bluminoo.vercel.app. Ses identifiants sont codés en dur dans
 `scripts/deploy.sh` — il ne manque qu'un token.
 
@@ -234,3 +234,5 @@ en compte.
   `supabase/migrations/0003_credit_functions.sql` et `0004_gallery.sql`) —
   un client authentifié ne peut ni modifier son propre solde, ni celui d'un
   autre utilisateur, ni écrire dans le bucket `gallery`
+
+<!-- trigger redeploy -->

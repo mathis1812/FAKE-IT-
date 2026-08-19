@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   const uploadForm = new FormData();
   uploadForm.append("file", file, file.name);
-  uploadForm.append("uploadPath", "fakeit-uploads");
+  uploadForm.append("uploadPath", "bluminoo-uploads");
 
   let res: Response;
   try {
