@@ -5,7 +5,7 @@ import {
   refundCredits,
   spendCredits,
 } from "@/lib/credits";
-import { saveVideoGalleryEntry } from "@/lib/gallery-server";
+import { persistVideoFromUrl } from "@/lib/gallery-server";
 import { createFalTask, pollFalTask } from "@/lib/fal-jobs";
 import {
   DISALLOWED_ASSET_URL_MESSAGE,
@@ -21,7 +21,11 @@ const MODEL_ID = "fal-ai/kling-video/o1/video-to-video/edit";
 // que nous n'utilisons pas).
 const OBJECT_REFERENCE_TAG = "Image1";
 const POLL_INTERVAL_MS = 4_000;
-const POLL_TIMEOUT_MS = 280_000;
+// 230 s au lieu de 280 : le reste du budget `maxDuration` sert à
+// télécharger la vidéo chez fal.ai et à la réhéberger dans notre Storage.
+// Sans cette marge, une génération lente ferait expirer la fonction avant
+// la persistance, et l'utilisateur se retrouverait avec une URL temporaire.
+const POLL_TIMEOUT_MS = 230_000;
 
 type GenerateVideoBody = {
   sourceVideoUrl?: string;
@@ -138,12 +142,12 @@ export async function POST(req: NextRequest) {
       intervalMs: POLL_INTERVAL_MS,
       timeoutMs: POLL_TIMEOUT_MS,
     });
-    await saveVideoGalleryEntry(
+    const storedUrl = await persistVideoFromUrl(
       user.id,
       resultUrl,
       label?.trim() || "Remplacement d'objet",
     );
-    return NextResponse.json({ videoUrl: resultUrl });
+    return NextResponse.json({ videoUrl: storedUrl });
   } catch (err) {
     await refundCredits(user.id, VIDEO_GENERATION_COST);
     if (err instanceof Error && err.message === "TIMEOUT") {

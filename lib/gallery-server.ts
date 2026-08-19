@@ -44,26 +44,79 @@ export async function persistImageBytes(
 }
 
 /**
- * Enregistre une entrée de galerie pour une vidéo déjà hébergée par fal.ai
- * (pas de re-upload). Best-effort : contrairement à persistImageBytes, qui
- * réhéberge durablement l'image dans Supabase Storage, ceci ne stocke que
- * l'URL fal.ai telle quelle — elle est temporaire et finira par expirer.
+ * fal.ai ne sert la vidéo générée que depuis une URL temporaire, qui expire
+ * au bout de quelques heures. Ce délai laisse ~50 s à l'ensemble
+ * téléchargement + upload avant que la fonction Vercel n'atteigne son
+ * `maxDuration` (le timeout de polling de la route est réduit en
+ * conséquence).
  */
-export async function saveVideoGalleryEntry(
+const VIDEO_FETCH_TIMEOUT_MS = 45_000;
+
+/**
+ * Télécharge la vidéo depuis l'URL temporaire du fournisseur, la réhéberge
+ * durablement dans notre bucket Storage, puis enregistre l'entrée de
+ * galerie. Renvoie l'URL à afficher et à stocker.
+ *
+ * Dégradation volontaire : si le ré-hébergement échoue, on retombe sur
+ * l'URL temporaire du fournisseur plutôt que de perdre la génération —
+ * l'utilisateur a déjà été débité, il doit récupérer sa vidéo même si
+ * celle-ci finit par expirer. L'échec est journalisé, jamais renvoyé au
+ * client.
+ */
+export async function persistVideoFromUrl(
   userId: string,
   videoUrl: string,
   label: string,
-): Promise<void> {
+): Promise<string> {
+  let permanentUrl: string | null = null;
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), VIDEO_FETCH_TIMEOUT_MS);
+    let res: Response;
+    try {
+      res = await fetch(videoUrl, { signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+    if (!res.ok) {
+      throw new Error(`Téléchargement de la vidéo échoué (${res.status}).`);
+    }
+
+    const mimeType =
+      res.headers.get("content-type")?.split(";")[0]?.trim() || "video/mp4";
+    const bytes = Buffer.from(await res.arrayBuffer());
+
+    const service = createServiceClient();
+    const path = `${userId}/${crypto.randomUUID()}.${extensionForMimeType(mimeType)}`;
+    const { error: uploadError } = await service.storage
+      .from(BUCKET)
+      .upload(path, bytes, { contentType: mimeType });
+    if (uploadError) throw uploadError;
+
+    permanentUrl = service.storage.from(BUCKET).getPublicUrl(path).data
+      .publicUrl;
+  } catch (err) {
+    console.error(
+      "Ré-hébergement de la vidéo impossible, repli sur l'URL temporaire du fournisseur :",
+      err,
+    );
+  }
+
+  const finalUrl = permanentUrl ?? videoUrl;
+
   try {
     const service = createServiceClient();
     const { error } = await service.from("gallery_entries").insert({
       user_id: userId,
       mode: "video",
-      result_url: videoUrl,
+      result_url: finalUrl,
       label,
     });
     if (error) throw error;
   } catch (err) {
     console.error("Échec de l'enregistrement en galerie (vidéo) :", err);
   }
+
+  return finalUrl;
 }
