@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Panel from "@/components/Panel";
 import { createClient } from "@/lib/supabase/client";
+import {
+  prepareShareFile,
+  shareToSnapchat as shareToSnapchatFn,
+  sendAsRedSnap as sendAsRedSnapFn,
+  SNAP_UPLOAD_LENS_URL,
+} from "@/lib/share-utils";
 
 type Mode = "image" | "video";
 
@@ -19,14 +25,8 @@ const MAX_VIDEO_FILE_BYTES = 4 * 1024 * 1024;
 const COMPRESS_THRESHOLD_BYTES = 2 * 1024 * 1024;
 const MAX_DIMENSION = 1536;
 const JPEG_QUALITY = 0.9;
-const SNAP_SHARE_MAX_DIMENSION = 1600;
-const SNAP_SHARE_JPEG_QUALITY = 0.85;
-// Lens officiel Snapchat "Camera Roll" (exactement celui qu'on trouve en
-// tapant "UP" dans la barre de recherche des filtres). Ouvrir ce lien sur
-// mobile bascule directement dessus dans la caméra Snapchat, sans avoir à
-// chercher le filtre à la main.
-const SNAP_UPLOAD_LENS_URL =
-  "https://www.snapchat.com/lens/a9cd4b5d2687457eb0be82bd332a2a74";
+// SNAP_SHARE_MAX_DIMENSION, SNAP_SHARE_JPEG_QUALITY, SNAP_UPLOAD_LENS_URL and
+// prepareShareFile are now imported from @workspace/share-utils.
 
 // Légende lifestyle glissée dans le partage (best-effort selon l'app)
 const STORY_CAPTION = "❆ Lifestyle ultra-réaliste — généré avec Bluminoo";
@@ -94,50 +94,7 @@ async function compressImage(file: File): Promise<PreparedImage> {
   }
 }
 
-/**
- * Convertit le résultat (souvent un PNG haute résolution) en JPEG
- * redimensionné avant un navigator.share(). Les extensions de partage de
- * Snapchat sur iOS ont peu de mémoire et affichent un écran noir/plantent
- * avec de gros PNG ; un JPEG plus léger règle le problème.
- */
-async function prepareShareFile(blob: Blob): Promise<File> {
-  const objectUrl = URL.createObjectURL(blob);
-  try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const image = new Image();
-      image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error("Image illisible."));
-      image.src = objectUrl;
-    });
-
-    const { width, height } = img;
-    const longSide = Math.max(width, height);
-    const scale =
-      longSide > SNAP_SHARE_MAX_DIMENSION ? SNAP_SHARE_MAX_DIMENSION / longSide : 1;
-    const targetW = Math.round(width * scale);
-    const targetH = Math.round(height * scale);
-
-    const canvas = document.createElement("canvas");
-    canvas.width = targetW;
-    canvas.height = targetH;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Préparation du partage impossible.");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, targetW, targetH);
-    ctx.drawImage(img, 0, 0, targetW, targetH);
-
-    const shareBlob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", SNAP_SHARE_JPEG_QUALITY),
-    );
-    if (!shareBlob) throw new Error("Préparation du partage impossible.");
-
-    return new File([shareBlob], "bluminoo-result.jpg", {
-      type: "image/jpeg",
-    });
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
-}
+// prepareShareFile is imported from @workspace/share-utils above.
 
 async function prepareImage(file: File): Promise<PreparedImage> {
   if (file.size > COMPRESS_THRESHOLD_BYTES) {
@@ -539,156 +496,20 @@ export default function Home() {
     document.body.removeChild(a);
   }, [result]);
 
+  // Delegate to @workspace/share-utils — the canonical implementation also
+  // imported by the Vitest regression suite in __tests__/share-button.test.tsx.
   const shareToSnapchat = useCallback(async () => {
-    if (!result) return;
-    if (!navigator.share) {
-      setError(
-        "Le partage direct est disponible depuis un téléphone compatible. Téléchargez l'image si nécessaire.",
-      );
-      return;
-    }
-
-    setSharing(true);
-    setError("");
-    try {
-      // Fetch enveloppé séparément : erreur CORS ou lien expiré → message
-      // orienté téléchargement plutôt qu'une erreur générique.
-      let blob: Blob;
-      try {
-        const response = await fetch(result);
-        if (!response.ok) {
-          throw new Error("http_error");
-        }
-        blob = await response.blob();
-      } catch {
-        setError(
-          "L'image n'a pas pu être chargée pour le partage (lien expiré ou accès refusé). Téléchargez-la directement.",
-        );
-        return;
-      }
-
-      // Snapchat plante ou affiche un écran noir quand on lui partage un PNG
-      // volumineux (ses extensions de partage ont peu de mémoire). On
-      // reconvertit en JPEG redimensionné pour rester léger et compatible.
-      const file = await prepareShareFile(blob);
-
-      if (navigator.canShare && !navigator.canShare({ files: [file] })) {
-        setError(
-          "Le partage de fichiers n'est pas pris en charge par votre navigateur. Téléchargez l'image directement.",
-        );
-        return;
-      }
-
-      // On ne passe QUE le fichier : ajouter un titre/texte en plus d'une
-      // image fait planter/reste noir l'extension de partage de Snapchat
-      // sur iOS (bug connu de compositing de légende chez plusieurs apps).
-      await navigator.share({ files: [file] });
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-
-      // iOS Safari : share() appelé hors geste utilisateur ou bloqué par
-      // une politique de contenu (fréquent sur anciennes versions iOS).
-      if (err instanceof DOMException && err.name === "NotAllowedError") {
-        setError(
-          "Le partage a été refusé par iOS. Appuyez directement sur le bouton (sans autre action avant), ou téléchargez l'image.",
-        );
-        return;
-      }
-
-      // iOS Safari : le navigateur ou l'OS ne supporte pas ce type de fichier.
-      if (err instanceof DOMException && err.name === "NotSupportedError") {
-        setError(
-          "Le partage d'image n'est pas pris en charge sur cette version d'iOS. Téléchargez l'image directement.",
-        );
-        return;
-      }
-
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Le partage de la photo est impossible pour le moment. Téléchargez-la si nécessaire.",
-      );
-    } finally {
-      setSharing(false);
-    }
+    await shareToSnapchatFn(result, (patch) => {
+      if (patch.sharing !== undefined) setSharing(patch.sharing);
+      if (patch.error !== undefined) setError(patch.error);
+    });
   }, [result]);
 
   const sendAsRedSnap = useCallback(async () => {
-    if (!result) return;
-    if (!navigator.share) {
-      setError(
-        "Cette fonction est disponible depuis un téléphone compatible.",
-      );
-      return;
-    }
-
-    setSendingRedSnap(true);
-    setError("");
-    try {
-      // Fetch enveloppé séparément : erreur CORS ou lien expiré → message
-      // orienté téléchargement plutôt qu'une erreur générique.
-      let blob: Blob;
-      try {
-        const response = await fetch(result);
-        if (!response.ok) {
-          throw new Error("http_error");
-        }
-        blob = await response.blob();
-      } catch {
-        setError(
-          "L'image n'a pas pu être chargée pour le partage (lien expiré ou accès refusé). Téléchargez-la directement.",
-        );
-        return;
-      }
-
-      const file = await prepareShareFile(blob);
-
-      if (navigator.canShare && !navigator.canShare({ files: [file] })) {
-        setError(
-          "Le partage de fichiers n'est pas pris en charge par votre navigateur. Téléchargez l'image directement.",
-        );
-        return;
-      }
-
-      // Étape 1 (automatique) : on ouvre le menu de partage du téléphone ;
-      // l'utilisateur choisit "Enregistrer l'image" pour la mettre dans sa
-      // pellicule (aucune API web ne peut faire cette sauvegarde toute
-      // seule, Apple/Google l'interdisent pour des raisons de sécurité).
-      await navigator.share({ files: [file] });
-
-      // Étape 2 (automatique) : on bascule directement Snapchat sur son
-      // filtre officiel "Camera Roll", qui permet d'importer une photo de
-      // la pellicule et de la reprendre avec l'appareil photo. Ça évite
-      // d'avoir à chercher le filtre à la main dans Snapchat.
-      window.location.href = SNAP_UPLOAD_LENS_URL;
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-
-      // iOS Safari : share() appelé hors geste utilisateur ou bloqué par
-      // une politique de contenu (fréquent sur anciennes versions iOS).
-      if (err instanceof DOMException && err.name === "NotAllowedError") {
-        setError(
-          "Le partage a été refusé par iOS. Appuyez directement sur le bouton (sans autre action avant), ou téléchargez l'image.",
-        );
-        return;
-      }
-
-      // iOS Safari : le navigateur ou l'OS ne supporte pas ce type de fichier.
-      if (err instanceof DOMException && err.name === "NotSupportedError") {
-        setError(
-          "Le partage d'image n'est pas pris en charge sur cette version d'iOS. Téléchargez l'image directement.",
-        );
-        return;
-      }
-
-      setError(
-        err instanceof Error
-          ? err.message
-          : "L'envoi en Snap Rouge est impossible pour le moment. Téléchargez l'image si nécessaire.",
-      );
-    } finally {
-      setSendingRedSnap(false);
-    }
+    await sendAsRedSnapFn(result, (patch) => {
+      if (patch.sendingRedSnap !== undefined) setSendingRedSnap(patch.sendingRedSnap);
+      if (patch.error !== undefined) setError(patch.error);
+    });
   }, [result]);
 
   const reset = useCallback(() => {
@@ -807,59 +628,28 @@ export default function Home() {
     setSharing(true);
     setVideoError("");
     try {
-      // Fetch the video — wrapped separately to detect CORS / expired-URL errors
-      // and surface a download-oriented message rather than a generic one.
-      let blob: Blob;
-      try {
-        const response = await fetch(videoUrl);
-        if (!response.ok) {
-          throw new Error("http_error");
-        }
-        blob = await response.blob();
-      } catch {
-        setVideoError(
-          "La vidéo n'a pas pu être chargée pour le partage (lien expiré ou accès refusé). Utilisez le bouton Télécharger à la place.",
-        );
-        return;
+      const response = await fetch(videoUrl);
+      if (!response.ok) {
+        throw new Error("La vidéo ne peut pas être préparée pour le partage.");
       }
-
+      const blob = await response.blob();
       const file = new File([blob], "bluminoo-story.mp4", {
         type: "video/mp4",
       });
 
       if (navigator.canShare && !navigator.canShare({ files: [file] })) {
-        setVideoError(
-          "Le partage de fichiers vidéo n'est pas pris en charge par votre navigateur. Téléchargez la vidéo directement.",
+        throw new Error(
+          "Le partage de fichiers vidéo n'est pas pris en charge par ce navigateur.",
         );
-        return;
       }
 
       await navigator.share({ files: [file], text: STORY_CAPTION });
     } catch (err) {
-      // User dismissed the share sheet — not an error.
       if (err instanceof DOMException && err.name === "AbortError") return;
-
-      // iOS Safari: share() was called outside a user-gesture context, or was
-      // blocked by a content policy (common on older iOS versions).
-      if (err instanceof DOMException && err.name === "NotAllowedError") {
-        setVideoError(
-          "Le partage a été refusé par iOS. Appuyez directement sur le bouton (sans autre action avant), ou téléchargez la vidéo.",
-        );
-        return;
-      }
-
-      // iOS Safari: the browser or OS does not support sharing this file type.
-      if (err instanceof DOMException && err.name === "NotSupportedError") {
-        setVideoError(
-          "Le partage de vidéo n'est pas pris en charge sur cette version d'iOS. Téléchargez la vidéo directement.",
-        );
-        return;
-      }
-
       setVideoError(
         err instanceof Error
           ? err.message
-          : "Le partage de la vidéo est impossible pour le moment. Téléchargez-la si nécessaire.",
+          : "Le partage de la vidéo est impossible pour le moment.",
       );
     } finally {
       setSharing(false);
