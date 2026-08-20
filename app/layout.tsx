@@ -20,7 +20,7 @@ const montserrat = Montserrat({
 const SITE_URL = "https://bluminoo.vercel.app";
 const SITE_TITLE = "Bluminoo Studio";
 const SITE_DESCRIPTION =
-  "Uploadez une photo et générez une version ultra-réaliste avec un élément de luxe intégré.";
+  "Crée une photo ou une vidéo ultra-réaliste de la vie dont tu rêves — un lieu, une scène, un instant — et poste-la en story pour surprendre tout ton entourage.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

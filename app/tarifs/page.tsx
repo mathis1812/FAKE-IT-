@@ -61,7 +61,7 @@ export default async function TarifsPage() {
           Tarifs
         </p>
         <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
-          Des tarifs simples, pensés pour créer sans limite.
+          Des crédits simples, pour créer sans limite ta vie de rêve.
         </h2>
       </div>
 
