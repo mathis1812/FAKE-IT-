@@ -2,6 +2,11 @@ import Panel from "@/components/Panel";
 
 const FAQ_ITEMS = [
   {
+    question: "Comment fonctionne l'intégration dans un lieu réel ?",
+    answer:
+      "Ajoutez 1 à 3 photos du lieu où vous voulez apparaître (un restaurant, un rooftop, n'importe quel endroit dont vous avez une image). Bluminoo Studio analyse la lumière, les matériaux et l'ambiance du lieu pour vous y intégrer de façon photoréaliste, sans avoir à écrire de description détaillée.",
+  },
+  {
     question: "Quels formats de photo sont acceptés ?",
     answer:
       "JPG, PNG et WebP, jusqu'à 10 Mo. Les images plus lourdes que 2 Mo sont automatiquement compressées avant l'envoi.",
@@ -34,11 +39,12 @@ export default function AProposPage() {
           Bluminoo Studio
         </h2>
         <p className="mt-4 text-sm leading-relaxed text-neutral-400">
-          Bluminoo Studio transforme une photo — visage, poignet ou scène —
-          en une version ultra-réaliste avec un élément de luxe intégré
-          (montre, voiture, décor haut de gamme), en préservant la
-          personne, la pose, la lumière et le cadrage d&apos;origine, en
-          image ou en vidéo.
+          Bluminoo Studio transforme une photo en scène de vie ultra-réaliste :
+          intégrez un objet de luxe (montre, voiture) ou placez-vous dans un
+          lieu réel de votre choix (restaurant, rooftop, ou tout endroit dont
+          vous avez une photo), en préservant votre visage, votre pose, la
+          lumière et le cadrage d&apos;origine — en image ou en vidéo, prêt à
+          poster en story.
         </p>
         <p className="mt-3 text-sm leading-relaxed text-neutral-400">
           Propulsé par Gemini 3 Pro Image (API Google) pour l&apos;image, et
