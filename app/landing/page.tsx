@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Panel from "@/components/Panel";
 import { createClient } from "@/lib/supabase/client";
 import { TESTIMONIALS } from "@/lib/testimonials";
+import { trackLandingCtaClick, trackLandingPageView } from "@/lib/analytics";
 
 const HERO_IMAGES = [
   "/landing/rooftop.jpg",
@@ -100,6 +101,10 @@ export default function LandingPage() {
     });
   }, []);
 
+  useEffect(() => {
+    trackLandingPageView();
+  }, []);
+
   const ctaHref = isLoggedIn ? "/" : "/inscription";
   const ctaLabel = isLoggedIn ? "Ouvrir le studio" : "Créer ma première photo";
 
@@ -141,6 +146,7 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
               <Link
                 href={ctaHref}
+                onClick={() => trackLandingCtaClick("hero_primary")}
                 className="cursor-pointer rounded-2xl bg-primary px-7 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft"
               >
                 {ctaLabel}
@@ -328,6 +334,7 @@ export default function LandingPage() {
           </p>
           <Link
             href={ctaHref}
+            onClick={() => trackLandingCtaClick("final_cta")}
             className="mt-6 inline-block cursor-pointer rounded-2xl bg-primary px-8 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft"
           >
             {ctaLabel}
