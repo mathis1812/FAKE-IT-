@@ -887,7 +887,7 @@ export default function Home() {
                 Génération image
               </p>
               <h2 className="font-display mt-2 text-2xl font-semibold leading-tight tracking-tight text-white">
-                Intégrez le luxe. Gardez tout le reste.
+                Le lifestyle dont vous rêvez. Jusqu&apos;à ce que vous l&apos;ayez vraiment.
               </h2>
             </div>
 
@@ -1261,7 +1261,7 @@ export default function Home() {
               Remplacer un objet
             </p>
             <h2 className="font-display mt-2 text-3xl font-semibold text-white">
-              Vidéo courte, intégration réaliste
+              Vidéo courte, lifestyle ultra-réaliste
             </h2>
             <p className="mt-2 text-sm text-neutral-500">
               ~5 s de vidéo · génération ~90 s · Kling O1 via fal.ai
