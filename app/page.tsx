@@ -43,7 +43,7 @@ const JPEG_QUALITY = 0.9;
 // prepareShareFile are now imported from @/lib/share-utils.
 
 // Légende lifestyle glissée dans le partage (best-effort selon l'app)
-const STORY_CAPTION = "❆ Lifestyle ultra-réaliste — généré avec Bluminoo";
+const STORY_CAPTION = "❆ Le lifestyle dont je rêve — créé avec Bluminoo";
 
 type PreparedImage = {
   previewUrl: string;
@@ -887,8 +887,11 @@ export default function Home() {
                 Génération image
               </p>
               <h2 className="font-display mt-2 text-2xl font-semibold leading-tight tracking-tight text-white">
-                Le lifestyle dont vous rêvez. Jusqu&apos;à ce que vous l&apos;ayez vraiment.
+                Le lifestyle dont tu rêves. Jusqu&apos;à ce que tu l&apos;aies vraiment.
               </h2>
+              <p className="mt-2 text-xs text-neutral-500">
+                Assez réaliste pour que ton entourage y croie.
+              </p>
             </div>
 
             <div className="mx-auto mb-4 h-80 w-80 max-w-full overflow-hidden rounded-2xl border border-dashed border-white/10">
@@ -1261,7 +1264,7 @@ export default function Home() {
               Remplacer un objet
             </p>
             <h2 className="font-display mt-2 text-3xl font-semibold text-white">
-              Vidéo courte, lifestyle ultra-réaliste
+              Vidéo courte, un instant qui impressionne
             </h2>
             <p className="mt-2 text-sm text-neutral-500">
               ~5 s de vidéo · génération ~90 s · Kling O1 via fal.ai
