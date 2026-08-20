@@ -890,7 +890,7 @@ export default function Home() {
                 Le lifestyle dont tu rêves. Jusqu&apos;à ce que tu l&apos;aies vraiment.
               </h2>
               <p className="mt-2 text-xs text-neutral-500">
-                Assez réaliste pour que ton entourage y croie.
+                Ultra-réaliste pour que ton entourage y croie.
               </p>
             </div>
 
