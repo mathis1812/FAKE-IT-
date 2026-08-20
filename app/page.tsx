@@ -14,8 +14,14 @@ import {
 
 type Mode = "image" | "video";
 
-const IMAGE_NOTE_PLACEHOLDER =
+// Le rôle de la note change selon qu'une photo de lieu est fournie ou non :
+// simple précision qui affine le prompt généré par l'analyse vision, ou
+// seule description de la scène. Le placeholder suit ce basculement, sans
+// quoi il annoncerait « optionnelle » un champ devenu obligatoire.
+const IMAGE_NOTE_PLACEHOLDER_WITH_PLACE =
   "Note optionnelle (ex : assis à la table près de la fenêtre, ambiance soirée)…";
+const IMAGE_NOTE_PLACEHOLDER_WITHOUT_PLACE =
+  "Décris la scène souhaitée (ex : à la terrasse d'un café parisien, lumière de fin de journée)…";
 
 const MAX_PLACE_IMAGES = 3;
 
@@ -1073,7 +1079,11 @@ export default function Home() {
               value={userNote}
               onChange={(e) => setUserNote(e.target.value)}
               rows={2}
-              placeholder={IMAGE_NOTE_PLACEHOLDER}
+              placeholder={
+                placeImages.length > 0
+                  ? IMAGE_NOTE_PLACEHOLDER_WITH_PLACE
+                  : IMAGE_NOTE_PLACEHOLDER_WITHOUT_PLACE
+              }
               className="mb-4 w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-700 focus:border-primary/50"
             />
 
