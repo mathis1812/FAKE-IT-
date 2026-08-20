@@ -6,7 +6,7 @@ haut de gamme), en préservant la personne, la pose, la lumière et le cadrage
 d'origine — en **image** ou en **vidéo**. Génération verrouillée par compte et
 crédits, abonnements Stripe mensuels ou annuels.
 
-Propulsée par l'**API Gemini** directe (`gemini-3-pro-image-preview` pour
+Propulsée par l'**API Gemini** directe (`gemini-3-pro-image` pour
 l'image), **fal.ai** (Kling O1 pour la vidéo), **kie.ai** (hébergement
 des uploads et analyse vision du lieu), **Supabase** (auth, base de données,
 stockage), **Stripe** (abonnements), Next.js 14 (App Router), TypeScript et
@@ -17,7 +17,7 @@ Tailwind CSS. Fond animé **DotField** (React Bits).
 
 ## Fonctionnalités
 
-### Image (API Gemini directe, `gemini-3-pro-image-preview`)
+### Image (API Gemini directe, `gemini-3-pro-image`)
 - Upload par glisser-déposer ou clic, avec aperçu immédiat de l'original
 - Photo(s) du lieu réel analysées par un modèle vision kie.ai
   (`lib/place-prompt.ts`) pour produire un prompt structuré automatiquement ;
@@ -88,7 +88,7 @@ app/
   a-propos/                FAQ
   mentions-legales/ cgv/ confidentialite/
   api/
-    generate/              Image → API Gemini directe (gemini-3-pro-image-preview)
+    generate/              Image → API Gemini directe (gemini-3-pro-image)
     generate-video/        Vidéo → fal.ai Kling O1
     kie/upload/            Upload d'image vers kie.ai (proxy)
     stripe/checkout/       Création de session Stripe Checkout
@@ -220,7 +220,7 @@ en compte.
 
 ## Coût
 
-- Image `gemini-3-pro-image-preview` (API Gemini, résolution dépendant du
+- Image `gemini-3-pro-image` (API Gemini, résolution dépendant du
   palier de l'utilisateur — voir `imageResolution` dans `PLANS`,
   `lib/stripe.ts`) : environ **~0,12 $ / image** en résolution 1K, plus pour
   les paliers en résolution supérieure

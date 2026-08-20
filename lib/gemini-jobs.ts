@@ -1,5 +1,8 @@
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
-const MODEL_ID = "gemini-3-pro-image-preview";
+// gemini-3-pro-image-preview a été retiré par Google le 25/06/2026 ;
+// gemini-3-pro-image (Nano Banana Pro, sans suffixe -preview) est son
+// remplacement officiel — voir ai.google.dev/gemini-api/docs/deprecations.
+const MODEL_ID = "gemini-3-pro-image";
 
 type GeminiInlineData = {
   mimeType?: string;
