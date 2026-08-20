@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Panel from "@/components/Panel";
 import { createClient } from "@/lib/supabase/client";
+import { TESTIMONIALS } from "@/lib/testimonials";
 
 const HERO_IMAGES = [
   "/landing/rooftop.jpg",
@@ -236,6 +237,58 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+
+      {/* Témoignages (uniquement si de vrais retours clients sont disponibles) */}
+      {TESTIMONIALS.length > 0 && (
+        <section className="mb-10">
+          <div className="mb-5 text-center">
+            <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
+              Ils en parlent
+            </p>
+            <h2 className="font-display mt-2 text-2xl font-semibold text-white sm:text-3xl">
+              Ce que nos utilisateurs en disent
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {TESTIMONIALS.map((testimonial) => (
+              <Panel key={testimonial.name} className="p-5 sm:p-6">
+                {typeof testimonial.rating === "number" && (
+                  <div
+                    className="mb-3 flex gap-0.5 text-primary"
+                    aria-label={`${testimonial.rating} sur 5`}
+                  >
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <svg
+                        key={i}
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill={i < testimonial.rating! ? "currentColor" : "none"}
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        aria-hidden
+                      >
+                        <path d="M12 2 15 9l7 .6-5.3 4.6L18.2 21 12 17.3 5.8 21l1.5-6.8L2 9.6 9 9z" />
+                      </svg>
+                    ))}
+                  </div>
+                )}
+                <p className="text-sm leading-relaxed text-neutral-300">
+                  &laquo;&nbsp;{testimonial.quote}&nbsp;&raquo;
+                </p>
+                <p className="mt-4 text-sm font-semibold text-white">
+                  {testimonial.name}
+                  {testimonial.role && (
+                    <span className="ml-1.5 font-normal text-neutral-500">
+                      &middot; {testimonial.role}
+                    </span>
+                  )}
+                </p>
+              </Panel>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* FAQ */}
       <section className="mb-10">
