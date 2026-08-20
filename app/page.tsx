@@ -553,8 +553,13 @@ export default function Home() {
       setError("Veuillez d'abord uploader une image.");
       return;
     }
-    if (placeImages.length === 0) {
-      setError("Ajoutez au moins une photo du lieu où vous voulez apparaître.");
+    // Les photos du lieu sont facultatives : sans elles, la note sert de
+    // description. Il en faut donc au moins une des deux, sinon le modèle
+    // n'a aucune indication sur la scène à produire.
+    if (placeImages.length === 0 && !userNote.trim()) {
+      setError(
+        "Ajoutez une photo du lieu, ou décrivez la scène souhaitée dans la note.",
+      );
       return;
     }
     setLoading(true);
@@ -593,12 +598,22 @@ export default function Home() {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sourceImageUrl,
-          placeImageUrls,
-          userNote: userNote.trim() || undefined,
-          label: "Génération image",
-        }),
+        body: JSON.stringify(
+          placeImageUrls.length > 0
+            ? {
+                sourceImageUrl,
+                placeImageUrls,
+                userNote: userNote.trim() || undefined,
+                label: "Génération image",
+              }
+            : {
+                // Sans photo de lieu, la note devient la description : le
+                // serveur bascule alors sur son flux « prompt libre ».
+                sourceImageUrl,
+                prompt: userNote.trim(),
+                label: "Génération image",
+              },
+        ),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data) {
@@ -1040,15 +1055,16 @@ export default function Home() {
                   <span className="text-base leading-none">+</span>
                   <span>
                     {placeImages.length === 0
-                      ? "Ajouter la photo du lieu (restaurant, rooftop…)"
+                      ? "Ajouter une photo du lieu (facultatif)"
                       : "Ajouter un autre angle du lieu"}
                   </span>
                 </button>
               )}
               <p className="mt-2 text-[11px] text-neutral-600">
-                1 photo suffit — 2 à 3 angles différents du même lieu améliorent
-                la fidélité du décor et de la lumière. Le prompt est généré
-                automatiquement à partir de tes photos.
+                Facultatif : sans photo de lieu, décris simplement la scène
+                dans la note ci-dessous. Avec, 1 photo suffit — 2 à 3 angles
+                du même lieu améliorent la fidélité du décor et de la
+                lumière, et le prompt est généré automatiquement.
               </p>
             </div>
 
@@ -1090,7 +1106,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={generate}
-                    disabled={loading || placeImages.length === 0}
+                    disabled={loading}
                     className="cursor-pointer rounded-2xl border border-white/10 px-4 py-3.5 text-sm font-medium text-neutral-300 transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {loading ? "…" : "Régénérer"}
@@ -1209,7 +1225,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={generate}
-                  disabled={loading || !prepared || placeImages.length === 0}
+                  disabled={loading || !prepared}
                   className="flex-1 cursor-pointer rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {loading ? "Génération… (~15-30s)" : "Générer"}

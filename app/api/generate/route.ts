@@ -104,13 +104,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Nouveau flux : au moins une photo du lieu, prompt généré automatiquement.
-  // Ancien flux (compatibilité) : prompt libre obligatoire.
+  // Les photos du lieu sont facultatives. Deux flux possibles : avec photos
+  // de lieu, le prompt est généré automatiquement par analyse vision ; sans
+  // elles, la description libre de l'utilisateur tient lieu de prompt. Il
+  // faut l'un ou l'autre, sinon le modèle n'a aucune indication de scène.
   if (placeUrls.length === 0 && (!prompt || !prompt.trim())) {
     return NextResponse.json(
       {
         error:
-          "Ajoutez au moins une photo du lieu où vous voulez apparaître.",
+          "Ajoutez une photo du lieu, ou décrivez la scène souhaitée dans la note.",
       },
       { status: 400 },
     );
