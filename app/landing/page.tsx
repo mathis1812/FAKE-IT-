@@ -191,7 +191,7 @@ export default function LandingPage() {
             onClick={() => trackLandingCtaClick("difference_link")}
             className="text-sm font-medium text-primary-soft underline-offset-4 transition hover:text-primary hover:underline"
           >
-            Créer ma première scène
+            {secondaryCtaLabel}
           </Link>
         </div>
       </section>

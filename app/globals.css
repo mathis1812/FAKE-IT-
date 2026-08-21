@@ -33,6 +33,7 @@ body {
   position: relative;
   isolation: isolate;
   background: var(--ink);
+  overflow-x: clip;
 }
 
 .studio-backdrop {
