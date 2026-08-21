@@ -111,9 +111,10 @@ export default function LandingPage() {
         </Link>
       </section>
 
-      {/* Marges négatives pour compenser le padding cumulé de ce conteneur
-          et de <main> (layout) : seul le bandeau doit aller bord à bord. */}
-      <div className="-mx-4 sm:-mx-6">
+      {/* mx-[calc(50%-50vw)] + w-screen : seul le bandeau doit aller bord à
+          bord, indépendamment des paddings cumulés de ce conteneur et de
+          <main> (layout) et du plafond max-w-6xl. */}
+      <div className="mx-[calc(50%-50vw)] w-screen">
         <TestimonialMarquee />
       </div>
 
