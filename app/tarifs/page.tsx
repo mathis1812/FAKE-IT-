@@ -1,32 +1,59 @@
-import PricingGrid, { type PlanFeature } from "@/components/PricingGrid";
+import PricingGrid, { type ComparisonRow } from "@/components/PricingGrid";
 import { createClient } from "@/lib/supabase/server";
 import { PLANS, type PlanId } from "@/lib/stripe";
 
 const PLAN_ORDER: PlanId[] = ["decouverte", "essentiel", "ultimate"];
 
-const PLAN_FEATURES: Record<PlanId, PlanFeature[]> = {
-  decouverte: [
-    { text: "Génération photo & vidéo" },
-    { text: "Qualité photo 1K" },
-    { text: "Photo de référence optionnelle" },
-    { text: "Historique complet" },
-  ],
-  essentiel: [
-    { text: "Génération photo & vidéo" },
-    { text: "Qualité photo 2K", bold: true },
-    { text: "Photo de référence optionnelle" },
-    { text: "Historique complet" },
-    { text: "Support prioritaire" },
-  ],
-  ultimate: [
-    { text: "Génération photo & vidéo" },
-    { text: "Qualité photo 4K Ultra-détails", bold: true },
-    { text: "Photo de référence optionnelle" },
-    { text: "Historique complet" },
-    { text: "Support prioritaire" },
-    { text: "12 000 crédits/mois (plafonné)" },
-  ],
+const CHECK_ALL = {
+  decouverte: { kind: "check" as const },
+  essentiel: { kind: "check" as const },
+  ultimate: { kind: "check" as const },
 };
+
+// Grille comparative : une ligne par argument, une cellule par palier.
+// Chiffres dérivés de PLANS (jamais recopiés en dur) pour ne jamais
+// diverger du prix/de la résolution/des crédits réellement facturés.
+const COMPARISON_ROWS: ComparisonRow[] = [
+  { label: "Génération photo & vidéo", ...CHECK_ALL },
+  {
+    label: "Qualité photo",
+    decouverte: { kind: "value", text: PLANS.decouverte.imageResolution },
+    essentiel: {
+      kind: "value",
+      text: PLANS.essentiel.imageResolution,
+      bold: true,
+    },
+    ultimate: {
+      kind: "value",
+      text: `${PLANS.ultimate.imageResolution} Ultra-détails`,
+      bold: true,
+    },
+  },
+  {
+    label: "Crédits inclus",
+    decouverte: {
+      kind: "value",
+      text: `${PLANS.decouverte.creditsPerMonth.toLocaleString("fr-FR")}/mois`,
+    },
+    essentiel: {
+      kind: "value",
+      text: `${PLANS.essentiel.creditsPerMonth.toLocaleString("fr-FR")}/mois`,
+    },
+    ultimate: {
+      kind: "value",
+      text: `${PLANS.ultimate.creditsPerMonth.toLocaleString("fr-FR")}/mois`,
+      bold: true,
+    },
+  },
+  { label: "Photo de référence optionnelle", ...CHECK_ALL },
+  { label: "Historique complet (Galerie)", ...CHECK_ALL },
+  {
+    label: "Support prioritaire",
+    decouverte: { kind: "cross" },
+    essentiel: { kind: "check" },
+    ultimate: { kind: "check" },
+  },
+];
 
 export default async function TarifsPage() {
   const supabase = createClient();
@@ -51,7 +78,6 @@ export default async function TarifsPage() {
     monthlyPriceEur: PLANS[planId].monthly.priceEur,
     annualPriceEur: PLANS[planId].annual.priceEur,
     creditsPerMonth: PLANS[planId].creditsPerMonth,
-    features: PLAN_FEATURES[planId],
   }));
 
   return (
@@ -65,7 +91,12 @@ export default async function TarifsPage() {
         </h2>
       </div>
 
-      <PricingGrid plans={plans} currentPlan={currentPlan} isLoggedIn={!!user} />
+      <PricingGrid
+        plans={plans}
+        comparisonRows={COMPARISON_ROWS}
+        currentPlan={currentPlan}
+        isLoggedIn={!!user}
+      />
     </div>
   );
 }

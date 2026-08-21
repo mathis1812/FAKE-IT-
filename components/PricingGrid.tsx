@@ -6,7 +6,25 @@ import SubscribeButton from "@/components/SubscribeButton";
 import ManageSubscriptionButton from "@/components/ManageSubscriptionButton";
 import type { BillingPeriod, PlanId } from "@/lib/stripe";
 
-export type PlanFeature = { text: string; bold?: boolean };
+/**
+ * Une ligne de la grille comparative : même libellé sur les 3 paliers, une
+ * cellule par palier (coche, croix, ou valeur textuelle comme la
+ * résolution). Construite en un seul tableau partagé plutôt qu'en listes
+ * par palier, pour garantir que les 3 cartes affichent les mêmes lignes
+ * dans le même ordre — condition pour que l'effet de comparaison (ce que
+ * Découverte n'a pas) se lise d'un coup d'œil.
+ */
+export type ComparisonCell =
+  | { kind: "check" }
+  | { kind: "cross" }
+  | { kind: "value"; text: string; bold?: boolean };
+
+export type ComparisonRow = {
+  label: string;
+  decouverte: ComparisonCell;
+  essentiel: ComparisonCell;
+  ultimate: ComparisonCell;
+};
 
 type PlanView = {
   id: PlanId;
@@ -14,8 +32,31 @@ type PlanView = {
   monthlyPriceEur: number;
   annualPriceEur: number;
   creditsPerMonth: number;
-  features: PlanFeature[];
 };
+
+function ComparisonCellView({ cell }: { cell: ComparisonCell }) {
+  if (cell.kind === "check") {
+    return (
+      <span aria-label="Inclus" className="text-primary">
+        ✓
+      </span>
+    );
+  }
+  if (cell.kind === "cross") {
+    return (
+      <span aria-label="Non inclus" className="text-neutral-700">
+        ✕
+      </span>
+    );
+  }
+  return (
+    <span
+      className={cell.bold ? "font-semibold text-white" : "text-neutral-300"}
+    >
+      {cell.text}
+    </span>
+  );
+}
 
 function formatEur(amount: number): string {
   return amount.toFixed(2).replace(".", ",");
@@ -44,10 +85,12 @@ const TIER_STYLES: Record<PlanId, { panel: string; ring: string }> = {
 
 export default function PricingGrid({
   plans,
+  comparisonRows,
   currentPlan,
   isLoggedIn,
 }: {
   plans: PlanView[];
+  comparisonRows: ComparisonRow[];
   currentPlan: PlanId | null;
   isLoggedIn: boolean;
 }) {
@@ -159,16 +202,13 @@ export default function PricingGrid({
               </p>
 
               <ul className="mb-6 flex-1 space-y-2.5 text-sm text-neutral-400">
-                {plan.features.map((feature) => (
-                  <li key={feature.text} className="flex items-start gap-2">
-                    <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-primary" />
-                    <span
-                      className={
-                        feature.bold ? "font-semibold text-white" : undefined
-                      }
-                    >
-                      {feature.text}
-                    </span>
+                {comparisonRows.map((row) => (
+                  <li
+                    key={row.label}
+                    className="flex items-center justify-between gap-3"
+                  >
+                    <span>{row.label}</span>
+                    <ComparisonCellView cell={row[plan.id]} />
                   </li>
                 ))}
               </ul>
