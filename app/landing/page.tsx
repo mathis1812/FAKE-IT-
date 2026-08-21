@@ -187,11 +187,11 @@ export default function LandingPage() {
 
         <div className="mt-8 text-center">
           <Link
-            href="/inscription"
+            href={ctaHref}
             onClick={() => trackLandingCtaClick("difference_link")}
             className="text-sm font-medium text-primary-soft underline-offset-4 transition hover:text-primary hover:underline"
           >
-            Voir plus d&apos;exemples
+            Créer ma première scène
           </Link>
         </div>
       </section>
