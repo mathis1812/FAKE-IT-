@@ -25,6 +25,8 @@ const config: Config = {
           "fade-up 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both",
         reveal: "reveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) both",
         "magic-reveal": "magic-reveal 0.9s cubic-bezier(0.16, 1, 0.3, 1) both",
+        "marquee-left": "marquee-left 40s linear infinite",
+        "marquee-right": "marquee-right 40s linear infinite",
       },
       keyframes: {
         "fade-up": {
@@ -50,6 +52,14 @@ const config: Config = {
             transform: "scale(1)",
             filter: "blur(0) brightness(1) saturate(1)",
           },
+        },
+        "marquee-left": {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
+        "marquee-right": {
+          from: { transform: "translateX(-50%)" },
+          to: { transform: "translateX(0)" },
         },
       },
     },
