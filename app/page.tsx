@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Panel from "@/components/Panel";
 import { SparkleFrame, RevealBurst } from "@/components/MagicSparkles";
@@ -24,6 +25,16 @@ const IMAGE_NOTE_PLACEHOLDER_WITHOUT_PLACE =
   "Décris la scène souhaitée (ex : à la terrasse d'un café parisien, lumière de fin de journée)…";
 
 const MAX_PLACE_IMAGES = 3;
+
+/**
+ * Durée du chargement simulé du paywall. Calée sur l'ordre de grandeur d'une
+ * vraie génération pour que le parcours reste crédible, sans faire attendre
+ * un visiteur qui ne verra de toute façon qu'un aperçu verrouillé.
+ */
+const PAYWALL_PREVIEW_DELAY_MS = 6_000;
+
+/** Visuel d'exemple affiché flouté derrière le paywall. */
+const PAYWALL_PREVIEW_IMAGE = "/landing/rooftop.jpg";
 
 const VIDEO_PROMPT_PLACEHOLDER =
   "Ex : Remplace la montre au poignet par une Rolex Submariner en acier, mouvements naturels, conserve le visage, la pose et le fond…";
@@ -422,6 +433,19 @@ export default function Home() {
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const [credits, setCredits] = useState<number | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [hasPlan, setHasPlan] = useState(false);
+  /**
+   * Paywall : un visiteur non connecté, ou connecté sans abonnement, parcourt
+   * tout le flux (photo, description, bouton Générer, chargement) mais
+   * n'obtient qu'un aperçu verrouillé. Aucun appel à l'IA n'est déclenché —
+   * ni Gemini, ni l'analyse vision — donc aucune génération n'est facturée
+   * pour un visiteur qui n'a pas payé, et rien de générable ne transite vers
+   * le navigateur.
+   */
+  const [paywalled, setPaywalled] = useState(false);
+
+  /** Seul un compte connecté ET porteur d'un palier peut générer. */
+  const isSubscribed = isLoggedIn && hasPlan;
 
   const { elapsedSeconds: imageElapsed, progressPercent: imageProgress } =
     useElapsedProgress(loading);
@@ -440,10 +464,11 @@ export default function Home() {
     }
     const { data } = await supabase
       .from("profiles")
-      .select("credits")
+      .select("credits, plan")
       .eq("id", user.id)
       .single();
     setCredits(data?.credits ?? 0);
+    setHasPlan(!!data?.plan);
   }, []);
 
   useEffect(() => {
@@ -490,6 +515,9 @@ export default function Home() {
   const handleFile = useCallback(async (file: File) => {
     setError("");
     setResult("");
+    // Nouvelle photo = nouveau parcours : on relève le verrou pour que
+    // l'aperçu bloqué d'une tentative précédente ne reste pas affiché.
+    setPaywalled(false);
     const validationError = validateImageFile(file);
     if (validationError) {
       setError(validationError);
@@ -571,6 +599,19 @@ export default function Home() {
     setLoading(true);
     setError("");
     setResult("");
+
+    // Paywall : on rejoue le chargement pour que le parcours reste lisible,
+    // puis on s'arrête sur l'aperçu verrouillé. Le `return` est placé ici,
+    // avant tout upload et tout appel fournisseur : rien n'est envoyé, rien
+    // n'est facturé.
+    if (!isSubscribed) {
+      setPaywalled(false);
+      await new Promise((r) => setTimeout(r, PAYWALL_PREVIEW_DELAY_MS));
+      setLoading(false);
+      setPaywalled(true);
+      return;
+    }
+
     try {
       const blob = await (await fetch(prepared.previewUrl)).blob();
       if (blob.size > MAX_VIDEO_FILE_BYTES) {
@@ -648,7 +689,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [prepared, userNote, fileName, placeImages, refreshCredits]);
+  }, [prepared, userNote, fileName, placeImages, refreshCredits, isSubscribed]);
 
   const download = useCallback(() => {
     if (!result) return;
@@ -733,6 +774,21 @@ export default function Home() {
       return;
     }
     setVideoLoading(true);
+
+    // Même paywall que pour l'image. Le `return` précède `uploadVideoDirect` :
+    // un visiteur non abonné ne peut donc pas déposer de fichier dans le
+    // bucket Storage, ce qui ferme aussi la voie d'hébergement gratuit.
+    if (!isSubscribed) {
+      setVideoError("");
+      await new Promise((r) => setTimeout(r, PAYWALL_PREVIEW_DELAY_MS));
+      setVideoLoading(false);
+      setVideoError(
+        isLoggedIn
+          ? "La génération vidéo est réservée aux abonnés. Choisis un palier sur la page Tarifs pour la débloquer."
+          : "La génération vidéo est réservée aux abonnés. Crée ton compte puis choisis un palier pour la débloquer.",
+      );
+      return;
+    }
     setVideoError("");
     setVideoUrl("");
     try {
@@ -796,7 +852,14 @@ export default function Home() {
     } finally {
       setVideoLoading(false);
     }
-  }, [videoSource, videoObject, videoPrompt, refreshCredits]);
+  }, [
+    videoSource,
+    videoObject,
+    videoPrompt,
+    refreshCredits,
+    isSubscribed,
+    isLoggedIn,
+  ]);
 
   const downloadVideo = useCallback(() => {
     if (!videoUrl) return;
@@ -944,6 +1007,56 @@ export default function Home() {
                     <p className="text-[10px] tabular-nums text-neutral-600">
                       {imageElapsed}s
                     </p>
+                  </div>
+                ) : paywalled ? (
+                  <div className="animate-magic-reveal relative h-full">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={PAYWALL_PREVIEW_IMAGE}
+                      alt="Exemple de rendu Bluminoo, volontairement flouté"
+                      className="h-full w-full scale-110 object-cover blur-2xl"
+                      aria-hidden
+                    />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/55 px-6 text-center">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-full border border-primary/30 bg-primary/15 text-primary-soft">
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          aria-hidden
+                        >
+                          <rect
+                            x="4"
+                            y="10"
+                            width="16"
+                            height="10"
+                            rx="2"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                          />
+                          <path
+                            d="M8 10V7a4 4 0 018 0v3"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </span>
+                      <p className="font-display text-lg font-semibold text-white">
+                        La génération est réservée aux abonnés
+                      </p>
+                      <p className="max-w-xs text-xs leading-relaxed text-neutral-300">
+                        Choisis un palier pour lancer ta scène et récupérer ton
+                        image en pleine qualité.
+                      </p>
+                      <Link
+                        href={isLoggedIn ? "/tarifs" : "/inscription"}
+                        className="mt-1 inline-flex items-center justify-center rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-ink transition hover:bg-primary-soft"
+                      >
+                        {isLoggedIn ? "Voir les paliers" : "Créer mon compte"}
+                      </Link>
+                    </div>
                   </div>
                 ) : result ? (
                   <div key={result} className="animate-magic-reveal relative h-full">
