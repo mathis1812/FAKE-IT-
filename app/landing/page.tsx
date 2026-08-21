@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import TestimonialMarquee from "@/components/TestimonialMarquee";
 import { trackLandingCtaClick, trackLandingPageView } from "@/lib/analytics";
+import { createClient } from "@/lib/supabase/client";
 
 const FEATURES = [
   {
@@ -54,12 +55,29 @@ const FAQ_ITEMS = [
 ];
 
 export default function LandingPage() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   useEffect(() => {
     trackLandingPageView();
   }, []);
 
+  // Un visiteur déjà connecté n'a rien à faire sur /inscription : on le
+  // renvoie vers le studio plutôt que de lui reproposer de créer un compte.
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+    });
+  }, []);
+
+  const ctaHref = isLoggedIn ? "/" : "/inscription";
+  const ctaLabel = isLoggedIn ? "Ouvrir le studio" : "Commencer maintenant";
+  const secondaryCtaLabel = isLoggedIn
+    ? "Ouvrir le studio"
+    : "Démarrer avec Bluminoo";
+
   return (
-    <div className="mx-auto max-w-6xl px-4">
+    <div className="mx-auto max-w-6xl px-4 animate-fade-up">
       {/* HERO — pas de fond opaque : StudioBackdrop (monté dans
           app/layout.tsx) doit rester visible derrière. */}
       <section className="relative flex min-h-[80vh] flex-col items-center justify-center py-20 text-center">
@@ -77,15 +95,19 @@ export default function LandingPage() {
         </p>
 
         <Link
-          href="/inscription"
+          href={ctaHref}
           onClick={() => trackLandingCtaClick("hero_primary")}
           className="mt-10 inline-flex items-center justify-center rounded-2xl bg-primary px-8 py-4 text-sm font-semibold text-ink transition hover:bg-primary-soft"
         >
-          Commencer maintenant
+          {ctaLabel}
         </Link>
       </section>
 
-      <TestimonialMarquee />
+      {/* Marges négatives pour compenser le padding cumulé de ce conteneur
+          et de <main> (layout) : seul le bandeau doit aller bord à bord. */}
+      <div className="-mx-4 sm:-mx-6">
+        <TestimonialMarquee />
+      </div>
 
       {/* SOLUTION EXCLUSIVE — le Snap Rouge, mis en avant seul. */}
       <section className="relative overflow-hidden rounded-[2rem] border border-primary/20 bg-primary/10 px-6 py-14 text-center sm:px-12">
@@ -101,14 +123,16 @@ export default function LandingPage() {
         </p>
       </section>
 
-      {/* AVANT / APRÈS */}
+      {/* LE PRINCIPE — un lieu de référence, un type de scène produit.
+          Les deux photos ne sont pas liées : aucune n'est le résultat de
+          l'autre, on illustre juste les deux bouts du principe. */}
       <section className="py-20 sm:py-28">
         <div className="text-center">
           <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
-            Ultra-réaliste
+            Le principe
           </p>
           <h2 className="font-display mt-3 text-4xl font-semibold text-white sm:text-5xl">
-            La différence Bluminoo
+            Ta photo, le lieu de ton choix
           </h2>
         </div>
 
@@ -117,14 +141,17 @@ export default function LandingPage() {
             <img
               src="/landing/restaurant.jpg"
               alt="Photo d'un restaurant utilisée comme lieu de référence"
+              width={1024}
+              height={1024}
+              loading="lazy"
               className="h-72 w-full object-cover"
             />
             <figcaption className="border-t border-white/10 bg-white/[0.02] px-5 py-4">
               <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-500">
-                Avant
+                Le lieu
               </span>
               <p className="mt-1 text-sm text-neutral-300">
-                La photo du lieu, prise ou trouvée par tes soins.
+                La photo du lieu que tu fournis.
               </p>
             </figcaption>
           </figure>
@@ -132,15 +159,18 @@ export default function LandingPage() {
           <figure className="overflow-hidden rounded-3xl border border-primary/30">
             <img
               src="/landing/rooftop.jpg"
-              alt="Rendu Bluminoo : sujet intégré dans le lieu"
+              alt="Exemple du type de scène produit par Bluminoo dans un lieu extérieur"
+              width={1024}
+              height={1024}
+              loading="lazy"
               className="h-72 w-full object-cover"
             />
             <figcaption className="border-t border-primary/20 bg-primary/[0.06] px-5 py-4">
               <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-soft">
-                Après
+                Le résultat
               </span>
               <p className="mt-1 text-sm text-neutral-200">
-                Te voilà sur place : lumière, décor et perspective recalculés.
+                Le type de scène que Bluminoo produit.
               </p>
             </figcaption>
           </figure>
@@ -148,7 +178,7 @@ export default function LandingPage() {
 
         <div className="mt-8 text-center">
           <Link
-            href="/galerie"
+            href="/inscription"
             onClick={() => trackLandingCtaClick("difference_link")}
             className="text-sm font-medium text-primary-soft underline-offset-4 transition hover:text-primary hover:underline"
           >
@@ -157,9 +187,15 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* LA DIFFÉRENCE — arguments produit */}
+      {/* LA DIFFÉRENCE BLUMINOO — arguments produit */}
       <section className="pb-20 sm:pb-28">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+        <div className="text-center">
+          <h2 className="font-display text-4xl font-semibold text-white sm:text-5xl">
+            La différence Bluminoo
+          </h2>
+        </div>
+
+        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-3">
           {FEATURES.map((feature) => (
             <div
               key={feature.title}
@@ -177,11 +213,11 @@ export default function LandingPage() {
 
         <div className="mt-10 text-center">
           <Link
-            href="/inscription"
+            href={ctaHref}
             onClick={() => trackLandingCtaClick("difference_cta")}
             className="inline-flex items-center justify-center rounded-2xl border border-primary/40 px-8 py-4 text-sm font-semibold text-primary-soft transition hover:border-primary hover:text-primary"
           >
-            Démarrer avec Bluminoo
+            {secondaryCtaLabel}
           </Link>
         </div>
       </section>
@@ -203,8 +239,14 @@ export default function LandingPage() {
               key={item.question}
               className="group rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4"
             >
-              <summary className="cursor-pointer list-none text-sm font-semibold text-white marker:content-none">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-white marker:content-none">
                 {item.question}
+                <span
+                  aria-hidden
+                  className="shrink-0 text-lg font-normal text-primary-soft transition-transform duration-200 group-open:rotate-45"
+                >
+                  +
+                </span>
               </summary>
               <p className="mt-3 text-sm leading-relaxed text-neutral-400">
                 {item.answer}
@@ -223,11 +265,11 @@ export default function LandingPage() {
           Crée ta première scène en quelques secondes.
         </p>
         <Link
-          href="/inscription"
+          href={ctaHref}
           onClick={() => trackLandingCtaClick("final_cta")}
           className="mt-10 inline-flex items-center justify-center rounded-2xl bg-primary px-8 py-4 text-sm font-semibold text-ink transition hover:bg-primary-soft"
         >
-          Commencer maintenant
+          {ctaLabel}
         </Link>
       </section>
     </div>
