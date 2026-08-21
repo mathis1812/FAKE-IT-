@@ -3,7 +3,11 @@
 const TRACK_ENDPOINT = "/api/track";
 const SESSION_STORAGE_KEY = "bluminoo_landing_session_id";
 
-export type LandingCtaId = "hero_primary" | "final_cta";
+export type LandingCtaId =
+  | "hero_primary"
+  | "difference_link"
+  | "difference_cta"
+  | "final_cta";
 
 /**
  * Identifiant de session éphémère (sessionStorage, pas de cookie tiers ni de
