@@ -64,10 +64,18 @@ export default function LandingPage() {
   // Un visiteur déjà connecté n'a rien à faire sur /inscription : on le
   // renvoie vers le studio plutôt que de lui reproposer de créer un compte.
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsLoggedIn(!!session);
-    });
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ) {
+      return;
+    }
+    createClient()
+      .auth.getSession()
+      .then(({ data: { session } }) => {
+        setIsLoggedIn(!!session);
+      })
+      .catch(() => {});
   }, []);
 
   const ctaHref = isLoggedIn ? "/" : "/inscription";
