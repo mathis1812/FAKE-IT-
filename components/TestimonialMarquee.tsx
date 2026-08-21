@@ -7,9 +7,9 @@ import { TESTIMONIALS, type Testimonial } from "@/lib/testimonials";
  * opposés.
  *
  * Le défilement sans couture repose sur la duplication : chaque rangée rend
- * la liste deux fois, et l'animation translate de 0 à -50% (soit exactement
- * la longueur d'une copie) avant de repartir. L'œil ne voit jamais le saut.
- * Retirer la duplication casserait l'effet.
+ * la liste deux fois, et l'animation translate de 0 à -100% (soit
+ * exactement la largeur d'une copie) avant de repartir. L'œil ne voit
+ * jamais le saut. Retirer la duplication casserait l'effet.
  */
 function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
   return (
@@ -35,9 +35,9 @@ function MarqueeRow({
     direction === "left" ? "animate-marquee-left" : "animate-marquee-right";
 
   return (
-    <div className="group flex overflow-hidden">
+    <div className="group flex overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_4rem,black_calc(100%-4rem),transparent)] motion-reduce:overflow-x-auto">
       <div
-        className={`flex shrink-0 gap-4 pr-4 ${animation} group-hover:[animation-play-state:paused] motion-reduce:animate-none`}
+        className={`flex shrink-0 gap-4 pr-4 ${animation} group-hover:[animation-play-state:paused] group-active:[animation-play-state:paused] group-focus-within:[animation-play-state:paused] motion-reduce:animate-none`}
       >
         {items.map((t) => (
           <TestimonialCard key={`a-${t.name}`} testimonial={t} />
@@ -45,7 +45,7 @@ function MarqueeRow({
       </div>
       <div
         aria-hidden
-        className={`flex shrink-0 gap-4 pr-4 ${animation} group-hover:[animation-play-state:paused] motion-reduce:animate-none`}
+        className={`flex shrink-0 gap-4 pr-4 ${animation} group-hover:[animation-play-state:paused] group-active:[animation-play-state:paused] group-focus-within:[animation-play-state:paused] motion-reduce:animate-none motion-reduce:hidden`}
       >
         {items.map((t) => (
           <TestimonialCard key={`b-${t.name}`} testimonial={t} />
@@ -69,10 +69,6 @@ export default function TestimonialMarquee() {
         <MarqueeRow items={topRow} direction="left" />
         <MarqueeRow items={bottomRow} direction="right" />
       </div>
-      {/* Masques dégradés : les cartes entrent et sortent en fondu au lieu
-          d'être coupées net sur les bords. */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-ink to-transparent sm:w-32" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-ink to-transparent sm:w-32" />
     </section>
   );
 }
