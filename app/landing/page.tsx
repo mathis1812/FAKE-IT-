@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import HeroShowcaseMosaic from "@/components/HeroShowcaseMosaic";
 import TestimonialMarquee from "@/components/TestimonialMarquee";
 import { trackLandingCtaClick, trackLandingPageView } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
@@ -89,15 +90,17 @@ export default function LandingPage() {
       {/* HERO — pas de fond opaque : StudioBackdrop (monté dans
           app/layout.tsx) doit rester visible derrière. */}
       <section className="relative flex min-h-[80vh] flex-col items-center justify-center py-20 text-center">
-        <span className="rounded-full border border-white/10 bg-black/40 px-5 py-2 text-[11px] font-medium uppercase tracking-[0.18em] text-primary-soft">
+        <HeroShowcaseMosaic />
+
+        <span className="relative rounded-full border border-white/10 bg-black/40 px-5 py-2 text-[11px] font-medium uppercase tracking-[0.18em] text-primary-soft">
           Nouvelle version disponible
         </span>
 
-        <h1 className="font-display mt-8 max-w-4xl text-5xl font-semibold leading-[0.95] tracking-[-0.03em] text-white sm:text-7xl md:text-8xl">
+        <h1 className="font-display relative mt-8 max-w-4xl text-5xl font-semibold leading-[0.95] tracking-[-0.03em] text-white sm:text-7xl md:text-8xl">
           Fake it &apos;til you make it
         </h1>
 
-        <p className="mt-6 max-w-2xl text-base leading-relaxed text-neutral-300 sm:text-lg">
+        <p className="relative mt-6 max-w-2xl text-base leading-relaxed text-neutral-300 sm:text-lg">
           L&apos;IA parfaite pour impressionner ton entourage avec une photo
           en un seul clic.
         </p>
@@ -105,7 +108,7 @@ export default function LandingPage() {
         <Link
           href={ctaHref}
           onClick={() => trackLandingCtaClick("hero_primary")}
-          className="mt-10 inline-flex items-center justify-center rounded-2xl bg-primary px-8 py-4 text-sm font-semibold text-ink transition hover:bg-primary-soft"
+          className="relative mt-10 inline-flex items-center justify-center rounded-2xl bg-primary px-8 py-4 text-sm font-semibold text-ink transition hover:bg-primary-soft"
         >
           {ctaLabel}
         </Link>
