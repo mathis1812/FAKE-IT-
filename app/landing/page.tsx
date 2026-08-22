@@ -96,11 +96,11 @@ export default function LandingPage() {
           Nouvelle version disponible
         </span>
 
-        <h1 className="font-display relative mt-8 max-w-4xl text-5xl font-semibold leading-[0.95] tracking-[-0.03em] text-white sm:text-7xl md:text-8xl">
+        <h1 className="font-display relative mt-8 max-w-4xl [text-shadow:0_2px_28px_rgba(0,0,0,0.75)] text-5xl font-semibold leading-[0.95] tracking-[-0.03em] text-white sm:text-7xl md:text-8xl">
           Fake it &apos;til you make it
         </h1>
 
-        <p className="relative mt-6 max-w-2xl text-base leading-relaxed text-neutral-300 sm:text-lg">
+        <p className="relative mt-6 max-w-2xl text-base leading-relaxed text-neutral-200 [text-shadow:0_1px_18px_rgba(0,0,0,0.8)] sm:text-lg">
           L&apos;IA parfaite pour impressionner ton entourage avec une photo
           en un seul clic.
         </p>

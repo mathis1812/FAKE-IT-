@@ -71,10 +71,13 @@ export default function HeroShowcaseMosaic() {
     .flat();
   const half = Math.ceil(repeated.length / 2);
 
+  // `left-[calc(50%-50vw)]` + `w-screen` sortent la mosaïque du conteneur
+  // `max-w-6xl` de la page pour lui donner toute la largeur de la fenêtre.
+  // Le débordement est contenu par `overflow-x: clip` sur `.studio-shell`.
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-x-0 top-0 h-[760px] overflow-hidden opacity-40"
+      className="pointer-events-none absolute left-[calc(50%-50vw)] top-0 h-[760px] w-screen overflow-hidden opacity-[0.55]"
     >
       <div className="absolute inset-0 -rotate-12 scale-[1.35] sm:scale-125 lg:scale-110">
         <div className="flex flex-col gap-6 pt-10">
@@ -83,8 +86,10 @@ export default function HeroShowcaseMosaic() {
         </div>
       </div>
 
-      {/* Fondu vers le fond du site : laisse réapparaître StudioBackdrop. */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0a0810]/70 via-[#0a0810]/30 to-[#0a0810]" />
+      {/* Fondu concentré sur le bas : le haut reste presque limpide pour ne
+          pas ternir les photos, et seule la dernière portion se fond dans le
+          fond du site pour laisser réapparaître StudioBackdrop. */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent via-55% to-[#0a0810]" />
     </div>
   );
 }
