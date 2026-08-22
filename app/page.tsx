@@ -443,6 +443,9 @@ export default function Home() {
    * le navigateur.
    */
   const [paywalled, setPaywalled] = useState(false);
+  /** Même verrou, côté onglet Vidéo (état séparé : les deux panneaux ont
+   *  leur propre parcours et peuvent être verrouillés indépendamment). */
+  const [videoPaywalled, setVideoPaywalled] = useState(false);
 
   /** Seul un compte connecté ET porteur d'un palier peut générer. */
   const isSubscribed = isLoggedIn && hasPlan;
@@ -733,6 +736,9 @@ export default function Home() {
     async (file: File, kind: "source" | "object") => {
       setVideoError("");
       setVideoUrl("");
+      // Nouveau fichier = nouveau parcours : on relève le verrou pour que
+      // l'aperçu bloqué d'une tentative précédente ne reste pas affiché.
+      setVideoPaywalled(false);
       const videoCheck =
         kind === "source"
           ? await validateVideoFile(file)
@@ -780,13 +786,10 @@ export default function Home() {
     // bucket Storage, ce qui ferme aussi la voie d'hébergement gratuit.
     if (!isSubscribed) {
       setVideoError("");
+      setVideoPaywalled(false);
       await new Promise((r) => setTimeout(r, PAYWALL_PREVIEW_DELAY_MS));
       setVideoLoading(false);
-      setVideoError(
-        isLoggedIn
-          ? "La génération vidéo est réservée aux abonnés. Choisis un palier sur la page Tarifs pour la débloquer."
-          : "La génération vidéo est réservée aux abonnés. Crée ton compte puis choisis un palier pour la débloquer.",
-      );
+      setVideoPaywalled(true);
       return;
     }
     setVideoError("");
@@ -852,14 +855,7 @@ export default function Home() {
     } finally {
       setVideoLoading(false);
     }
-  }, [
-    videoSource,
-    videoObject,
-    videoPrompt,
-    refreshCredits,
-    isSubscribed,
-    isLoggedIn,
-  ]);
+  }, [videoSource, videoObject, videoPrompt, refreshCredits, isSubscribed]);
 
   const downloadVideo = useCallback(() => {
     if (!videoUrl) return;
@@ -1550,6 +1546,60 @@ export default function Home() {
                   {videoElapsed}s
                 </p>
               </div>
+            )}
+
+            {videoPaywalled && (
+              <section className="animate-magic-reveal mt-8">
+                <div className="relative overflow-hidden rounded-2xl border border-white/10">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={PAYWALL_PREVIEW_IMAGE}
+                    alt="Exemple de rendu Bluminoo, volontairement flouté"
+                    className="h-64 w-full scale-110 object-cover blur-2xl sm:h-80"
+                    aria-hidden
+                  />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/55 px-6 text-center">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full border border-primary/30 bg-primary/15 text-primary-soft">
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        aria-hidden
+                      >
+                        <rect
+                          x="4"
+                          y="10"
+                          width="16"
+                          height="10"
+                          rx="2"
+                          stroke="currentColor"
+                          strokeWidth="1.7"
+                        />
+                        <path
+                          d="M8 10V7a4 4 0 018 0v3"
+                          stroke="currentColor"
+                          strokeWidth="1.7"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    </span>
+                    <p className="font-display text-lg font-semibold text-white">
+                      La génération vidéo est réservée aux abonnés
+                    </p>
+                    <p className="max-w-xs text-xs leading-relaxed text-neutral-300">
+                      Choisis un palier pour lancer ta vidéo et la récupérer en
+                      pleine qualité.
+                    </p>
+                    <Link
+                      href={isLoggedIn ? "/tarifs" : "/inscription"}
+                      className="mt-1 inline-flex items-center justify-center rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-ink transition hover:bg-primary-soft"
+                    >
+                      {isLoggedIn ? "Voir les paliers" : "Créer mon compte"}
+                    </Link>
+                  </div>
+                </div>
+              </section>
             )}
 
             {videoUrl && (
