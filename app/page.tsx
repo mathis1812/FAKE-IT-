@@ -1240,6 +1240,49 @@ export default function Home() {
                     {loading ? "…" : "Régénérer"}
                   </button>
 
+                  {canShareToSnap && !hasSnapRouge && (
+                    <div className="w-full space-y-2 sm:w-auto">
+                      {/* Palier Découverte : à l'emplacement exact du bouton
+                          Snap Rouge, une invitation à le débloquer plutôt
+                          qu'un vide. Ce bloc n'est atteignable que par un
+                          abonné (le paywall arrête les autres avant). */}
+                      <Link
+                        href="/tarifs"
+                        className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-red-600/40 bg-gradient-to-b from-neutral-950 to-black px-5 py-3.5 text-sm font-black uppercase tracking-wide text-red-400/80 transition duration-200 hover:border-red-600 hover:text-red-400 sm:w-auto"
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          aria-hidden
+                          className="shrink-0"
+                        >
+                          <rect
+                            x="4"
+                            y="10"
+                            width="16"
+                            height="10"
+                            rx="2"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                          <path
+                            d="M8 10V7a4 4 0 018 0v3"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        Débloquer le Snap Rouge
+                      </Link>
+                      <p className="text-center text-[11px] text-neutral-500 sm:text-left">
+                        Envoi indétectable, sans filigrane &mdash; inclus dès le
+                        palier Essentiel.
+                      </p>
+                    </div>
+                  )}
+
                   {canShareToSnap && hasSnapRouge && (
                     <div className="w-full space-y-2 sm:w-auto">
                       <button
