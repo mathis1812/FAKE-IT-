@@ -433,7 +433,7 @@ export default function Home() {
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const [credits, setCredits] = useState<number | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [hasPlan, setHasPlan] = useState(false);
+  const [planId, setPlanId] = useState<string | null>(null);
   /**
    * Paywall : un visiteur non connecté, ou connecté sans abonnement, parcourt
    * tout le flux (photo, description, bouton Générer, chargement) mais
@@ -448,7 +448,13 @@ export default function Home() {
   const [videoPaywalled, setVideoPaywalled] = useState(false);
 
   /** Seul un compte connecté ET porteur d'un palier peut générer. */
-  const isSubscribed = isLoggedIn && hasPlan;
+  const isSubscribed = isLoggedIn && !!planId;
+  /**
+   * Le Snap Rouge est un avantage des paliers Essentiel et Ultimate, annoncé
+   * comme tel sur /tarifs. Un abonné Découverte génère normalement mais n'y
+   * a pas accès : si cette condition saute, la grille tarifaire ment.
+   */
+  const hasSnapRouge = planId === "essentiel" || planId === "ultimate";
 
   const { elapsedSeconds: imageElapsed, progressPercent: imageProgress } =
     useElapsedProgress(loading);
@@ -471,7 +477,7 @@ export default function Home() {
       .eq("id", user.id)
       .single();
     setCredits(data?.credits ?? 0);
-    setHasPlan(!!data?.plan);
+    setPlanId((data?.plan as string | null) ?? null);
   }, []);
 
   useEffect(() => {
@@ -1234,7 +1240,7 @@ export default function Home() {
                     {loading ? "…" : "Régénérer"}
                   </button>
 
-                  {canShareToSnap && (
+                  {canShareToSnap && hasSnapRouge && (
                     <div className="w-full space-y-2 sm:w-auto">
                       <button
                         type="button"
@@ -1255,6 +1261,7 @@ export default function Home() {
                     </div>
                   )}
 
+                  {hasSnapRouge && (
                   <button
                     type="button"
                     onClick={() => setShowSnapRougeGuide((v) => !v)}
@@ -1264,8 +1271,9 @@ export default function Home() {
                       ? "Masquer les explications"
                       : "Comment ça marche, le Snap Rouge ? →"}
                   </button>
+                  )}
 
-                  {showSnapRougeGuide && (
+                  {hasSnapRouge && showSnapRougeGuide && (
                     <div className="w-full rounded-2xl border border-red-500/20 bg-gradient-to-b from-red-500/5 to-transparent p-4">
                       <p className="mb-4 text-center text-lg font-black uppercase tracking-wide text-red-500">
                         Snap Rouge

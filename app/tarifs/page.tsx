@@ -53,6 +53,15 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     essentiel: { kind: "check" },
     ultimate: { kind: "check" },
   },
+  // Réellement restreint dans le studio : `hasSnapRouge` dans app/page.tsx
+  // n'affiche le bouton et le tutoriel que pour ces deux paliers. Modifier
+  // cette ligne sans modifier cette condition rendrait la grille mensongère.
+  {
+    label: "Snap Rouge (envoi indétectable)",
+    decouverte: { kind: "cross" },
+    essentiel: { kind: "check" },
+    ultimate: { kind: "check" },
+  },
 ];
 
 export default async function TarifsPage() {
