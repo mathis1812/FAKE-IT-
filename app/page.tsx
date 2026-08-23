@@ -1156,9 +1156,6 @@ export default function Home() {
             />
             <div className="mb-4">
               <div className="mb-2 flex items-center gap-2">
-                <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-neutral-500">
-                  Le lieu où tu veux apparaître
-                </p>
                 <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary-soft">
                   1 à 3 photos
                 </span>
@@ -1206,12 +1203,6 @@ export default function Home() {
                   </span>
                 </button>
               )}
-              <p className="mt-2 text-[11px] text-neutral-600">
-                Facultatif : sans photo de lieu, décris simplement la scène
-                dans la note ci-dessous. Avec, 1 photo suffit — 2 à 3 angles
-                du même lieu améliorent la fidélité du décor et de la
-                lumière, et le prompt est généré automatiquement.
-              </p>
             </div>
 
             <textarea
