@@ -8,7 +8,6 @@ import { playRevealChime, unlockAudioContext } from "@/lib/reveal-chime";
 import { createClient } from "@/lib/supabase/client";
 import {
   prepareShareFile,
-  shareToSnapchat as shareToSnapchatFn,
   sendAsRedSnap as sendAsRedSnapFn,
   SNAP_UPLOAD_LENS_URL,
 } from "@/lib/share-utils";
@@ -700,25 +699,48 @@ export default function Home() {
     }
   }, [prepared, userNote, fileName, placeImages, refreshCredits, isSubscribed]);
 
-  const download = useCallback(() => {
+  /**
+   * Sur mobile, un lien `download` ouvre l'image dans un onglet au lieu de
+   * l'enregistrer : seule la feuille de partage native propose « Enregistrer
+   * dans Photos ». On passe donc par navigator.share quand il accepte les
+   * fichiers — comme le fait le partage Snap — et on garde le lien
+   * classique en repli sur desktop.
+   *
+   * Contrairement au partage Snap, on n'utilise PAS `prepareShareFile` :
+   * celui-ci réduit à 1600 px et convertit en JPEG pour Snapchat, alors
+   * qu'un téléchargement doit rendre le fichier en pleine qualité.
+   */
+  const download = useCallback(async () => {
     if (!result) return;
-    const a = document.createElement("a");
-    a.href = result;
-    a.download = "bluminoo-result.png";
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }, [result]);
 
-  // Delegate to @/lib/share-utils — the canonical implementation also
-  // imported by the Vitest regression suite in __tests__/share-button.test.tsx.
-  const shareToSnapchat = useCallback(async () => {
-    await shareToSnapchatFn(result, (patch) => {
-      if (patch.sharing !== undefined) setSharing(patch.sharing);
-      if (patch.error !== undefined) setError(patch.error);
-    });
+    const fallbackToAnchor = () => {
+      const a = document.createElement("a");
+      a.href = result;
+      a.download = "bluminoo-result.png";
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+
+    try {
+      const res = await fetch(result);
+      const blob = await res.blob();
+      const file = new File([blob], "bluminoo-result.png", {
+        type: blob.type || "image/png",
+      });
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file] });
+        return;
+      }
+    } catch (err) {
+      // L'utilisateur a simplement fermé la feuille de partage : ne pas
+      // enchaîner sur un téléchargement qu'il n'a pas demandé.
+      if (err instanceof DOMException && err.name === "AbortError") return;
+    }
+
+    fallbackToAnchor();
   }, [result]);
 
   const sendAsRedSnap = useCallback(async () => {
@@ -1221,16 +1243,6 @@ export default function Home() {
                   >
                     Télécharger
                   </button>
-                  {canShareToSnap && (
-                    <button
-                      type="button"
-                      onClick={() => void shareToSnapchat()}
-                      disabled={sharing}
-                      className="flex-1 cursor-pointer rounded-2xl bg-red-600 px-5 py-3.5 text-sm font-bold text-white transition duration-200 hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {sharing ? "Préparation…" : "Envoyer sur Snapchat"}
-                    </button>
-                  )}
                   <button
                     type="button"
                     onClick={generate}
