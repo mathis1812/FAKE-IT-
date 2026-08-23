@@ -89,7 +89,12 @@ export default function SiteHeader() {
 
   return (
     <Fragment>
-      <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-ink/55 backdrop-blur-2xl">
+      {/* Header posé directement sur le fond : ni bordure ni bandeau opaque,
+          pour qu'il se fonde dans StudioBackdrop. Le léger dégradé vers le
+          bas n'introduit aucune ligne visible — il sert uniquement à garder
+          la navigation lisible quand elle passe au-dessus d'une zone claire
+          (la mosaïque du hero, par exemple). */}
+      <header className="sticky top-0 z-30 bg-gradient-to-b from-ink/85 via-ink/40 to-transparent">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <Link href="/" className="flex items-baseline gap-3">
             <h1 className="font-display text-3xl font-semibold tracking-tight text-white">
