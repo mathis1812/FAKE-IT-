@@ -79,9 +79,9 @@ export async function POST(req: NextRequest) {
       });
       customerId = customer.id;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erreur Stripe.";
+      const message = err instanceof Error ? err.message : "Stripe error.";
       return NextResponse.json(
-        { error: `Impossible de créer le client Stripe. ${message}` },
+        { error: `Unable to create the Stripe customer. ${message}` },
         { status: 502 },
       );
     }
@@ -101,9 +101,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url: session.url });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Erreur Stripe.";
+    const message = err instanceof Error ? err.message : "Stripe error.";
     return NextResponse.json(
-      { error: `Impossible de créer la session de paiement. ${message}` },
+      { error: `Unable to create the payment session. ${message}` },
       { status: 502 },
     );
   }

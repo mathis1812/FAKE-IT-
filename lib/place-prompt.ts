@@ -101,7 +101,7 @@ export async function buildPlacePrompt(
 
     if (!res.ok) {
       console.error(
-        `Analyse du lieu : kie.ai a répondu ${res.status}, utilisation du prompt de secours.`,
+        `Place analysis: kie.ai responded ${res.status}, using the fallback prompt.`,
       );
       return fallbackPlacePrompt(userNote);
     }
@@ -110,13 +110,13 @@ export async function buildPlacePrompt(
     const text = json.choices?.[0]?.message?.content?.trim();
     if (!text) {
       console.error(
-        "Analyse du lieu : réponse vide de kie.ai, utilisation du prompt de secours.",
+        "Place analysis: empty response from kie.ai, using the fallback prompt.",
       );
       return fallbackPlacePrompt(userNote);
     }
     return text;
   } catch (err) {
-    console.error("Analyse du lieu impossible :", err);
+    console.error("Place analysis failed:", err);
     return fallbackPlacePrompt(userNote);
   }
 }

@@ -25,7 +25,7 @@ type GeminiGenerateContentResponse = {
 async function fetchAsInlineData(url: string): Promise<GeminiInlineData> {
   const res = await fetch(url);
   if (!res.ok) {
-    throw new Error(`Téléchargement de l'image de référence échoué (${res.status}).`);
+    throw new Error(`Failed to download the reference image (${res.status}).`);
   }
   const mimeType = res.headers.get("content-type") || "image/png";
   const bytes = Buffer.from(await res.arrayBuffer());
@@ -81,24 +81,24 @@ export async function generateGeminiImage(
     json = JSON.parse(raw);
   } catch {
     throw new Error(
-      `Réponse Gemini illisible (HTTP ${res.status}) : ${raw.slice(0, 300) || "(corps vide)"}`,
+      `Unreadable Gemini response (HTTP ${res.status}): ${raw.slice(0, 300) || "(empty body)"}`,
     );
   }
 
   if (!res.ok) {
-    throw new Error(`Erreur API Gemini (${res.status}) : ${raw.slice(0, 300)}`);
+    throw new Error(`Gemini API error (${res.status}): ${raw.slice(0, 300)}`);
   }
 
   if (json.promptFeedback?.blockReason) {
     throw new Error(
-      `Génération bloquée par Gemini (${json.promptFeedback.blockReason}).`,
+      `Generation blocked by Gemini (${json.promptFeedback.blockReason}).`,
     );
   }
 
   const parts = json.candidates?.[0]?.content?.parts ?? [];
   const imagePart = parts.find((p) => p.inlineData?.data);
   if (!imagePart?.inlineData?.data) {
-    throw new Error("La génération a réussi mais aucune image n'a été renvoyée.");
+    throw new Error("Generation succeeded but no image was returned.");
   }
 
   return {

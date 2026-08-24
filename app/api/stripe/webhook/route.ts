@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
 
           if (updateError) {
             console.error(
-              `[stripe-webhook] échec update profiles pour ${event.type} (event ${event.id}):`,
+              `[stripe-webhook] failed to update profiles for ${event.type} (event ${event.id}):`,
               updateError,
             );
             dbWriteFailed = true;
@@ -209,7 +209,7 @@ export async function POST(req: NextRequest) {
 
         if (updateError) {
           console.error(
-            `[stripe-webhook] échec update profiles pour ${event.type} (event ${event.id}):`,
+            `[stripe-webhook] failed to update profiles for ${event.type} (event ${event.id}):`,
             updateError,
           );
           dbWriteFailed = true;
@@ -220,7 +220,7 @@ export async function POST(req: NextRequest) {
         }
       } else {
         console.error(
-          `[stripe-webhook] resolvePriceId introuvable pour priceId=${priceId} (subscriptionId=${subscription.id}, event ${event.id})`,
+          `[stripe-webhook] resolvePriceId not found for priceId=${priceId} (subscriptionId=${subscription.id}, event ${event.id})`,
         );
       }
     }
@@ -237,7 +237,7 @@ export async function POST(req: NextRequest) {
 
     if (updateError) {
       console.error(
-        `[stripe-webhook] échec update profiles pour ${event.type} (event ${event.id}):`,
+        `[stripe-webhook] failed to update profiles for ${event.type} (event ${event.id}):`,
         updateError,
       );
       dbWriteFailed = true;

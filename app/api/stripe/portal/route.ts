@@ -79,9 +79,9 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({ url: session.url });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erreur Stripe.";
+      const message = err instanceof Error ? err.message : "Stripe error.";
       return NextResponse.json(
-        { error: `Impossible d'ouvrir le portail de facturation. ${message}` },
+        { error: `Unable to open the billing portal. ${message}` },
         { status: 502 },
       );
     }
@@ -129,9 +129,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url: session.url });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Erreur Stripe.";
+    const message = err instanceof Error ? err.message : "Stripe error.";
     return NextResponse.json(
-      { error: `Impossible d'ouvrir le changement de palier. ${message}` },
+      { error: `Unable to open the plan change. ${message}` },
       { status: 502 },
     );
   }

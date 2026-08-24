@@ -29,7 +29,7 @@ export async function refundCredits(
   });
   if (error) {
     console.error(
-      `Échec du remboursement de ${amount} crédits pour l'utilisateur ${userId} :`,
+      `Failed to refund ${amount} credits for user ${userId}:`,
       error.message,
     );
   }

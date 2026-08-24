@@ -37,7 +37,7 @@ async function parseFalJson<T>(
     return { json: JSON.parse(raw) as T, raw };
   } catch {
     throw new Error(
-      `Réponse fal.ai illisible ${context} (HTTP ${res.status}) : ${raw.slice(0, 300) || "(corps vide)"}`,
+      `Unreadable fal.ai response ${context} (HTTP ${res.status}): ${raw.slice(0, 300) || "(empty body)"}`,
     );
   }
 }
@@ -65,12 +65,12 @@ export async function createFalTask(
 
   const { json, raw } = await parseFalJson<FalSubmitResponse>(
     res,
-    "à la création de la tâche",
+    "creating the task",
   );
 
   if (!res.ok || !json.request_id || !json.status_url || !json.response_url) {
     throw new Error(
-      `Erreur fal.ai (${res.status}) à la création de la tâche : ${raw.slice(0, 300)}`,
+      `fal.ai error (${res.status}) creating the task: ${raw.slice(0, 300)}`,
     );
   }
   return { statusUrl: json.status_url, responseUrl: json.response_url };
@@ -92,31 +92,31 @@ export async function pollFalTask(
     const statusRes = await fetch(task.statusUrl, { headers });
 
     const { json: statusJson, raw: statusRaw } =
-      await parseFalJson<FalStatusResponse>(statusRes, "en interrogeant la tâche");
+      await parseFalJson<FalStatusResponse>(statusRes, "polling the task");
 
     if (!statusRes.ok) {
       throw new Error(
-        `Erreur fal.ai (${statusRes.status}) en interrogeant la tâche : ${statusRaw.slice(0, 300)}`,
+        `fal.ai error (${statusRes.status}) polling the task: ${statusRaw.slice(0, 300)}`,
       );
     }
 
     if (statusJson.status === "COMPLETED") {
       const resultRes = await fetch(task.responseUrl, { headers });
       const { json: resultJson, raw: resultRaw } =
-        await parseFalJson<FalResultResponse>(resultRes, "en récupérant le résultat");
+        await parseFalJson<FalResultResponse>(resultRes, "fetching the result");
       if (!resultRes.ok) {
         throw new Error(
-          `Erreur fal.ai (${resultRes.status}) en récupérant le résultat : ${resultRaw.slice(0, 300)}`,
+          `fal.ai error (${resultRes.status}) fetching the result: ${resultRaw.slice(0, 300)}`,
         );
       }
       const url = resultJson.images?.[0]?.url ?? resultJson.video?.url;
       if (!url) {
-        throw new Error("La tâche a réussi mais aucun résultat n'a été renvoyé.");
+        throw new Error("The task succeeded but no result was returned.");
       }
       return url;
     }
 
-    // "IN_QUEUE" | "IN_PROGRESS" (ou tout autre état en cours) : on continue.
+    // "IN_QUEUE" | "IN_PROGRESS" (or any other in-progress state): keep polling.
     await new Promise((resolve) => setTimeout(resolve, options.intervalMs));
   }
 

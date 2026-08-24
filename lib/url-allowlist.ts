@@ -36,8 +36,8 @@ export const KIE_UPLOAD_URL =
 export const KIE_DOWNLOAD_HOSTNAME = "tempfile.redpandaai.co";
 
 export const DISALLOWED_ASSET_URL_MESSAGE =
-  "URL de média non autorisée. Les fichiers doivent être uploadés via " +
-  "l'application avant d'être utilisés.";
+  "Media URL not allowed. Files must be uploaded through " +
+  "the application before being used.";
 
 /**
  * Hôtes autorisés, recalculés à chaque appel : `NEXT_PUBLIC_SUPABASE_URL` est

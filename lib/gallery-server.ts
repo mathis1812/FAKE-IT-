@@ -80,7 +80,7 @@ export async function persistVideoFromUrl(
       clearTimeout(timer);
     }
     if (!res.ok) {
-      throw new Error(`Téléchargement de la vidéo échoué (${res.status}).`);
+      throw new Error(`Failed to download the video (${res.status}).`);
     }
 
     const mimeType =
@@ -98,7 +98,7 @@ export async function persistVideoFromUrl(
       .publicUrl;
   } catch (err) {
     console.error(
-      "Ré-hébergement de la vidéo impossible, repli sur l'URL temporaire du fournisseur :",
+      "Unable to re-host the video, falling back to the provider's temporary URL:",
       err,
     );
   }
@@ -115,7 +115,7 @@ export async function persistVideoFromUrl(
     });
     if (error) throw error;
   } catch (err) {
-    console.error("Échec de l'enregistrement en galerie (vidéo) :", err);
+    console.error("Failed to save gallery entry (video):", err);
   }
 
   return finalUrl;
