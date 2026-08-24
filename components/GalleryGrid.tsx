@@ -41,7 +41,7 @@ async function shareEntry(entry: GalleryEntry): Promise<void> {
 
   const response = await fetch(entry.result_url);
   if (!response.ok) {
-    throw new Error("The photo could not be prepared for sharing.");
+    throw new Error("The photo can't be prepared for sharing.");
   }
   const blob = await response.blob();
   const file = new File([blob], `bluminoo-${entry.id}.${extensionFor(entry)}`, {
@@ -50,7 +50,7 @@ async function shareEntry(entry: GalleryEntry): Promise<void> {
 
   if (navigator.canShare && !navigator.canShare({ files: [file] })) {
     throw new Error(
-      "File sharing is not supported by this browser.",
+      "File sharing isn't supported by this browser.",
     );
   }
 
