@@ -9,49 +9,49 @@ import { createClient } from "@/lib/supabase/client";
 
 const FEATURES = [
   {
-    title: "Ultra-réaliste",
-    text: "Lumière, textures, visage et cadrage d'origine sont préservés. Le résultat passe pour une vraie photo.",
+    title: "Ultra-realistic",
+    text: "Lighting, textures, your face, and the original framing all stay intact. The result passes for a real photo.",
   },
   {
-    title: "Dans un lieu réel",
-    text: "Ajoute 1 à 3 photos d'un endroit et retrouve-toi dedans. Le décor, l'ambiance et la lumière sont analysés automatiquement.",
+    title: "In a real place",
+    text: "Add 1 to 3 photos of a spot and put yourself right in it. The setting, mood, and light are analyzed automatically.",
   },
   {
-    title: "Photo ou vidéo",
-    text: "Crée une image lifestyle, ou donne vie à ta scène en vidéo courte prête à poster en story.",
+    title: "Photo or video",
+    text: "Create a lifestyle image, or bring your scene to life as a short video ready to post to your story.",
   },
 ];
 
 const FAQ_ITEMS = [
   {
-    question: "Comment fonctionne la génération d'images ?",
+    question: "How does the image generation work?",
     answer:
-      "Tu envoies ta photo, tu ajoutes 1 à 3 photos du lieu où tu veux apparaître (ou tu décris simplement la scène), et l'IA t'intègre dedans de façon photoréaliste en préservant ton visage, ta pose et la lumière d'origine.",
+      "You send your photo, add 1 to 3 photos of the place you want to appear in (or just describe the scene), and the AI blends you in photorealistically while preserving your face, pose, and the original lighting.",
   },
   {
-    question: "Les photos m'appartiennent-elles ?",
+    question: "Do the photos belong to me?",
     answer:
-      "Oui. Tes rendus sont sauvegardés dans ta Galerie, associée à ton compte, et accessibles depuis n'importe quel appareil après connexion.",
+      "Yes. Your renders are saved in your Gallery, tied to your account, and accessible from any device once you're signed in.",
   },
   {
-    question: "Qu'est-ce que le système de Snap Rouge ?",
+    question: "What is the Red Snap system?",
     answer:
-      "Une méthode de partage qui envoie ta photo comme un vrai snap pris sur le moment, sans le filigrane « Média chargé » qui trahit les images importées depuis la galerie.",
+      "A sharing method that sends your photo like a real snap taken on the spot, without the \"Media loaded\" watermark that gives away images imported from the gallery.",
   },
   {
-    question: "Puis-je annuler mon abonnement ?",
+    question: "Can I cancel my subscription?",
     answer:
-      "Oui, à tout moment depuis ton espace compte, via le portail de gestion sécurisé. Ton palier reste actif jusqu'à la fin de la période déjà payée.",
+      "Yes, anytime from your account area, through the secure management portal. Your plan stays active until the end of the period you've already paid for.",
   },
   {
-    question: "Les paiements sont-ils sécurisés ?",
+    question: "Are payments secure?",
     answer:
-      "Les paiements sont traités par Stripe. Aucune donnée bancaire ne transite ni n'est stockée sur nos serveurs.",
+      "Payments are processed by Stripe. No banking data ever passes through or is stored on our servers.",
   },
   {
-    question: "Mes photos générées sont-elles confidentielles ?",
+    question: "Are my generated photos private?",
     answer:
-      "Ta Galerie est privée et rattachée à ton seul compte. La politique de confidentialité détaille les sous-traitants utilisés pour le traitement des photos.",
+      "Your Gallery is private and tied only to your account. The privacy policy details the subprocessors used to handle photos.",
   },
 ];
 
@@ -80,10 +80,10 @@ export default function LandingPage() {
   }, []);
 
   const ctaHref = isLoggedIn ? "/" : "/sign-up";
-  const ctaLabel = isLoggedIn ? "Ouvrir le studio" : "Commencer maintenant";
+  const ctaLabel = isLoggedIn ? "Open the studio" : "Get started now";
   const secondaryCtaLabel = isLoggedIn
-    ? "Ouvrir le studio"
-    : "Démarrer avec Bluminoo";
+    ? "Open the studio"
+    : "Start with Bluminoo";
 
   return (
     <div className="mx-auto max-w-6xl px-4 animate-fade-up">
@@ -93,7 +93,7 @@ export default function LandingPage() {
         <HeroShowcaseMosaic />
 
         <span className="relative rounded-full border border-white/10 bg-black/40 px-5 py-2 text-[11px] font-medium uppercase tracking-[0.18em] text-primary-soft">
-          Nouvelle version disponible
+          New version available
         </span>
 
         <h1 className="font-display relative mt-8 max-w-4xl [text-shadow:0_2px_28px_rgba(0,0,0,0.75)] text-5xl font-semibold leading-[0.95] tracking-[-0.03em] text-white sm:text-7xl md:text-8xl">
@@ -101,8 +101,8 @@ export default function LandingPage() {
         </h1>
 
         <p className="relative mt-6 max-w-2xl text-base leading-relaxed text-neutral-200 [text-shadow:0_1px_18px_rgba(0,0,0,0.8)] sm:text-lg">
-          L&apos;IA parfaite pour impressionner ton entourage avec une photo
-          en un seul clic.
+          The perfect AI to impress everyone around you with one photo,
+          in a single click.
         </p>
 
         <Link
@@ -124,14 +124,14 @@ export default function LandingPage() {
       {/* SOLUTION EXCLUSIVE — le Snap Rouge, mis en avant seul. */}
       <section className="relative overflow-hidden rounded-[2rem] border border-primary/20 bg-primary/10 px-6 py-14 text-center sm:px-12">
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
-          Solution exclusive
+          Exclusive feature
         </p>
         <h2 className="font-display mt-4 text-3xl font-semibold text-white sm:text-4xl">
-          Envoie tes photos en snap rouge indétectable
+          Send your photos as an undetectable Red Snap
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-neutral-300">
-          Plus de filigrane « Média chargé » qui trahit une image importée.
-          Ta photo part comme un vrai snap pris sur le moment.
+          No more "Media loaded" watermark giving away an imported image.
+          Your photo goes out like a real snap taken on the spot.
         </p>
       </section>
 
@@ -141,10 +141,10 @@ export default function LandingPage() {
       <section className="py-20 sm:py-28">
         <div className="text-center">
           <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
-            Le principe
+            How it works
           </p>
           <h2 className="font-display mt-3 text-4xl font-semibold text-white sm:text-5xl">
-            Ta photo, le lieu de ton choix
+            Your photo, any place you pick
           </h2>
         </div>
 
@@ -152,7 +152,7 @@ export default function LandingPage() {
           <figure className="overflow-hidden rounded-3xl border border-white/10">
             <img
               src="/landing/restaurant.jpg"
-              alt="Photo d'un restaurant utilisée comme lieu de référence"
+              alt="Photo of a restaurant used as the reference location"
               width={1024}
               height={1024}
               loading="lazy"
@@ -160,10 +160,10 @@ export default function LandingPage() {
             />
             <figcaption className="border-t border-white/10 bg-white/[0.02] px-5 py-4">
               <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-500">
-                Le lieu
+                The place
               </span>
               <p className="mt-1 text-sm text-neutral-300">
-                La photo du lieu que tu fournis.
+                The photo of the place you provide.
               </p>
             </figcaption>
           </figure>
@@ -171,7 +171,7 @@ export default function LandingPage() {
           <figure className="overflow-hidden rounded-3xl border border-primary/30">
             <img
               src="/landing/rooftop.jpg"
-              alt="Exemple du type de scène produit par Bluminoo dans un lieu extérieur"
+              alt="Example of the kind of scene Bluminoo produces in an outdoor setting"
               width={1024}
               height={1024}
               loading="lazy"
@@ -179,10 +179,10 @@ export default function LandingPage() {
             />
             <figcaption className="border-t border-primary/20 bg-primary/[0.06] px-5 py-4">
               <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-soft">
-                Le résultat
+                The result
               </span>
               <p className="mt-1 text-sm text-neutral-200">
-                Le type de scène que Bluminoo produit.
+                The kind of scene Bluminoo produces.
               </p>
             </figcaption>
           </figure>
@@ -203,7 +203,7 @@ export default function LandingPage() {
       <section className="pb-20 sm:pb-28">
         <div className="text-center">
           <h2 className="font-display text-4xl font-semibold text-white sm:text-5xl">
-            La différence Bluminoo
+            The Bluminoo difference
           </h2>
         </div>
 
@@ -238,10 +238,10 @@ export default function LandingPage() {
       <section className="pb-20 sm:pb-28">
         <div className="text-center">
           <h2 className="font-display text-4xl font-semibold text-white sm:text-5xl">
-            Questions fréquentes
+            Frequently asked questions
           </h2>
           <p className="mt-3 text-sm text-neutral-400">
-            Tout ce que tu dois savoir sur Bluminoo Studio.
+            Everything you need to know about Bluminoo Studio.
           </p>
         </div>
 
@@ -271,10 +271,10 @@ export default function LandingPage() {
       {/* CTA FINAL */}
       <section className="relative overflow-hidden rounded-[2rem] border border-primary/20 bg-primary/10 px-6 py-16 text-center sm:px-12 sm:py-24">
         <h2 className="font-display text-4xl font-semibold text-white sm:text-6xl">
-          Prêt à impressionner ?
+          Ready to impress?
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-neutral-300">
-          Crée ta première scène en quelques secondes.
+          Create your first scene in seconds.
         </p>
         <Link
           href={ctaHref}
