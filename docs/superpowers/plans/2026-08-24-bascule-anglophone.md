@@ -621,12 +621,52 @@ cd C:/Users/julie/projects/fakeit && git add app/api && git commit -m "feat: mes
 
 ---
 
-### Task 11: Vérification finale de la bascule
+### Task 11: Messages de partage et tests associés
+
+Lacune découverte pendant l'exécution : `lib/share-utils.ts` ne figurait dans aucune tâche alors qu'il porte des messages affichés à l'utilisateur. C'est aussi le seul fichier couvert par des tests, et **2 des 10 assertions portent sur ses chaînes françaises** — les traduire sans toucher aux tests casserait la suite.
+
+**Files:**
+- Modify: `lib/share-utils.ts` (6 messages d'erreur, plus le commentaire de flux « Snap Rouge »)
+- Modify: `__tests__/share-button.test.tsx` (lignes 165 et 276)
+
+**Interfaces:**
+- Consumes: rien
+- Produces: des messages de partage en anglais ; aucune signature de fonction ne change
+
+- [ ] **Step 1: Traduire les messages de `lib/share-utils.ts`**
+
+Traduire les chaînes affichées à l'utilisateur, notamment celles des lignes 57, 65, 110, 119, 174, 183 et 204. Le message de la ligne 204 mentionne « Snap Rouge » : il devient « Red Snap ». Le commentaire de flux ligne 153 (`Two-step "Snap Rouge" flow`) devient également « Red Snap ».
+
+Ne change aucune signature de fonction, aucun type, aucune logique. `shareToSnapchat` est conservée même si elle n'est plus appelée par l'interface : elle est couverte par les tests.
+
+- [ ] **Step 2: Mettre à jour les deux assertions de test**
+
+`__tests__/share-button.test.tsx` ligne 165 attend `"Le résultat ne peut pas être préparé pour le partage."` et ligne 276 attend `"Le résultat ne peut pas être préparé."`. Remplacer ces deux valeurs attendues par les traductions exactes retenues à l'étape 1, au caractère près.
+
+Ne modifier que ces valeurs attendues : ni la structure des tests, ni les cas couverts, ni les simulacres.
+
+- [ ] **Step 3: Vérifier**
+
+```bash
+cd C:/Users/julie/projects/fakeit && npx tsc --noEmit -p tsconfig.json && npx vitest run
+```
+
+Expected: compilation sans erreur et **10 tests sur 10 au vert**. Un test rouge signale une chaîne attendue qui ne correspond pas exactement à la traduction retenue.
+
+- [ ] **Step 4: Commit**
+
+```bash
+cd C:/Users/julie/projects/fakeit && git add lib/share-utils.ts __tests__/share-button.test.tsx && git commit -m "feat: messages de partage en anglais"
+```
+
+---
+
+### Task 12: Vérification finale de la bascule
 
 **Files:** aucun fichier modifié par défaut — cette tâche recherche les oublis et les corrige là où elle en trouve.
 
 **Interfaces:**
-- Consumes: le résultat des tâches 1 à 10
+- Consumes: le résultat des tâches 1 à 11
 - Produces: la confirmation que la bascule est complète
 
 - [ ] **Step 1: Chercher tout texte français résiduel**
