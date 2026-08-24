@@ -77,8 +77,8 @@ function PauseButton({
       onClick={onToggle}
       aria-label={
         isPaused
-          ? "Reprendre le défilement"
-          : "Mettre le défilement en pause"
+          ? "Resume scrolling"
+          : "Pause scrolling"
       }
       className="mx-auto flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.14em] text-neutral-300 transition hover:border-white/20 hover:text-white focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
     >
@@ -99,7 +99,7 @@ function PauseButton({
           <path d="M4 2.5h3v11H4v-11zm5 0h3v11H9v-11z" />
         </svg>
       )}
-      {isPaused ? "Reprendre" : "Pause"}
+      {isPaused ? "Resume" : "Pause"}
     </button>
   );
 }
@@ -115,7 +115,7 @@ export default function TestimonialMarquee() {
 
   return (
     <section className="relative overflow-hidden py-16">
-      <h2 className="sr-only">Ce qu&apos;en disent nos utilisateurs</h2>
+      <h2 className="sr-only">What our users say</h2>
       <div className="flex flex-col gap-4">
         <MarqueeRow items={topRow} direction="left" isPaused={isPaused} />
         <MarqueeRow items={bottomRow} direction="right" isPaused={isPaused} />
