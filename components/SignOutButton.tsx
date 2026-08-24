@@ -19,7 +19,7 @@ export default function SignOutButton() {
       onClick={handleSignOut}
       className="w-full rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-neutral-300 transition hover:border-white/20 hover:text-white"
     >
-      Se déconnecter
+      Sign out
     </button>
   );
 }

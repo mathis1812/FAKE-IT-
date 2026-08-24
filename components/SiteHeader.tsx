@@ -8,10 +8,10 @@ import { createClient } from "@/lib/supabase/client";
 const MOBILE_BREAKPOINT_QUERY = "(min-width: 768px)";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Accueil" },
-  { href: "/gallery", label: "Galerie" },
-  { href: "/pricing", label: "Tarifs" },
-  { href: "/about", label: "À propos" },
+  { href: "/", label: "Home" },
+  { href: "/gallery", label: "Gallery" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/about", label: "About" },
 ] as const;
 
 /**
@@ -130,7 +130,7 @@ export default function SiteHeader() {
                 href={isLoggedIn ? "/account" : "/sign-in"}
                 className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-neutral-300 transition hover:border-white/20 hover:text-white"
               >
-                {isLoggedIn ? "Mon compte" : "Connexion"}
+                {isLoggedIn ? "My account" : "Sign in"}
               </Link>
             )}
           </div>
@@ -140,7 +140,7 @@ export default function SiteHeader() {
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls="mobile-nav-panel"
-            aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-label={open ? "Close menu" : "Open menu"}
             className="cursor-pointer rounded-xl border border-white/10 p-2 text-neutral-300 transition hover:border-white/20 hover:text-white md:hidden"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -194,7 +194,7 @@ export default function SiteHeader() {
                     onClick={() => setOpen(false)}
                     className="rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-neutral-300 transition hover:bg-white/[0.04] hover:text-white"
                   >
-                    {isLoggedIn ? "Mon compte" : "Connexion"}
+                    {isLoggedIn ? "My account" : "Sign in"}
                   </Link>
                 )}
               </nav>

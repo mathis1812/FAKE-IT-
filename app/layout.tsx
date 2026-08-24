@@ -20,7 +20,7 @@ const montserrat = Montserrat({
 const SITE_URL = "https://bluminoo.vercel.app";
 const SITE_TITLE = "Bluminoo Studio";
 const SITE_DESCRIPTION =
-  "Crée une photo ou une vidéo ultra-réaliste de la vie dont tu rêves — un lieu, une scène, un instant — et poste-la en story pour surprendre tout ton entourage.";
+  "Create a hyper-realistic photo or video of the life you dream about — a place, a scene, a moment — and post it to your story to stun everyone you know.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     url: SITE_URL,
     siteName: SITE_TITLE,
-    locale: "fr_FR",
+    locale: "en_US",
     type: "website",
   },
   twitter: {
@@ -50,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`}>
+    <html lang="en" className={`${cormorant.variable} ${montserrat.variable}`}>
       <body className="bg-ink font-body text-neutral-100 antialiased">
         <div className="studio-shell min-h-screen">
           <StudioBackdrop />
