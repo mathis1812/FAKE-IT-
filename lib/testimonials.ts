@@ -49,7 +49,7 @@ export const TESTIMONIALS: Testimonial[] = [
   { name: "ZEN_USER_99", quote: "Keep doing what you're doing, you're doing an extraordinary job. Plus you're responsive when there's an issue. Thanks!" },
   { name: "TOM_RIDER", quote: "you guys are the best, keep going on this path, I hope for you, you could go far" },
   { name: "GIRAFE93FANTE", quote: "if only I'd had this sooner, my buddy believes anything thanks to the Red Snap thing 🤣" },
-  { name: "ENTIFACHO", quote: "thanks for including Red Snap tech in the essential plan, you guys rock 🙏" },
+  { name: "ENTIFACHO", quote: "thanks for including Red Snap tech in the Essential plan, you guys rock 🙏" },
   { name: "PEPITRDOR999", quote: "I don't regret my purchase one bit, I skipped a kebab and ended up with this banger instead 😭🙏" },
   { name: "MASKEYTV", quote: "for a start I'll give it a 4.5 rating because nothing and nobody is perfect, but it's extremely high quality" },
   { name: "PAYXLANPY", quote: "Well done for your work, a lot of people love the site, it's really good work!" },
