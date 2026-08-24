@@ -35,6 +35,13 @@ export default function ManageSubscriptionButton({
         return;
       }
 
+      // Abonnement en euros (ancienne tarification) : le backend renvoie un
+      // message d'explication à afficher avant de rediriger vers le portail,
+      // faute de quoi l'utilisateur ne le verrait jamais.
+      if (data.message) {
+        window.alert(data.message);
+      }
+
       window.location.href = data.url;
     } catch {
       setError("Something went wrong, please try again in a moment.");

@@ -132,7 +132,7 @@ const LEGACY_PRICE_IDS: {
 
 export function resolvePriceId(
   priceId: string | undefined,
-): { planId: PlanId; period: BillingPeriod } | null {
+): { planId: PlanId; period: BillingPeriod; legacy?: boolean } | null {
   if (!priceId) return null;
   for (const [id, plan] of Object.entries(PLANS) as [
     PlanId,
@@ -141,8 +141,12 @@ export function resolvePriceId(
     if (plan.monthly.priceId === priceId) return { planId: id, period: "monthly" };
     if (plan.annual.priceId === priceId) return { planId: id, period: "annual" };
   }
+  // `legacy: true` signale une résolution via LEGACY_PRICE_IDS (abonnement en
+  // euros souscrit avant la bascule anglophone). Les appelants qui n'ont pas
+  // besoin de cette distinction (ex. le webhook, qui traite planId/period de
+  // la même façon dans les deux cas) peuvent l'ignorer sans risque.
   const legacy = LEGACY_PRICE_IDS.find((entry) => entry.priceId === priceId);
-  if (legacy) return { planId: legacy.planId, period: legacy.period };
+  if (legacy) return { planId: legacy.planId, period: legacy.period, legacy: true };
 
   return null;
 }
