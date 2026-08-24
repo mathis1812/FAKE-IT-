@@ -19,9 +19,9 @@ type Mode = "image" | "video";
 // seule description de la scène. Le placeholder suit ce basculement, sans
 // quoi il annoncerait « optionnelle » un champ devenu obligatoire.
 const IMAGE_NOTE_PLACEHOLDER_WITH_PLACE =
-  "Note optionnelle (ex : assis à la table près de la fenêtre, ambiance soirée)…";
+  "Optional note (e.g. sitting at the table by the window, evening vibe)…";
 const IMAGE_NOTE_PLACEHOLDER_WITHOUT_PLACE =
-  "Décris la scène souhaitée (ex : à la terrasse d'un café parisien, lumière de fin de journée)…";
+  "Describe the scene you want (e.g. on the terrace of a Parisian café, late afternoon light)…";
 
 const MAX_PLACE_IMAGES = 3;
 
@@ -36,7 +36,7 @@ const PAYWALL_PREVIEW_DELAY_MS = 6_000;
 const PAYWALL_PREVIEW_IMAGE = "/landing/rooftop.jpg";
 
 const VIDEO_PROMPT_PLACEHOLDER =
-  "Ex : Remplace la montre au poignet par une Rolex Submariner en acier, mouvements naturels, conserve le visage, la pose et le fond…";
+  "E.g. Replace the watch on the wrist with a steel Rolex Submariner, natural movements, keep the face, pose, and background…";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_FILE_BYTES = 4 * 1024 * 1024;
@@ -53,7 +53,7 @@ const JPEG_QUALITY = 0.9;
 // prepareShareFile are now imported from @/lib/share-utils.
 
 // Légende lifestyle glissée dans le partage (best-effort selon l'app)
-const STORY_CAPTION = "❆ Le lifestyle dont je rêve — créé avec Bluminoo";
+const STORY_CAPTION = "❆ The lifestyle I dream of — made with Bluminoo";
 
 type PreparedImage = {
   previewUrl: string;
@@ -85,7 +85,7 @@ function readFileAsDataUrl(file: File | Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error("Lecture du fichier impossible."));
+    reader.onerror = () => reject(new Error("Unable to read the file."));
     reader.readAsDataURL(file);
   });
 }
@@ -96,7 +96,7 @@ async function compressImage(file: File): Promise<PreparedImage> {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const image = new Image();
       image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error("Image illisible."));
+      image.onerror = () => reject(new Error("Unreadable image."));
       image.src = objectUrl;
     });
 
@@ -110,7 +110,7 @@ async function compressImage(file: File): Promise<PreparedImage> {
     canvas.width = targetW;
     canvas.height = targetH;
     const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Compression impossible (canvas indisponible).");
+    if (!ctx) throw new Error("Compression failed (canvas unavailable).");
     ctx.drawImage(img, 0, 0, targetW, targetH);
 
     const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
@@ -138,11 +138,11 @@ async function validateVideoFile(
   if (!["video/mp4", "video/quicktime"].includes(file.type)) {
     return {
       error:
-        "Fichier non pris en charge. Veuillez sélectionner une vidéo MP4 ou MOV.",
+        "Unsupported file. Please select an MP4 or MOV video.",
     };
   }
   if (file.size > MAX_VIDEO_SOURCE_BYTES) {
-    return { error: "Fichier trop volumineux (max 50 Mo)." };
+    return { error: "File too large (max 50MB)." };
   }
 
   const objectUrl = URL.createObjectURL(file);
@@ -160,18 +160,18 @@ async function validateVideoFile(
           height: video.videoHeight,
           duration: video.duration,
         });
-      video.onerror = () => reject(new Error("Vidéo illisible."));
+      video.onerror = () => reject(new Error("Unreadable video."));
       video.src = objectUrl;
     });
 
     if (meta.width < MIN_VIDEO_WIDTH) {
       return {
-        error: `Vidéo trop basse résolution : ${meta.width} px de large, alors qu'il en faut au moins ${MIN_VIDEO_WIDTH}. Réexportez-la en qualité supérieure (720p minimum).`,
+        error: `Video resolution too low: ${meta.width}px wide, but at least ${MIN_VIDEO_WIDTH} is required. Re-export it in a higher quality (720p minimum).`,
       };
     }
     if (meta.width > MAX_VIDEO_WIDTH) {
       return {
-        error: `Vidéo trop grande : ${meta.width} px de large, alors que le maximum est ${MAX_VIDEO_WIDTH}.`,
+        error: `Video too large: ${meta.width}px wide, but the maximum is ${MAX_VIDEO_WIDTH}.`,
       };
     }
     if (
@@ -179,12 +179,12 @@ async function validateVideoFile(
       meta.duration > MAX_VIDEO_DURATION_S
     ) {
       return {
-        error: `Durée non prise en charge : ${Math.round(meta.duration)} s, alors qu'il faut entre ${MIN_VIDEO_DURATION_S} et ${MAX_VIDEO_DURATION_S} s.`,
+        error: `Unsupported duration: ${Math.round(meta.duration)}s, but it must be between ${MIN_VIDEO_DURATION_S} and ${MAX_VIDEO_DURATION_S}s.`,
       };
     }
     return { error: null, width: meta.width, height: meta.height };
   } catch {
-    return { error: "Vidéo illisible. Essayez un autre fichier MP4 ou MOV." };
+    return { error: "Unreadable video. Try another MP4 or MOV file." };
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
@@ -203,7 +203,7 @@ async function uploadVideoDirect(file: File, userId: string): Promise<string> {
     .from("video-uploads")
     .upload(path, file, { contentType: file.type });
   if (error) {
-    throw new Error(`Échec de l'upload de la vidéo : ${error.message}`);
+    throw new Error(`Video upload failed: ${error.message}`);
   }
   const {
     data: { publicUrl },
@@ -213,10 +213,10 @@ async function uploadVideoDirect(file: File, userId: string): Promise<string> {
 
 function validateImageFile(file: File): string | null {
   if (!file.type.startsWith("image/")) {
-    return "Fichier non pris en charge. Veuillez sélectionner une image.";
+    return "Unsupported file. Please select an image.";
   }
   if (file.size > MAX_FILE_BYTES) {
-    return "Fichier trop volumineux (max 10 Mo).";
+    return "File too large (max 10MB).";
   }
   return null;
 }
@@ -230,7 +230,7 @@ async function uploadImage(file: File): Promise<string> {
   });
   const data = await res.json().catch(() => null);
   if (!res.ok || !data?.fileUrl) {
-    throw new Error(data?.error || "Échec de l'upload de l'image.");
+    throw new Error(data?.error || "Image upload failed.");
   }
   return data.fileUrl as string;
 }
@@ -361,10 +361,10 @@ function DropZone({
 }
 
 const GENERATION_LOADING_MESSAGES = [
-  "Analyse de la lumière…",
-  "Ajustement des reflets…",
-  "Intégration du luxe…",
-  "Finalisation du rendu…",
+  "Analyzing the light…",
+  "Adjusting the reflections…",
+  "Adding the luxury touches…",
+  "Finalizing the render…",
 ];
 
 /**
@@ -408,7 +408,7 @@ export default function Home() {
   const [sharing, setSharing] = useState(false);
   const [canShareToSnap, setCanShareToSnap] = useState(false);
   const [canShareToStory, setCanShareToStory] = useState(false);
-  const [showSnapRougeGuide, setShowSnapRougeGuide] = useState(false);
+  const [showRedSnapGuide, setShowRedSnapGuide] = useState(false);
   const [sendingRedSnap, setSendingRedSnap] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -453,7 +453,7 @@ export default function Home() {
    * comme tel sur /pricing. Un abonné Découverte génère normalement mais n'y
    * a pas accès : si cette condition saute, la grille tarifaire ment.
    */
-  const hasSnapRouge = planId === "essentiel" || planId === "ultimate";
+  const hasRedSnap = planId === "essentiel" || planId === "ultimate";
 
   const { elapsedSeconds: imageElapsed, progressPercent: imageProgress } =
     useElapsedProgress(loading);
@@ -539,7 +539,7 @@ export default function Home() {
       setError(
         err instanceof Error
           ? err.message
-          : "Préparation de l'image impossible.",
+          : "Unable to prepare the image.",
       );
     }
   }, []);
@@ -573,7 +573,7 @@ export default function Home() {
       setError(
         err instanceof Error
           ? err.message
-          : "Préparation de l'image impossible.",
+          : "Unable to prepare the image.",
       );
     }
   }, []);
@@ -592,7 +592,7 @@ export default function Home() {
     // Amorce l'AudioContext dans le geste utilisateur pour iOS Safari.
     unlockAudioContext();
     if (!prepared) {
-      setError("Veuillez d'abord uploader une image.");
+      setError("Please upload an image first.");
       return;
     }
     // Les photos du lieu sont facultatives : sans elles, la note sert de
@@ -600,7 +600,7 @@ export default function Home() {
     // n'a aucune indication sur la scène à produire.
     if (placeImages.length === 0 && !userNote.trim()) {
       setError(
-        "Ajoutez une photo du lieu, ou décrivez la scène souhaitée dans la note.",
+        "Add a photo of the location, or describe the scene you want in the note.",
       );
       return;
     }
@@ -624,7 +624,7 @@ export default function Home() {
       const blob = await (await fetch(prepared.previewUrl)).blob();
       if (blob.size > MAX_VIDEO_FILE_BYTES) {
         setError(
-          "Image trop volumineuse après compression (max 4 Mo). Essayez une photo plus simple.",
+          "Image too large after compression (max 4MB). Try a simpler photo.",
         );
         return;
       }
@@ -640,7 +640,7 @@ export default function Home() {
         ).blob();
         if (placeBlob.size > MAX_VIDEO_FILE_BYTES) {
           setError(
-            "Photo du lieu trop volumineuse après compression (max 4 Mo).",
+            "Location photo too large after compression (max 4MB).",
           );
           return;
         }
@@ -659,14 +659,14 @@ export default function Home() {
                 sourceImageUrl,
                 placeImageUrls,
                 userNote: userNote.trim() || undefined,
-                label: "Génération image",
+                label: "Image generation",
               }
             : {
                 // Sans photo de lieu, la note devient la description : le
                 // serveur bascule alors sur son flux « prompt libre ».
                 sourceImageUrl,
                 prompt: userNote.trim(),
-                label: "Génération image",
+                label: "Image generation",
               },
         ),
       });
@@ -674,7 +674,7 @@ export default function Home() {
       if (!res.ok || !data) {
         setError(
           (data && data.error) ||
-            `Une erreur est survenue (${res.status}). Réessayez.`,
+            `Something went wrong (${res.status}). Please try again.`,
         );
         return;
       }
@@ -686,13 +686,13 @@ export default function Home() {
         setResult(data.imageUrl);
         void refreshCredits();
       } else {
-        setError("Réponse inattendue du serveur. Réessayez.");
+        setError("Unexpected response from the server. Please try again.");
       }
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Erreur réseau lors de la génération. Vérifiez votre connexion.",
+          : "Network error during generation. Check your connection.",
       );
     } finally {
       setLoading(false);
@@ -793,17 +793,17 @@ export default function Home() {
     // Amorce l'AudioContext dans le geste utilisateur pour iOS Safari.
     unlockAudioContext();
     if (!videoSource) {
-      setVideoError("Veuillez uploader une vidéo source.");
+      setVideoError("Please upload a source video.");
       return;
     }
     if (!videoObject) {
-      setVideoError("Veuillez uploader une photo de l'objet de remplacement.");
+      setVideoError("Please upload a photo of the replacement object.");
       return;
     }
     const prompt = videoPrompt.trim();
     if (!prompt) {
       setVideoError(
-        "Veuillez saisir un prompt décrivant le remplacement d'objet.",
+        "Please enter a prompt describing the object replacement.",
       );
       return;
     }
@@ -828,7 +828,7 @@ export default function Home() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        setVideoError("Connectez-vous pour générer une vidéo.");
+        setVideoError("Log in to generate a video.");
         return;
       }
       const sourceVideoUrl = await uploadVideoDirect(videoSource.file, user.id);
@@ -836,7 +836,7 @@ export default function Home() {
       const objectBlob = await (await fetch(preparedObject.previewUrl)).blob();
       if (objectBlob.size > MAX_VIDEO_FILE_BYTES) {
         setVideoError(
-          "Photo de l'objet trop volumineuse après compression (max 4 Mo). Essayez une photo plus simple.",
+          "Object photo too large after compression (max 4MB). Try a simpler photo.",
         );
         return;
       }
@@ -851,7 +851,7 @@ export default function Home() {
           sourceVideoUrl,
           objectImageUrl,
           prompt,
-          label: "Remplacement d'objet",
+          label: "Object replacement",
           sourceVideoWidth: videoSource.width,
           sourceVideoHeight: videoSource.height,
         }),
@@ -860,7 +860,7 @@ export default function Home() {
       if (!res.ok || !data) {
         setVideoError(
           (data && data.error) ||
-            `Une erreur est survenue (${res.status}). Réessayez.`,
+            `Something went wrong (${res.status}). Please try again.`,
         );
         return;
       }
@@ -872,13 +872,13 @@ export default function Home() {
         setVideoUrl(data.videoUrl);
         void refreshCredits();
       } else {
-        setVideoError("Réponse inattendue du serveur. Réessayez.");
+        setVideoError("Unexpected response from the server. Please try again.");
       }
     } catch (err) {
       setVideoError(
         err instanceof Error
           ? err.message
-          : "Erreur réseau lors de la génération vidéo. Vérifiez votre connexion.",
+          : "Network error during video generation. Check your connection.",
       );
     } finally {
       setVideoLoading(false);
@@ -901,7 +901,7 @@ export default function Home() {
     if (!videoUrl) return;
     if (!navigator.share) {
       setVideoError(
-        "Le partage direct est disponible depuis un téléphone compatible. Téléchargez la vidéo si nécessaire.",
+        "Direct sharing is available from a compatible phone. Download the video if needed.",
       );
       return;
     }
@@ -911,7 +911,7 @@ export default function Home() {
     try {
       const response = await fetch(videoUrl);
       if (!response.ok) {
-        throw new Error("La vidéo ne peut pas être préparée pour le partage.");
+        throw new Error("The video couldn't be prepared for sharing.");
       }
       const blob = await response.blob();
       const file = new File([blob], "bluminoo-story.mp4", {
@@ -920,7 +920,7 @@ export default function Home() {
 
       if (navigator.canShare && !navigator.canShare({ files: [file] })) {
         throw new Error(
-          "Le partage de fichiers vidéo n'est pas pris en charge par ce navigateur.",
+          "Video file sharing isn't supported by this browser.",
         );
       }
 
@@ -930,7 +930,7 @@ export default function Home() {
       setVideoError(
         err instanceof Error
           ? err.message
-          : "Le partage de la vidéo est impossible pour le moment.",
+          : "Video sharing isn't possible right now.",
       );
     } finally {
       setSharing(false);
@@ -960,7 +960,7 @@ export default function Home() {
                   : "text-neutral-400 hover:text-neutral-100"
               }`}
             >
-              {m === "image" ? "Image" : "Vidéo"}
+              {m === "image" ? "Image" : "Video"}
             </button>
           ))}
         </div>
@@ -971,13 +971,13 @@ export default function Home() {
           <Panel className="p-5 sm:p-6">
             <div className="mb-5 text-center">
               <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
-                Génération image
+                Image generation
               </p>
               <h2 className="font-display mt-2 text-2xl font-semibold leading-tight tracking-tight text-white">
-                Le lifestyle dont tu rêves. Jusqu&apos;à ce que tu l&apos;aies vraiment.
+                The lifestyle you dream of. Until you actually have it.
               </h2>
               <p className="mt-2 text-xs text-neutral-500">
-                Ultra-réaliste pour que ton entourage y croie.
+                Ultra-realistic, so the people around you buy it.
               </p>
             </div>
 
@@ -985,7 +985,7 @@ export default function Home() {
               <div
                 role="button"
                 tabIndex={0}
-                aria-label="Choisir une photo à transformer"
+                aria-label="Choose a photo to transform"
                 onDragOver={(e) => {
                   e.preventDefault();
                   setIsDragging(true);
@@ -1037,7 +1037,7 @@ export default function Home() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={PAYWALL_PREVIEW_IMAGE}
-                      alt="Exemple de rendu Bluminoo, volontairement flouté"
+                      alt="Example Bluminoo render, deliberately blurred"
                       className="h-full w-full scale-110 object-cover blur-2xl"
                       aria-hidden
                     />
@@ -1068,17 +1068,17 @@ export default function Home() {
                         </svg>
                       </span>
                       <p className="font-display text-lg font-semibold text-white">
-                        La génération est réservée aux abonnés
+                        Generation is for subscribers only
                       </p>
                       <p className="max-w-xs text-xs leading-relaxed text-neutral-300">
-                        Choisis un palier pour lancer ta scène et récupérer ton
-                        image en pleine qualité.
+                        Pick a plan to run your scene and get your image in
+                        full quality.
                       </p>
                       <Link
                         href={isLoggedIn ? "/pricing" : "/sign-up"}
                         className="mt-1 inline-flex items-center justify-center rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-ink transition hover:bg-primary-soft"
                       >
-                        {isLoggedIn ? "Voir les paliers" : "Créer mon compte"}
+                        {isLoggedIn ? "See plans" : "Create my account"}
                       </Link>
                     </div>
                   </div>
@@ -1087,13 +1087,13 @@ export default function Home() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={result}
-                      alt="Résultat généré"
+                      alt="Generated result"
                       className="h-full w-full object-cover"
                     />
                     <RevealBurst />
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
                       <p className="truncate text-xs text-neutral-300">
-                        Résultat · touche pour changer de photo
+                        Result · tap to change photo
                       </p>
                     </div>
                   </div>
@@ -1102,13 +1102,12 @@ export default function Home() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={prepared.previewUrl}
-                      alt="Aperçu"
+                      alt="Preview"
                       className="h-full w-full object-cover"
                     />
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
                       <p className="truncate text-xs text-neutral-300">
-                        {fileName || "Image sélectionnée"} · touche pour
-                        changer
+                        {fileName || "Selected image"} · tap to change
                       </p>
                     </div>
                   </div>
@@ -1132,10 +1131,10 @@ export default function Home() {
                       </svg>
                     </div>
                     <p className="text-sm font-semibold uppercase tracking-[0.1em] text-neutral-200">
-                      Ta photo
+                      Your photo
                     </p>
                     <p className="text-xs text-neutral-600">
-                      Touche pour importer · max 10 Mo
+                      Tap to upload · max 10MB
                     </p>
                   </div>
                 )}
@@ -1157,7 +1156,7 @@ export default function Home() {
             <div className="mb-4">
               <div className="mb-2 flex items-center gap-2">
                 <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary-soft">
-                  1 à 3 photos
+                  1 to 3 photos
                 </span>
               </div>
               {placeImages.length > 0 && (
@@ -1170,12 +1169,12 @@ export default function Home() {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={img.previewUrl}
-                        alt={`Lieu ${i + 1}`}
+                        alt={`Location ${i + 1}`}
                         className="h-full w-full object-cover"
                       />
                       <button
                         type="button"
-                        aria-label={`Retirer la photo du lieu ${i + 1}`}
+                        aria-label={`Remove location photo ${i + 1}`}
                         onClick={() =>
                           setPlaceImages((current) =>
                             current.filter((_, j) => j !== i),
@@ -1198,8 +1197,8 @@ export default function Home() {
                   <span className="text-base leading-none">+</span>
                   <span>
                     {placeImages.length === 0
-                      ? "Ajouter une photo du lieu (facultatif)"
-                      : "Ajouter un autre angle du lieu"}
+                      ? "Add a location photo (optional)"
+                      : "Add another angle of the location"}
                   </span>
                 </button>
               )}
@@ -1232,7 +1231,7 @@ export default function Home() {
                     onClick={download}
                     className="flex-1 cursor-pointer rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft"
                   >
-                    Télécharger
+                    Download
                   </button>
                   <button
                     type="button"
@@ -1240,10 +1239,10 @@ export default function Home() {
                     disabled={loading}
                     className="cursor-pointer rounded-2xl border border-white/10 px-4 py-3.5 text-sm font-medium text-neutral-300 transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    {loading ? "…" : "Régénérer"}
+                    {loading ? "…" : "Regenerate"}
                   </button>
 
-                  {canShareToSnap && !hasSnapRouge && (
+                  {canShareToSnap && !hasRedSnap && (
                     <div className="w-full space-y-2 sm:w-auto">
                       {/* Palier Découverte : à l'emplacement exact du bouton
                           Snap Rouge, une invitation à le débloquer plutôt
@@ -1277,16 +1276,16 @@ export default function Home() {
                             strokeLinecap="round"
                           />
                         </svg>
-                        Débloquer le Snap Rouge
+                        Unlock Red Snap
                       </Link>
                       <p className="text-center text-[11px] text-neutral-500 sm:text-left">
-                        Envoi indétectable, sans filigrane &mdash; inclus dès le
-                        palier Essentiel.
+                        Undetectable delivery, no watermark &mdash; included
+                        from the Essential plan onward.
                       </p>
                     </div>
                   )}
 
-                  {canShareToSnap && hasSnapRouge && (
+                  {canShareToSnap && hasRedSnap && (
                     <div className="w-full space-y-2 sm:w-auto">
                       <button
                         type="button"
@@ -1298,66 +1297,66 @@ export default function Home() {
                           aria-hidden
                           className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-red-600"
                         />
-                        {sendingRedSnap ? "Préparation…" : "Envoyer en Snap Rouge"}
+                        {sendingRedSnap ? "Preparing…" : "Send as Red Snap"}
                       </button>
                       <p className="text-center text-[11px] text-neutral-400 sm:text-left">
-                        1 seul tap manuel restant (sur 9 étapes) &mdash; le reste est
-                        automatique.
+                        Just 1 manual tap left (out of 9 steps) &mdash; the
+                        rest is automatic.
                       </p>
                     </div>
                   )}
 
-                  {hasSnapRouge && (
+                  {hasRedSnap && (
                   <button
                     type="button"
-                    onClick={() => setShowSnapRougeGuide((v) => !v)}
+                    onClick={() => setShowRedSnapGuide((v) => !v)}
                     className="w-full cursor-pointer text-left text-xs font-semibold text-red-400 underline decoration-red-400/40 underline-offset-4 transition hover:text-red-300 sm:w-auto"
                   >
-                    {showSnapRougeGuide
-                      ? "Masquer les explications"
-                      : "Comment ça marche, le Snap Rouge ? →"}
+                    {showRedSnapGuide
+                      ? "Hide the walkthrough"
+                      : "How does Red Snap work? →"}
                   </button>
                   )}
 
-                  {hasSnapRouge && showSnapRougeGuide && (
+                  {hasRedSnap && showRedSnapGuide && (
                     <div className="w-full rounded-2xl border border-red-500/20 bg-gradient-to-b from-red-500/5 to-transparent p-4">
                       <p className="mb-4 text-center text-lg font-black uppercase tracking-wide text-red-500">
-                        Snap Rouge
+                        Red Snap
                       </p>
                       <p className="mb-4 text-center text-xs text-neutral-400">
-                        5 étapes pour envoyer ta photo Bluminoo comme un vrai Snap pris en
-                        direct, indétectable.
+                        5 steps to send your Bluminoo photo as a real,
+                        undetectable live Snap.
                       </p>
                       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
                         {[
                           {
                             n: 1,
-                            title: "Enregistrer",
-                            desc: "Choisis «Enregistrer l'image» dans le menu qui s'ouvre.",
+                            title: "Save",
+                            desc: "Choose \"Save Image\" from the menu that opens.",
                             auto: false,
                           },
                           {
                             n: 2,
-                            title: "Filtre ouvert",
-                            desc: "Snapchat s'ouvre déjà sur le bon filtre «Camera Roll».",
+                            title: "Filter opens",
+                            desc: "Snapchat opens straight to the right \"Camera Roll\" filter.",
                             auto: true,
                           },
                           {
                             n: 3,
-                            title: "Choix de la photo",
-                            desc: "Sélectionne la photo Bluminoo dans ta pellicule.",
+                            title: "Pick the photo",
+                            desc: "Select the Bluminoo photo from your camera roll.",
                             auto: false,
                           },
                           {
                             n: 4,
                             title: "Capture",
-                            desc: "Appuie sur le déclencheur pour la «prendre en photo».",
+                            desc: "Tap the shutter to \"take a photo\" of it.",
                             auto: false,
                           },
                           {
                             n: 5,
-                            title: "Envoi",
-                            desc: "Appuie sur «Envoyer à» et choisis tes destinataires.",
+                            title: "Send",
+                            desc: "Tap \"Send To\" and pick your recipients.",
                             auto: false,
                           },
                         ].map((step) => (
@@ -1376,7 +1375,7 @@ export default function Home() {
                                     : "rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-neutral-400"
                                 }
                               >
-                                {step.auto ? "Auto" : "Manuel"}
+                                {step.auto ? "Auto" : "Manual"}
                               </span>
                             </div>
                             <p className="text-xs font-bold text-neutral-100">
@@ -1389,10 +1388,10 @@ export default function Home() {
                         ))}
                       </div>
                       <p className="mt-4 text-center text-[11px] text-neutral-500">
-                        Les étapes «Manuel» se passent à l&rsquo;intérieur de Snapchat :
-                        aucun site (même chez les concurrents) ne peut les remplacer,
-                        Apple et Snapchat l&rsquo;interdisent pour la sécurité des
-                        utilisateurs.
+                        The &ldquo;Manual&rdquo; steps happen inside Snapchat
+                        itself &mdash; no website (not even competitors&rsquo;)
+                        can replace them, since Apple and Snapchat block that
+                        for user safety.
                       </p>
                     </div>
                   )}
@@ -1404,7 +1403,7 @@ export default function Home() {
                   disabled={loading || !prepared}
                   className="flex-1 cursor-pointer rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {loading ? "Génération… (~15-30s)" : "Générer"}
+                  {loading ? "Generating… (~15-30s)" : "Generate"}
                 </button>
               )}
               {prepared && (
@@ -1424,13 +1423,13 @@ export default function Home() {
         <div className="animate-fade-up mx-auto max-w-4xl">
           <Panel className="mb-6 p-5 sm:p-6">
             <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
-              Remplacer un objet
+              Replace an object
             </p>
             <h2 className="font-display mt-2 text-3xl font-semibold text-white">
-              Vidéo courte, un instant qui impressionne
+              A short video, a moment that impresses
             </h2>
             <p className="mt-2 text-sm text-neutral-500">
-              ~5 s de vidéo · génération ~90 s · Kling O1 via fal.ai
+              ~5s of video · ~90s generation · Kling O1 via fal.ai
             </p>
           </Panel>
 
@@ -1438,7 +1437,7 @@ export default function Home() {
             <div className="mb-5 flex items-center gap-3">
               <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/10" />
               <p className="shrink-0 text-[10px] font-medium uppercase tracking-[0.22em] text-neutral-500">
-                Exemple de résultat
+                Example result
               </p>
               <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/10" />
             </div>
@@ -1454,14 +1453,14 @@ export default function Home() {
               />
             </div>
             <p className="mt-3 text-center text-xs text-neutral-600">
-              Remplacement d&apos;objet par IA
+              AI-powered object replacement
             </p>
             <div className="mt-4 flex justify-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-neutral-300">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
                   <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor" />
                 </svg>
-                Tes crédits
+                Your credits
                 <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-ink">
                   {isLoggedIn ? (credits ?? "…") : "0"}
                 </span>
@@ -1473,10 +1472,10 @@ export default function Home() {
             <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
               <div className="flex-1">
                 <DropZone
-                  label="Vidéo source"
-                  badge="Requis"
-                  hint="Cliquez pour uploader"
-                  subtext="MP4/MOV · 3-10 s · 720p min · max 50 Mo"
+                  label="Source video"
+                  badge="Required"
+                  hint="Click to upload"
+                  subtext="MP4/MOV · 3-10s · 720p min · max 50MB"
                   upload={videoSource}
                   onPick={(file) => void pickVideoUpload(file, "source")}
                   disabled={videoLoading}
@@ -1498,9 +1497,9 @@ export default function Home() {
               </div>
               <div className="flex-1">
                 <DropZone
-                  label="Objet"
-                  badge="Requis"
-                  hint="Image de l'objet"
+                  label="Object"
+                  badge="Required"
+                  hint="Image of the object"
                   subtext="JPG, PNG, WebP"
                   upload={videoObject}
                   onPick={(file) => void pickVideoUpload(file, "object")}
@@ -1549,19 +1548,18 @@ export default function Home() {
                   className="shrink-0 cursor-pointer rounded-2xl bg-primary px-6 py-3.5 text-sm font-bold text-ink transition hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {videoLoading
-                    ? "Génération vidéo… (~90s+)"
-                    : "Remplacer l'objet"}
+                    ? "Generating video… (~90s+)"
+                    : "Replace the object"}
                 </button>
               </div>
               <div className="mt-3 flex items-center justify-between gap-3">
                 <p className="flex items-start gap-1.5 text-xs text-neutral-500">
                   <span className="text-primary">✦</span>
                   <span>
-                    Astuce : la photo de référence est automatiquement
-                    intégrée à la scène décrite dans le prompt. Filmez avec
-                    votre application Caméra puis choisissez la vidéo dans
-                    votre galerie — l&apos;enregistrement direct depuis le
-                    navigateur réduit fortement la qualité.
+                    Tip: the reference photo is automatically worked into the
+                    scene described in the prompt. Film with your Camera app,
+                    then pick the video from your gallery &mdash; recording
+                    directly in the browser reduces quality a lot.
                   </span>
                 </p>
                 {(videoSource || videoObject || videoPrompt) && (
@@ -1571,7 +1569,7 @@ export default function Home() {
                     disabled={videoLoading}
                     className="shrink-0 cursor-pointer text-xs font-medium text-neutral-500 underline underline-offset-2 transition hover:text-neutral-300 disabled:opacity-40"
                   >
-                    Réinitialiser
+                    Reset
                   </button>
                 )}
               </div>
@@ -1608,7 +1606,7 @@ export default function Home() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={PAYWALL_PREVIEW_IMAGE}
-                    alt="Exemple de rendu Bluminoo, volontairement flouté"
+                    alt="Example Bluminoo render, deliberately blurred"
                     className="h-64 w-full scale-110 object-cover blur-2xl sm:h-80"
                     aria-hidden
                   />
@@ -1639,17 +1637,17 @@ export default function Home() {
                       </svg>
                     </span>
                     <p className="font-display text-lg font-semibold text-white">
-                      La génération vidéo est réservée aux abonnés
+                      Video generation is for subscribers only
                     </p>
                     <p className="max-w-xs text-xs leading-relaxed text-neutral-300">
-                      Choisis un palier pour lancer ta vidéo et la récupérer en
-                      pleine qualité.
+                      Pick a plan to run your video and get it in full
+                      quality.
                     </p>
                     <Link
                       href={isLoggedIn ? "/pricing" : "/sign-up"}
                       className="mt-1 inline-flex items-center justify-center rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-ink transition hover:bg-primary-soft"
                     >
-                      {isLoggedIn ? "Voir les paliers" : "Créer mon compte"}
+                      {isLoggedIn ? "See plans" : "Create my account"}
                     </Link>
                   </div>
                 </div>
@@ -1673,7 +1671,7 @@ export default function Home() {
                     onClick={downloadVideo}
                     className="cursor-pointer rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-ink transition hover:bg-primary-soft"
                   >
-                    Télécharger
+                    Download
                   </button>
                   {canShareToStory && (
                     <button
@@ -1682,7 +1680,7 @@ export default function Home() {
                       disabled={sharing}
                       className="cursor-pointer rounded-xl bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {sharing ? "Préparation…" : "Poster en Story ↗"}
+                      {sharing ? "Preparing…" : "Post to Story ↗"}
                     </button>
                   )}
                   <button
@@ -1691,7 +1689,7 @@ export default function Home() {
                     disabled={videoLoading}
                     className="cursor-pointer rounded-xl border border-white/10 px-4 py-2.5 text-sm font-medium text-neutral-300 transition hover:border-white/20 disabled:opacity-40"
                   >
-                    {videoLoading ? "…" : "Régénérer"}
+                    {videoLoading ? "…" : "Regenerate"}
                   </button>
                 </div>
               </section>
