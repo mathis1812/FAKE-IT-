@@ -48,9 +48,16 @@ Tailwind CSS. Fond animé **DotField** (React Bits).
 
   | Palier | Mensuel | Annuel | Crédits/mois |
   | --- | --- | --- | --- |
-  | Découverte | 9,90 € | 94,90 € | 2 000 |
-  | Essentiel | 19,90 € | 190,90 € | 5 000 |
-  | Ultimate | 39,90 € | 382,90 € | 12 000 |
+  | Starter | 9,99 $ | 95,90 $ | 2 000 |
+  | Essential | 19,99 $ | 191,90 $ | 5 000 |
+  | Ultimate | 39,99 $ | 383,90 $ | 12 000 |
+
+  Identifiants internes de palier en base (`profiles.plan`) : `decouverte`,
+  `essentiel`, `ultimate` — seuls les noms affichés ont changé lors de la
+  bascule vers le marché anglophone. Les abonnés existants souscrits en euros
+  conservent leurs anciens price IDs Stripe (`STRIPE_PRICE_LEGACY_*`, voir
+  `.env.example`) ; leur changement de palier passe par une résiliation puis
+  un réabonnement à la nouvelle grille (voir `app/api/stripe/portal/route.ts`).
 
 - Paiement Stripe Checkout, gestion (changement/résiliation) via le portail
   de facturation Stripe
@@ -65,8 +72,8 @@ Tailwind CSS. Fond animé **DotField** (React Bits).
   serveur (`service_role`)
 
 ### Pages légales
-- Mentions légales, CGV, politique de confidentialité (`/mentions-legales`,
-  `/cgv`, `/confidentialite`), liées depuis le pied de page
+- Mentions légales, CGV, politique de confidentialité (`/legal`,
+  `/terms`, `/privacy`), liées depuis le pied de page
 - ⚠️ L'identité légale de l'éditeur (forme juridique, SIRET, adresse) est en
   attente de mise à jour suite à une réimmatriculation — voir le bandeau
   d'avertissement affiché sur ces pages. **Ne pas passer Stripe en mode live
@@ -81,12 +88,12 @@ Tailwind CSS. Fond animé **DotField** (React Bits).
 ```
 app/
   page.tsx                 Studio (image + vidéo)
-  tarifs/                  Paliers Stripe (mensuel/annuel)
-  compte/                  Palier, crédits, gestion abonnement
-  galerie/                 Historique des générations (server component)
-  connexion/ inscription/  Auth Supabase
-  a-propos/                FAQ
-  mentions-legales/ cgv/ confidentialite/
+  pricing/                 Paliers Stripe (mensuel/annuel)
+  account/                 Palier, crédits, gestion abonnement
+  gallery/                 Historique des générations (server component)
+  sign-in/ sign-up/        Auth Supabase
+  about/                   FAQ
+  legal/ terms/ privacy/
   api/
     generate/              Image → API Gemini directe (gemini-3-pro-image)
     generate-video/        Vidéo → fal.ai Kling O1
