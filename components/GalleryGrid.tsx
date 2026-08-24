@@ -35,13 +35,13 @@ async function shareEntry(entry: GalleryEntry): Promise<void> {
   if (entry.mode !== "image") return;
   if (!navigator.share) {
     throw new Error(
-      "Le partage direct est disponible depuis un téléphone compatible.",
+      "Direct sharing is available from a compatible phone.",
     );
   }
 
   const response = await fetch(entry.result_url);
   if (!response.ok) {
-    throw new Error("La photo ne peut pas être préparée pour le partage.");
+    throw new Error("The photo could not be prepared for sharing.");
   }
   const blob = await response.blob();
   const file = new File([blob], `bluminoo-${entry.id}.${extensionFor(entry)}`, {
@@ -50,19 +50,19 @@ async function shareEntry(entry: GalleryEntry): Promise<void> {
 
   if (navigator.canShare && !navigator.canShare({ files: [file] })) {
     throw new Error(
-      "Le partage de fichiers n'est pas pris en charge par ce navigateur.",
+      "File sharing is not supported by this browser.",
     );
   }
 
   await navigator.share({
     files: [file],
-    title: "Photo créée avec Bluminoo",
-    text: "Photo créée avec Bluminoo",
+    title: "Photo created with Bluminoo",
+    text: "Photo created with Bluminoo",
   });
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-FR", {
+  return new Date(iso).toLocaleDateString("en-US", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -84,7 +84,7 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
       setShareError(
         err instanceof Error
           ? err.message
-          : "Le partage de la photo est impossible pour le moment.",
+          : "Sharing the photo isn't possible right now.",
       );
     } finally {
       setSharingId(null);
@@ -113,7 +113,7 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
               type="button"
               onClick={() => setSelected(entry)}
               className="block w-full cursor-zoom-in"
-              aria-label={`Voir en grand : ${entry.label}`}
+              aria-label={`View full size: ${entry.label}`}
             >
               {entry.mode === "video" ? (
                 <video
@@ -144,7 +144,7 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
               <button
                 type="button"
                 onClick={() => void downloadEntry(entry)}
-                aria-label={`Télécharger : ${entry.label}`}
+                aria-label={`Download: ${entry.label}`}
                 className="shrink-0 rounded-full border border-white/10 p-2 text-neutral-400 transition hover:border-white/20 hover:text-white"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -210,7 +210,7 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
                     disabled={sharingId === selected.id}
                     className="rounded-xl border border-primary/30 bg-primary/10 px-3.5 py-2 text-xs font-bold text-primary transition hover:border-primary/50 hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {sharingId === selected.id ? "Préparation…" : "Partager sur Snapchat"}
+                    {sharingId === selected.id ? "Preparing…" : "Share to Snapchat"}
                   </button>
                 )}
                 <button
@@ -218,14 +218,14 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
                   onClick={() => void downloadEntry(selected)}
                   className="rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-ink transition hover:bg-primary-soft"
                 >
-                  Télécharger
+                  Download
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelected(null)}
                   className="rounded-xl border border-white/10 px-3.5 py-2 text-xs font-medium text-neutral-300 transition hover:border-white/20"
                 >
-                  Fermer
+                  Close
                 </button>
               </div>
             </div>

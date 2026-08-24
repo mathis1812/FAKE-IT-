@@ -11,11 +11,11 @@ const SUPPORT_EMAIL = "mathisvergne27@gmail.com";
 const PRIORITY_PLANS: readonly PlanId[] = ["essentiel", "ultimate"];
 
 /**
- * « Support prioritaire » n'a d'existence réelle que par ce que ce lien
- * porte : sur Essentiel/Ultimate, l'objet et le corps du mail signalent le
- * palier et le compte, pour un tri immédiat sans aller-retour — c'est la
- * seule différence tangible avec un compte gratuit, qui garde un accès au
- * support mais sans cette priorisation.
+ * "Priority support" only really exists through what this link carries: on
+ * Essential/Ultimate, the email subject and body flag the plan and the
+ * account up front, for instant triage with no back-and-forth — that's the
+ * one tangible difference from a free account, which keeps support access
+ * but without this prioritization.
  */
 function buildSupportMailto(
   isPriority: boolean,
@@ -23,15 +23,15 @@ function buildSupportMailto(
   email: string,
 ): string {
   const subject = isPriority
-    ? `[Support prioritaire] ${planName} — ${email}`
+    ? `[Priority support] ${planName} — ${email}`
     : `[Support] ${email}`;
   const body = isPriority
-    ? `Bonjour,\n\nPalier : ${planName}\nCompte : ${email}\n\nDécris ta demande ici :\n`
-    : `Bonjour,\n\nCompte : ${email}\n\nDécris ta demande ici :\n`;
+    ? `Hi,\n\nPlan: ${planName}\nAccount: ${email}\n\nDescribe your request here:\n`
+    : `Hi,\n\nAccount: ${email}\n\nDescribe your request here:\n`;
   return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
-export default async function ComptePage() {
+export default async function AccountPage() {
   const supabase = createClient();
 
   const {
@@ -60,7 +60,7 @@ export default async function ComptePage() {
     user.email ?? "",
   );
   const renewalDate = profile?.current_period_end
-    ? new Date(profile.current_period_end).toLocaleDateString("fr-FR", {
+    ? new Date(profile.current_period_end).toLocaleDateString("en-US", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -71,10 +71,10 @@ export default async function ComptePage() {
     <div className="animate-fade-up mx-auto max-w-4xl py-8">
       <div className="mb-8 text-center">
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
-          Mon compte
+          My account
         </p>
         <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
-          Bienvenue
+          Welcome back
         </h2>
       </div>
 
@@ -101,10 +101,10 @@ export default async function ComptePage() {
               </span>
               <div>
                 <h3 className="text-sm font-semibold text-white">
-                  Informations Personnelles
+                  Personal Information
                 </h3>
                 <p className="text-xs text-neutral-500">
-                  Vos données de base sur Bluminoo Studio.
+                  Your basic details on Bluminoo Studio.
                 </p>
               </div>
             </div>
@@ -120,7 +120,7 @@ export default async function ComptePage() {
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-[0.1em] text-neutral-500">
-                  Rôle
+                  Role
                 </dt>
                 <dd className="mt-1 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-white">
                   User
@@ -131,41 +131,41 @@ export default async function ComptePage() {
 
           <Panel className="p-6">
             <h3 className="text-sm font-semibold text-white">
-              Recharger mes crédits
+              Top up your credits
             </h3>
             <p className="mt-1 text-xs text-neutral-500">
-              Renouvelle ton abonnement pour recharger tes crédits, ou passe à
-              un palier supérieur pour débloquer une meilleure résolution.
+              Renew your subscription to top up your credits, or move up a
+              plan to unlock a higher resolution.
             </p>
             <Link
               href="/pricing"
               className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-ink transition hover:bg-primary-soft"
             >
-              Voir les paliers
+              See plans
             </Link>
           </Panel>
 
           <Panel className="p-6">
             <h3 className="text-sm font-semibold text-white">
-              {isPriority ? "Support prioritaire" : "Besoin d'aide ?"}
+              {isPriority ? "Priority support" : "Need help?"}
             </h3>
             <p className="mt-1 text-xs text-neutral-500">
               {isPriority
-                ? "Ton message est signalé comme prioritaire, avec ton palier et ton compte déjà renseignés — pas besoin de tout réexpliquer."
-                : "Écris-nous, on te répond dès que possible. Le support prioritaire (réponse en tête de file) est réservé aux paliers Essentiel et Ultimate."}
+                ? "Your message is flagged as priority, with your plan and account already filled in — no need to explain it all again."
+                : "Write to us and we'll get back to you as soon as possible. Priority support (front-of-queue reply) is reserved for the Essential and Ultimate plans."}
             </p>
             <a
               href={supportMailto}
               className="mt-4 inline-flex w-full items-center justify-center rounded-2xl border border-primary/40 px-4 py-3 text-sm font-semibold text-primary-soft transition hover:border-primary hover:text-primary"
             >
-              Contacter le support
+              Contact support
             </a>
           </Panel>
         </div>
 
         <div className="space-y-6">
           <AccountStatCard
-            title="Crédits"
+            title="Credits"
             icon={
               <svg
                 width="16"
@@ -198,16 +198,16 @@ export default async function ComptePage() {
               }
             >
               {profileError
-                ? "Impossible de charger ton solde pour le moment."
+                ? "Unable to load your balance right now."
                 : profile?.credits ?? 0}
             </p>
             {!profileError && (
-              <p className="mt-1 text-xs text-neutral-500">crédits restants</p>
+              <p className="mt-1 text-xs text-neutral-500">credits remaining</p>
             )}
           </AccountStatCard>
 
           <AccountStatCard
-            title="Abonnement"
+            title="Subscription"
             icon={
               <svg
                 width="16"
@@ -222,11 +222,11 @@ export default async function ComptePage() {
             }
           >
             <p className="text-xl font-semibold text-white">
-              {planName ?? "Plan Gratuit"}
+              {planName ?? "Free Plan"}
             </p>
             {renewalDate && (
               <p className="mt-1 text-xs text-neutral-500">
-                Renouvellement le {renewalDate}
+                Renews on {renewalDate}
               </p>
             )}
             <div className="mt-4">
@@ -237,7 +237,7 @@ export default async function ComptePage() {
                   href="/pricing"
                   className="flex w-full items-center justify-center rounded-2xl border border-primary/40 px-4 py-3 text-sm font-semibold text-primary-soft transition hover:border-primary hover:text-primary"
                 >
-                  Voir les offres
+                  See plans
                 </Link>
               )}
             </div>

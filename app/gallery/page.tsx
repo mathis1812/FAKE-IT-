@@ -11,7 +11,7 @@ type GalleryEntry = {
   created_at: string;
 };
 
-export default async function GaleriePage() {
+export default async function GalleryPage() {
   const supabase = createClient();
   const {
     data: { user },
@@ -31,9 +31,9 @@ export default async function GaleriePage() {
   if (!entries || entries.length === 0) {
     return (
       <PlaceholderSection
-        eyebrow="Galerie"
-        title="Vos prochaines générations apparaîtront ici."
-        description="Chaque génération réussie (image ou vidéo) est automatiquement sauvegardée sur votre compte — générez votre première photo ou vidéo pour la voir apparaître."
+        eyebrow="Gallery"
+        title="Your next generations will show up here."
+        description="Every successful generation (photo or video) is automatically saved to your account — generate your first photo or video to see it appear."
       />
     );
   }
@@ -42,10 +42,10 @@ export default async function GaleriePage() {
     <div className="animate-fade-up mx-auto max-w-6xl py-8">
       <div className="mb-6">
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
-          Galerie
+          Gallery
         </p>
         <h2 className="font-display mt-2 text-3xl font-semibold text-white">
-          Vos dernières générations
+          Your latest generations
         </h2>
       </div>
       <GalleryGrid entries={entries} />

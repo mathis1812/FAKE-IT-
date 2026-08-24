@@ -6,7 +6,7 @@ import Link from "next/link";
 import Panel from "@/components/Panel";
 import { createClient } from "@/lib/supabase/client";
 
-export default function InscriptionPage() {
+export default function SignUpPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,25 +27,25 @@ export default function InscriptionPage() {
 
       if (signUpError) {
         if (signUpError.message.toLowerCase().includes("password")) {
-          setError("Le mot de passe doit contenir au moins 6 caractères.");
+          setError("Password must be at least 6 characters long.");
         } else {
-          setError("Une erreur est survenue, réessaie dans quelques instants.");
+          setError("Something went wrong, please try again in a moment.");
         }
         return;
       }
 
-      // Avec la confirmation email désactivée, Supabase renvoie un
-      // utilisateur "vide" (identities === []) si l'email existe déjà,
-      // plutôt qu'une erreur explicite.
+      // With email confirmation disabled, Supabase returns an "empty"
+      // user (identities === []) if the email is already in use, rather
+      // than an explicit error.
       if (data.user && data.user.identities && data.user.identities.length === 0) {
-        setError("Cette adresse est déjà associée à un compte.");
+        setError("This email address is already linked to an account.");
         return;
       }
 
       router.push("/account");
       router.refresh();
     } catch {
-      setError("Une erreur est survenue, réessaie dans quelques instants.");
+      setError("Something went wrong, please try again in a moment.");
     } finally {
       setLoading(false);
     }
@@ -55,10 +55,10 @@ export default function InscriptionPage() {
     <div className="animate-fade-up mx-auto max-w-md py-8">
       <div className="mb-8 text-center">
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
-          Inscription
+          Sign up
         </p>
         <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
-          Crée ton compte Bluminoo
+          Create your Bluminoo account
         </h2>
       </div>
 
@@ -85,7 +85,7 @@ export default function InscriptionPage() {
               htmlFor="password"
               className="mb-1.5 block text-xs font-medium uppercase tracking-[0.1em] text-neutral-400"
             >
-              Mot de passe
+              Password
             </label>
             <input
               id="password"
@@ -109,14 +109,14 @@ export default function InscriptionPage() {
             disabled={loading}
             className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-ink transition hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? "Création en cours…" : "Créer mon compte"}
+            {loading ? "Creating account…" : "Create my account"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-neutral-400">
-          Déjà un compte ?{" "}
+          Already have an account?{" "}
           <Link href="/sign-in" className="text-primary-soft hover:underline">
-            Se connecter
+            Sign in
           </Link>
         </p>
       </Panel>

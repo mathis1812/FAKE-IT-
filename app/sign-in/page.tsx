@@ -6,7 +6,7 @@ import Link from "next/link";
 import Panel from "@/components/Panel";
 import { createClient } from "@/lib/supabase/client";
 
-export default function ConnexionPage() {
+export default function SignInPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,9 +27,9 @@ export default function ConnexionPage() {
 
       if (signInError) {
         if (signInError.status === 400) {
-          setError("Email ou mot de passe incorrect.");
+          setError("Incorrect email or password.");
         } else {
-          setError("Une erreur est survenue, réessaie dans quelques instants.");
+          setError("Something went wrong, please try again in a moment.");
         }
         return;
       }
@@ -37,7 +37,7 @@ export default function ConnexionPage() {
       router.push("/account");
       router.refresh();
     } catch {
-      setError("Une erreur est survenue, réessaie dans quelques instants.");
+      setError("Something went wrong, please try again in a moment.");
     } finally {
       setLoading(false);
     }
@@ -47,10 +47,10 @@ export default function ConnexionPage() {
     <div className="animate-fade-up mx-auto max-w-md py-8">
       <div className="mb-8 text-center">
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
-          Connexion
+          Sign in
         </p>
         <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
-          Content de te revoir
+          Welcome back
         </h2>
       </div>
 
@@ -77,7 +77,7 @@ export default function ConnexionPage() {
               htmlFor="password"
               className="mb-1.5 block text-xs font-medium uppercase tracking-[0.1em] text-neutral-400"
             >
-              Mot de passe
+              Password
             </label>
             <input
               id="password"
@@ -100,14 +100,14 @@ export default function ConnexionPage() {
             disabled={loading}
             className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-ink transition hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? "Connexion en cours…" : "Se connecter"}
+            {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-neutral-400">
-          Pas encore de compte ?{" "}
+          Don&apos;t have an account yet?{" "}
           <Link href="/sign-up" className="text-primary-soft hover:underline">
-            S&apos;inscrire
+            Sign up
           </Link>
         </p>
       </Panel>
