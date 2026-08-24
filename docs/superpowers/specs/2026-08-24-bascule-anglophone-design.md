@@ -40,6 +40,12 @@ qu'aucun client existant ne soit cassé au passage.
 - Les 30 témoignages de `lib/testimonials.ts`
 - Les 3 pages légales, en traduction fidèle
 - `lang="en"` et les formats de nombres et de dates
+- Les messages d'erreur des routes `app/api/` renvoyés au client : 41
+  chaînes françaises réparties sur 7 fichiers, dont plusieurs sont
+  affichées telles quelles à l'utilisateur (« Connectez-vous pour générer
+  une image. », « Aucun abonnement actif à modifier. »). Les messages
+  `console.error` destinés aux journaux serveur sont traduits dans le même
+  passage, par cohérence.
 
 ### Hors périmètre
 
@@ -157,8 +163,9 @@ du chantier.
 - `openGraph.locale` de `fr_FR` à `en_US`
 - Titres et descriptions réécrits pour des requêtes anglophones
 - Sitemap régénéré sur les nouvelles routes
-- Les URL canoniques restent sur `fakeit-delta.vercel.app` : on conserve le
-  même projet Vercel, le site anglais remplace le site français
+- Les URL canoniques restent inchangées, sur la valeur déjà présente dans
+  `app/layout.tsx` (`SITE_URL = "https://bluminoo.vercel.app"`) : on
+  conserve le même projet Vercel, le site anglais remplace le site français
 
 ## Données existantes
 
