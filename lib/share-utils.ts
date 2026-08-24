@@ -37,7 +37,7 @@ export async function prepareShareFile(blob: Blob): Promise<File> {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const image = new Image();
       image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error("Image illisible."));
+      image.onerror = () => reject(new Error("Unable to read image."));
       image.src = objectUrl;
     });
 
@@ -54,7 +54,7 @@ export async function prepareShareFile(blob: Blob): Promise<File> {
     canvas.width = targetW;
     canvas.height = targetH;
     const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Préparation du partage impossible.");
+    if (!ctx) throw new Error("Unable to prepare share.");
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, targetW, targetH);
     ctx.drawImage(img, 0, 0, targetW, targetH);
@@ -62,7 +62,7 @@ export async function prepareShareFile(blob: Blob): Promise<File> {
     const shareBlob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, "image/jpeg", SNAP_SHARE_JPEG_QUALITY),
     );
-    if (!shareBlob) throw new Error("Préparation du partage impossible.");
+    if (!shareBlob) throw new Error("Unable to prepare share.");
 
     return new File([shareBlob], "bluminoo-result.jpg", {
       type: "image/jpeg",
@@ -107,7 +107,7 @@ export async function shareToSnapchat(
   if (!navigator.share) {
     setState({
       error:
-        "Le partage direct est disponible depuis un téléphone compatible. Téléchargez l'image si nécessaire.",
+        "Direct sharing is available from a compatible phone. Download the image if needed.",
     });
     return;
   }
@@ -116,14 +116,14 @@ export async function shareToSnapchat(
   try {
     const response = await fetch(result);
     if (!response.ok) {
-      throw new Error("Le résultat ne peut pas être préparé pour le partage.");
+      throw new Error("The result can't be prepared for sharing.");
     }
     const blob = await response.blob();
     const file = await prepareFile(blob);
 
     if (navigator.canShare && !navigator.canShare({ files: [file] })) {
       throw new Error(
-        "Le partage de fichiers n'est pas pris en charge par ce navigateur.",
+        "File sharing isn't supported by this browser.",
       );
     }
 
@@ -135,7 +135,7 @@ export async function shareToSnapchat(
       error:
         err instanceof Error
           ? err.message
-          : "Le partage de la photo est impossible pour le moment.",
+          : "Sharing the photo isn't possible right now.",
     });
   } finally {
     setState({ sharing: false });
@@ -150,7 +150,7 @@ export interface SendAsRedSnapState {
 }
 
 /**
- * Two-step "Snap Rouge" flow:
+ * Two-step "Red Snap" flow:
  *   1. Opens the native share sheet so the user can save the image to their camera roll.
  *   2. Deep-links directly to the Snapchat "Camera Roll" lens so the user can
  *      pick the saved photo without searching for the filter manually.
@@ -171,7 +171,7 @@ export async function sendAsRedSnap(
   if (!result) return;
   if (!navigator.share) {
     setState({
-      error: "Cette fonction est disponible depuis un téléphone compatible.",
+      error: "This feature is available from a compatible phone.",
     });
     return;
   }
@@ -180,14 +180,14 @@ export async function sendAsRedSnap(
   try {
     const response = await fetch(result);
     if (!response.ok) {
-      throw new Error("Le résultat ne peut pas être préparé.");
+      throw new Error("The result can't be prepared.");
     }
     const blob = await response.blob();
     const file = await prepareFile(blob);
 
     if (navigator.canShare && !navigator.canShare({ files: [file] })) {
       throw new Error(
-        "Le partage de fichiers n'est pas pris en charge par ce navigateur.",
+        "File sharing isn't supported by this browser.",
       );
     }
 
@@ -201,7 +201,7 @@ export async function sendAsRedSnap(
       error:
         err instanceof Error
           ? err.message
-          : "L'envoi en Snap Rouge est impossible pour le moment.",
+          : "Sending as Red Snap isn't possible right now.",
     });
   } finally {
     setState({ sendingRedSnap: false });
