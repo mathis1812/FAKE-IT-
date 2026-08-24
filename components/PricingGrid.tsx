@@ -7,12 +7,11 @@ import ManageSubscriptionButton from "@/components/ManageSubscriptionButton";
 import { formatPrice, type BillingPeriod, type PlanId } from "@/lib/stripe";
 
 /**
- * Une ligne de la grille comparative : même libellé sur les 3 paliers, une
- * cellule par palier (coche, croix, ou valeur textuelle comme la
- * résolution). Construite en un seul tableau partagé plutôt qu'en listes
- * par palier, pour garantir que les 3 cartes affichent les mêmes lignes
- * dans le même ordre — condition pour que l'effet de comparaison (ce que
- * Découverte n'a pas) se lise d'un coup d'œil.
+ * One row of the comparison grid: same label across the 3 tiers, one cell
+ * per tier (check, cross, or a text value like resolution). Built as a
+ * single shared array rather than per-tier lists, to guarantee that the 3
+ * cards show the same rows in the same order — a requirement for the
+ * comparison effect (what Starter doesn't have) to read at a glance.
  */
 export type ComparisonCell =
   | { kind: "check" }
@@ -37,14 +36,14 @@ type PlanView = {
 function ComparisonCellView({ cell }: { cell: ComparisonCell }) {
   if (cell.kind === "check") {
     return (
-      <span aria-label="Inclus" className="text-primary">
+      <span aria-label="Included" className="text-primary">
         ✓
       </span>
     );
   }
   if (cell.kind === "cross") {
     return (
-      <span aria-label="Non inclus" className="text-neutral-700">
+      <span aria-label="Not included" className="text-neutral-700">
         ✕
       </span>
     );
@@ -59,9 +58,9 @@ function ComparisonCellView({ cell }: { cell: ComparisonCell }) {
 }
 
 /**
- * Fond et bordure par palier : même famille violette du studio (pas de
- * couleurs étrangères à la DA), intensité croissante pour que le palier
- * recommandé se détache sans rompre l'homogénéité de la grille.
+ * Background and border per tier: same purple family as the studio (no
+ * colors foreign to the visual identity), increasing intensity so the
+ * recommended tier stands out without breaking the grid's cohesion.
  */
 const TIER_STYLES: Record<PlanId, { panel: string; ring: string }> = {
   decouverte: {
@@ -91,11 +90,11 @@ export default function PricingGrid({
   isLoggedIn: boolean;
 }) {
   const [period, setPeriod] = useState<BillingPeriod>("monthly");
-  // Un abonné existant change de palier via ManageSubscriptionButton, qui ne
-  // transmet que targetPlan : la périodicité en cours est réutilisée côté
-  // serveur (voir app/api/stripe/portal/route.ts) et ne peut pas être
-  // changée depuis cet écran. Masquer le sélecteur évite d'afficher un prix
-  // annuel alors que le clic souscrirait au mensuel (ou l'inverse).
+  // An existing subscriber changes tier via ManageSubscriptionButton, which
+  // only sends targetPlan: the current billing period is reused server-side
+  // (see app/api/stripe/portal/route.ts) and can't be changed from this
+  // screen. Hiding the selector avoids showing an annual price when the
+  // click would actually subscribe monthly (or vice versa).
   const canChoosePeriod = !currentPlan;
 
   return (
@@ -112,7 +111,7 @@ export default function PricingGrid({
                   : "text-neutral-400 hover:text-neutral-100"
               }`}
             >
-              Mensuel
+              Monthly
             </button>
             <button
               type="button"
@@ -123,7 +122,7 @@ export default function PricingGrid({
                   : "text-neutral-400 hover:text-neutral-100"
               }`}
             >
-              Annuel · -20%
+              Annual · -20%
             </button>
           </div>
         </div>
@@ -153,12 +152,12 @@ export default function PricingGrid({
                 )}
                 {isHighlighted && (
                   <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.06em] text-ink">
-                    Meilleure offre
+                    Best value
                   </span>
                 )}
                 {isCurrent && (
                   <span className="ml-auto rounded-full bg-primary/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-soft">
-                    Plan actuel
+                    Current plan
                   </span>
                 )}
               </div>
@@ -167,32 +166,32 @@ export default function PricingGrid({
                 <p className="mb-1 text-3xl font-semibold text-white">
                   {formatPrice(plan.monthlyPriceUsd)}
                   <span className="text-sm font-normal text-neutral-500">
-                    /mois
+                    /mo
                   </span>
                 </p>
               ) : (
                 <div className="mb-1">
                   <p className="text-lg font-medium text-neutral-500 line-through decoration-red-500/70 decoration-2">
-                    {formatPrice(plan.monthlyPriceUsd)}/mois
+                    {formatPrice(plan.monthlyPriceUsd)}/mo
                   </p>
                   <p className="text-4xl font-semibold text-white">
                     {formatPrice(annualEffectiveMonthly)}
                     <span className="text-sm font-normal text-neutral-500">
-                      /mois
+                      /mo
                     </span>
                   </p>
                   <p className="text-xs text-neutral-500">
-                    Facturé {formatPrice(plan.annualPriceUsd)}/an
+                    Billed {formatPrice(plan.annualPriceUsd)}/year
                   </p>
                 </div>
               )}
 
               <p className="mb-4 mt-2 text-sm text-neutral-400">
-                {plan.creditsPerMonth.toLocaleString("fr-FR")} crédits/mois
+                {plan.creditsPerMonth.toLocaleString("en-US")} credits/mo
                 {period === "annual" && (
                   <span className="text-neutral-600">
                     {" "}
-                    (crédités en une fois pour l&apos;année)
+                    (credited all at once for the year)
                   </span>
                 )}
               </p>
@@ -211,18 +210,17 @@ export default function PricingGrid({
 
               {isCurrent ? (
                 <div className="rounded-2xl border border-white/10 px-4 py-3 text-center text-sm font-medium text-neutral-500">
-                  Ton palier actuel
+                  Your current plan
                 </div>
               ) : currentPlan ? (
                 <div>
                   <ManageSubscriptionButton targetPlan={plan.id} />
                   <p className="mt-2 text-center text-xs text-neutral-600">
-                    Prix affichés en référence mensuelle — ta facturation
-                    actuelle (mensuelle ou annuelle) est conservée.
+                    Prices shown as a monthly reference — your current
+                    billing (monthly or annual) is kept as is.
                   </p>
                   <p className="mt-1 text-center text-xs text-neutral-600">
-                    Le nouveau forfait de crédits s&apos;applique à ton
-                    prochain renouvellement.
+                    The new credit allowance applies at your next renewal.
                   </p>
                 </div>
               ) : (

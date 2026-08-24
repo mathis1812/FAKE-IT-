@@ -10,13 +10,13 @@ const CHECK_ALL = {
   ultimate: { kind: "check" as const },
 };
 
-// Grille comparative : une ligne par argument, une cellule par palier.
-// Chiffres dérivés de PLANS (jamais recopiés en dur) pour ne jamais
-// diverger du prix/de la résolution/des crédits réellement facturés.
+// Comparison grid: one row per benefit, one cell per tier.
+// Numbers are derived from PLANS (never hardcoded) so they can never
+// diverge from the price/resolution/credits actually billed.
 const COMPARISON_ROWS: ComparisonRow[] = [
-  { label: "Génération photo & vidéo", ...CHECK_ALL },
+  { label: "Photo & video generation", ...CHECK_ALL },
   {
-    label: "Qualité photo",
+    label: "Photo quality",
     decouverte: { kind: "value", text: PLANS.decouverte.imageResolution },
     essentiel: {
       kind: "value",
@@ -25,46 +25,46 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     },
     ultimate: {
       kind: "value",
-      text: `${PLANS.ultimate.imageResolution} Ultra-détails`,
+      text: `${PLANS.ultimate.imageResolution} Ultra detail`,
       bold: true,
     },
   },
   {
-    label: "Crédits inclus",
+    label: "Credits included",
     decouverte: {
       kind: "value",
-      text: `${PLANS.decouverte.creditsPerMonth.toLocaleString("fr-FR")}/mois`,
+      text: `${PLANS.decouverte.creditsPerMonth.toLocaleString("en-US")}/mo`,
     },
     essentiel: {
       kind: "value",
-      text: `${PLANS.essentiel.creditsPerMonth.toLocaleString("fr-FR")}/mois`,
+      text: `${PLANS.essentiel.creditsPerMonth.toLocaleString("en-US")}/mo`,
     },
     ultimate: {
       kind: "value",
-      text: `${PLANS.ultimate.creditsPerMonth.toLocaleString("fr-FR")}/mois`,
+      text: `${PLANS.ultimate.creditsPerMonth.toLocaleString("en-US")}/mo`,
       bold: true,
     },
   },
-  { label: "Photo de référence optionnelle", ...CHECK_ALL },
-  { label: "Historique complet (Galerie)", ...CHECK_ALL },
+  { label: "Optional reference photo", ...CHECK_ALL },
+  { label: "Full history (Gallery)", ...CHECK_ALL },
   {
-    label: "Support prioritaire",
+    label: "Priority support",
     decouverte: { kind: "cross" },
     essentiel: { kind: "check" },
     ultimate: { kind: "check" },
   },
-  // Réellement restreint dans le studio : `hasSnapRouge` dans app/page.tsx
-  // n'affiche le bouton et le tutoriel que pour ces deux paliers. Modifier
-  // cette ligne sans modifier cette condition rendrait la grille mensongère.
+  // Really restricted in the studio: `hasRedSnap` in app/page.tsx only
+  // shows the button and tutorial for these two tiers. Changing this row
+  // without changing that condition would make the grid misleading.
   {
-    label: "Snap Rouge (envoi indétectable)",
+    label: "Red Snap (undetectable send)",
     decouverte: { kind: "cross" },
     essentiel: { kind: "check" },
     ultimate: { kind: "check" },
   },
 ];
 
-export default async function TarifsPage() {
+export default async function PricingPage() {
   const supabase = createClient();
   const {
     data: { user },
@@ -93,10 +93,10 @@ export default async function TarifsPage() {
     <div className="animate-fade-up mx-auto max-w-5xl py-8">
       <div className="mb-8 text-center">
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
-          Tarifs
+          Pricing
         </p>
         <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
-          Des crédits simples, pour créer sans limite ta vie de rêve.
+          Simple credits, to create your dream life without limits.
         </h2>
       </div>
 

@@ -36,7 +36,7 @@ export default function SubscribeButton({
 
       if (!res.ok || !data.url) {
         setError(
-          data.error ?? "Une erreur est survenue, réessaie dans quelques instants.",
+          data.error ?? "Something went wrong, please try again in a moment.",
         );
         setLoading(false);
         return;
@@ -44,7 +44,7 @@ export default function SubscribeButton({
 
       window.location.href = data.url;
     } catch {
-      setError("Une erreur est survenue, réessaie dans quelques instants.");
+      setError("Something went wrong, please try again in a moment.");
       setLoading(false);
     }
   }
@@ -57,7 +57,7 @@ export default function SubscribeButton({
         disabled={loading}
         className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-ink transition hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {loading ? "Redirection…" : "S'abonner"}
+        {loading ? "Redirecting…" : "Subscribe"}
       </button>
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
     </div>

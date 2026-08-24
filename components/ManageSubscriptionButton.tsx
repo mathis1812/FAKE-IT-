@@ -29,7 +29,7 @@ export default function ManageSubscriptionButton({
 
       if (!res.ok || !data.url) {
         setError(
-          data.error ?? "Une erreur est survenue, réessaie dans quelques instants.",
+          data.error ?? "Something went wrong, please try again in a moment.",
         );
         setLoading(false);
         return;
@@ -37,7 +37,7 @@ export default function ManageSubscriptionButton({
 
       window.location.href = data.url;
     } catch {
-      setError("Une erreur est survenue, réessaie dans quelques instants.");
+      setError("Something went wrong, please try again in a moment.");
       setLoading(false);
     }
   }
@@ -51,10 +51,10 @@ export default function ManageSubscriptionButton({
         className="text-sm font-medium text-primary-soft underline underline-offset-2 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading
-          ? "Redirection…"
+          ? "Redirecting…"
           : targetPlan
-            ? "Passer à ce palier"
-            : "Gérer mon abonnement"}
+            ? "Switch to this plan"
+            : "Manage my subscription"}
       </button>
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
     </div>
