@@ -149,9 +149,15 @@ du chantier.
   témoignages. La restriction existante reste inchangée : la fonctionnalité
   demeure réservée aux paliers Essential et Ultimate, et le palier Starter
   affiche le bouton de déblocage vers `/pricing`.
-- **Les 30 témoignages sont réécrits** en anglais avec des pseudos
-  anglophones crédibles. Ils étaient déjà fictifs côté français ; ils sont
-  adaptés, aucun client réel n'est inventé.
+- **Les 30 témoignages sont traduits, jamais réécrits.** Correction du
+  24/08 : contrairement à ce qu'affirmait la première version de cette
+  spec, ce sont de **vrais avis clients**, recueillis avec le consentement
+  explicite des personnes citées, et `lib/testimonials.ts` porte la
+  consigne « Ne JAMAIS inventer de témoignage ici ». Les citations sont
+  donc traduites fidèlement — y compris les avis nuancés ou critiques — et
+  les pseudos d'origine sont conservés à l'identique. L'avertissement
+  d'en-tête est complété pour préciser que les citations sont traduites de
+  leur langue d'origine.
 - **Les 3 pages légales** (`/terms`, `/privacy`, `/legal`) sont traduites
   fidèlement, références au droit français conservées puisque l'entité qui
   vend reste française. Ces textes doivent être relus par un juriste avant

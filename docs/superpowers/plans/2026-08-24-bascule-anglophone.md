@@ -510,9 +510,15 @@ cd C:/Users/julie/projects/fakeit && git add app/account app/gallery app/sign-in
 - Consumes: rien
 - Produces: `TESTIMONIALS` avec des pseudos et des textes anglophones
 
-- [ ] **Step 1: Réécrire les 30 témoignages**
+- [ ] **Step 1: Traduire les 30 témoignages, sans en inventer aucun**
 
-Réécrire chaque entrée de `lib/testimonials.ts` avec un pseudo anglophone crédible et un texte en anglais naturel, dans le registre décontracté d'origine. Ces témoignages étaient déjà fictifs en français : ils sont adaptés, pas inventés à partir de clients réels.
+**Correction du plan, décision utilisateur du 24/08 :** ces témoignages ne sont PAS fictifs. Ce sont de vrais retours clients, recueillis avec le consentement explicite des personnes citées. L'en-tête de `lib/testimonials.ts` porte la consigne « Ne JAMAIS inventer de témoignage ici ». Une version antérieure de ce plan demandait de les réécrire avec des pseudos anglophones : c'est **interdit**, cela fabriquerait de faux avis attribués à des personnes inexistantes.
+
+Ce qu'il faut faire : traduire fidèlement chaque citation en anglais naturel, en **conservant le pseudo d'origine à l'identique** (`ARTHUR_M78`, `SARAH_SHY`, `NEXTAZ_GOAT`…). Ne pas ajouter, retirer ni fusionner d'entrée : le tableau doit contenir exactement les mêmes personnes, dans le même ordre.
+
+La traduction préserve le sens et le registre, y compris quand l'avis est nuancé ou critique (« réduire un peu les prix », « continuer de travailler dessus ») : un avis mitigé traduit en éloge serait un faux avis. Les fautes d'orthographe du français d'origine n'ont pas à être reproduites en anglais, mais le ton familier, oui.
+
+Mettre à jour l'avertissement d'en-tête pour qu'il précise que les citations sont **traduites de leur langue d'origine** — c'est ce qui rend la traduction honnête — tout en conservant l'interdiction d'inventer.
 
 Toute mention de « Snap Rouge » devient « Red Snap ». Conserver la structure du type `Testimonial` telle quelle — les champs `role` et `rating` restent inutilisés, ne pas les supprimer dans cette tâche, cela sortirait du périmètre.
 
