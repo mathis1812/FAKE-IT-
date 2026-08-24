@@ -10,10 +10,14 @@ export default function ManageSubscriptionButton({
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [portalUrl, setPortalUrl] = useState<string | null>(null);
 
   async function handleClick() {
     setLoading(true);
     setError(null);
+    setNotice(null);
+    setPortalUrl(null);
 
     try {
       const res = await fetch("/api/stripe/portal", {
@@ -36,10 +40,14 @@ export default function ManageSubscriptionButton({
       }
 
       // Abonnement en euros (ancienne tarification) : le backend renvoie un
-      // message d'explication à afficher avant de rediriger vers le portail,
-      // faute de quoi l'utilisateur ne le verrait jamais.
+      // message d'explication à afficher avant de rediriger vers le portail.
+      // On l'affiche dans la page et on laisse l'utilisateur poursuivre
+      // lui-même, plutôt que de rediriger automatiquement en dessous de lui.
       if (data.message) {
-        window.alert(data.message);
+        setNotice(data.message);
+        setPortalUrl(data.url);
+        setLoading(false);
+        return;
       }
 
       window.location.href = data.url;
@@ -64,6 +72,17 @@ export default function ManageSubscriptionButton({
             : "Manage my subscription"}
       </button>
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      {notice && portalUrl && (
+        <div className="mt-3 space-y-3">
+          <p className="text-xs text-neutral-400">{notice}</p>
+          <a
+            href={portalUrl}
+            className="inline-block rounded-2xl border border-white/10 px-4 py-2 text-xs font-medium text-neutral-300 transition hover:border-white/20 hover:text-white"
+          >
+            Continue to billing portal
+          </a>
+        </div>
+      )}
     </div>
   );
 }
