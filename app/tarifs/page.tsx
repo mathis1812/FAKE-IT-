@@ -84,8 +84,8 @@ export default async function TarifsPage() {
   const plans = PLAN_ORDER.map((planId) => ({
     id: planId,
     name: PLANS[planId].name,
-    monthlyPriceEur: PLANS[planId].monthly.priceEur,
-    annualPriceEur: PLANS[planId].annual.priceEur,
+    monthlyPriceUsd: PLANS[planId].monthly.priceUsd,
+    annualPriceUsd: PLANS[planId].annual.priceUsd,
     creditsPerMonth: PLANS[planId].creditsPerMonth,
   }));
 

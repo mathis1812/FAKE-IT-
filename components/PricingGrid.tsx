@@ -4,7 +4,7 @@ import { useState } from "react";
 import Panel from "@/components/Panel";
 import SubscribeButton from "@/components/SubscribeButton";
 import ManageSubscriptionButton from "@/components/ManageSubscriptionButton";
-import type { BillingPeriod, PlanId } from "@/lib/stripe";
+import { formatPrice, type BillingPeriod, type PlanId } from "@/lib/stripe";
 
 /**
  * Une ligne de la grille comparative : même libellé sur les 3 paliers, une
@@ -29,8 +29,8 @@ export type ComparisonRow = {
 type PlanView = {
   id: PlanId;
   name: string;
-  monthlyPriceEur: number;
-  annualPriceEur: number;
+  monthlyPriceUsd: number;
+  annualPriceUsd: number;
   creditsPerMonth: number;
 };
 
@@ -56,10 +56,6 @@ function ComparisonCellView({ cell }: { cell: ComparisonCell }) {
       {cell.text}
     </span>
   );
-}
-
-function formatEur(amount: number): string {
-  return amount.toFixed(2).replace(".", ",");
 }
 
 /**
@@ -137,7 +133,7 @@ export default function PricingGrid({
         {plans.map((plan) => {
           const isCurrent = currentPlan === plan.id;
           const isHighlighted = plan.id === "ultimate";
-          const annualEffectiveMonthly = plan.annualPriceEur / 12;
+          const annualEffectiveMonthly = plan.annualPriceUsd / 12;
           const showDiscountBadge = period === "annual" && canChoosePeriod;
           const tier = TIER_STYLES[plan.id];
 
@@ -169,7 +165,7 @@ export default function PricingGrid({
 
               {period === "monthly" ? (
                 <p className="mb-1 text-3xl font-semibold text-white">
-                  {formatEur(plan.monthlyPriceEur)} €
+                  {formatPrice(plan.monthlyPriceUsd)}
                   <span className="text-sm font-normal text-neutral-500">
                     /mois
                   </span>
@@ -177,16 +173,16 @@ export default function PricingGrid({
               ) : (
                 <div className="mb-1">
                   <p className="text-lg font-medium text-neutral-500 line-through decoration-red-500/70 decoration-2">
-                    {formatEur(plan.monthlyPriceEur)} €/mois
+                    {formatPrice(plan.monthlyPriceUsd)}/mois
                   </p>
                   <p className="text-4xl font-semibold text-white">
-                    {formatEur(annualEffectiveMonthly)} €
+                    {formatPrice(annualEffectiveMonthly)}
                     <span className="text-sm font-normal text-neutral-500">
                       /mois
                     </span>
                   </p>
                   <p className="text-xs text-neutral-500">
-                    Facturé {formatEur(plan.annualPriceEur)} €/an
+                    Facturé {formatPrice(plan.annualPriceUsd)}/an
                   </p>
                 </div>
               )}

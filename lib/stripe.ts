@@ -25,7 +25,7 @@ export type PlanId = "decouverte" | "essentiel" | "ultimate";
 export type BillingPeriod = "monthly" | "annual";
 export type ImageResolution = "1K" | "2K" | "4K";
 
-type PriceInfo = { priceId: string; priceEur: number };
+type PriceInfo = { priceId: string; priceUsd: number };
 
 export const PLANS: Record<
   PlanId,
@@ -38,36 +38,40 @@ export const PLANS: Record<
   }
 > = {
   decouverte: {
-    name: "Découverte",
-    monthly: { priceId: envValue("STRIPE_PRICE_DECOUVERTE"), priceEur: 9.9 },
+    name: "Starter",
+    monthly: { priceId: envValue("STRIPE_PRICE_DECOUVERTE"), priceUsd: 9.99 },
     annual: {
       priceId: envValue("STRIPE_PRICE_DECOUVERTE_ANNUEL"),
-      priceEur: 94.9,
+      priceUsd: 95.9,
     },
     creditsPerMonth: 2000,
     imageResolution: "1K",
   },
   essentiel: {
-    name: "Essentiel",
-    monthly: { priceId: envValue("STRIPE_PRICE_ESSENTIEL"), priceEur: 19.9 },
+    name: "Essential",
+    monthly: { priceId: envValue("STRIPE_PRICE_ESSENTIEL"), priceUsd: 19.99 },
     annual: {
       priceId: envValue("STRIPE_PRICE_ESSENTIEL_ANNUEL"),
-      priceEur: 190.9,
+      priceUsd: 191.9,
     },
     creditsPerMonth: 5000,
     imageResolution: "2K",
   },
   ultimate: {
     name: "Ultimate",
-    monthly: { priceId: envValue("STRIPE_PRICE_ULTIMATE"), priceEur: 39.9 },
+    monthly: { priceId: envValue("STRIPE_PRICE_ULTIMATE"), priceUsd: 39.99 },
     annual: {
       priceId: envValue("STRIPE_PRICE_ULTIMATE_ANNUEL"),
-      priceEur: 382.9,
+      priceUsd: 383.9,
     },
     creditsPerMonth: 12000,
     imageResolution: "4K",
   },
 };
+
+export function formatPrice(amount: number): string {
+  return `$${amount.toFixed(2)}`;
+}
 
 export function priceIdFor(planId: PlanId, period: BillingPeriod): string {
   return PLANS[planId][period].priceId;
@@ -81,6 +85,51 @@ export function creditsFor(planId: PlanId, period: BillingPeriod): number {
   return period === "annual" ? perMonth * 12 : perMonth;
 }
 
+// Les abonnés souscrits en euros avant la bascule vers le marché anglophone
+// conservent leurs anciens price IDs. Sans ce repli, leur événement de
+// renouvellement ne serait plus associé à un palier et ils paieraient sans
+// recevoir de crédits.
+const LEGACY_PRICE_IDS: {
+  priceId: string;
+  planId: PlanId;
+  period: BillingPeriod;
+}[] = [
+  {
+    priceId: envValue("STRIPE_PRICE_LEGACY_DECOUVERTE"),
+    planId: "decouverte",
+    period: "monthly",
+  },
+  {
+    priceId: envValue("STRIPE_PRICE_LEGACY_DECOUVERTE_ANNUEL"),
+    planId: "decouverte",
+    period: "annual",
+  },
+  {
+    priceId: envValue("STRIPE_PRICE_LEGACY_ESSENTIEL"),
+    planId: "essentiel",
+    period: "monthly",
+  },
+  {
+    priceId: envValue("STRIPE_PRICE_LEGACY_ESSENTIEL_ANNUEL"),
+    planId: "essentiel",
+    period: "annual",
+  },
+  {
+    priceId: envValue("STRIPE_PRICE_LEGACY_ULTIMATE"),
+    planId: "ultimate",
+    period: "monthly",
+  },
+  {
+    priceId: envValue("STRIPE_PRICE_LEGACY_ULTIMATE_ANNUEL"),
+    planId: "ultimate",
+    period: "annual",
+  },
+].filter((entry) => entry.priceId.length > 0) as Array<{
+  priceId: string;
+  planId: PlanId;
+  period: BillingPeriod;
+}>;
+
 export function resolvePriceId(
   priceId: string | undefined,
 ): { planId: PlanId; period: BillingPeriod } | null {
@@ -92,5 +141,8 @@ export function resolvePriceId(
     if (plan.monthly.priceId === priceId) return { planId: id, period: "monthly" };
     if (plan.annual.priceId === priceId) return { planId: id, period: "annual" };
   }
+  const legacy = LEGACY_PRICE_IDS.find((entry) => entry.priceId === priceId);
+  if (legacy) return { planId: legacy.planId, period: legacy.period };
+
   return null;
 }
