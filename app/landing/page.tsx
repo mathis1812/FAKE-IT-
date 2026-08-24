@@ -130,7 +130,7 @@ export default function LandingPage() {
           Turn your photos into undetectable Red Snaps
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-neutral-300">
-          No more "Media loaded" watermark giving away an imported image.
+          No more &ldquo;Media loaded&rdquo; watermark giving away an imported image.
           Your photo goes out like a real snap taken on the spot.
         </p>
       </section>
