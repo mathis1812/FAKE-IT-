@@ -62,7 +62,7 @@ export default function LandingPage() {
     trackLandingPageView();
   }, []);
 
-  // Un visiteur déjà connecté n'a rien à faire sur /inscription : on le
+  // Un visiteur déjà connecté n'a rien à faire sur /sign-up : on le
   // renvoie vers le studio plutôt que de lui reproposer de créer un compte.
   useEffect(() => {
     if (
@@ -79,7 +79,7 @@ export default function LandingPage() {
       .catch(() => {});
   }, []);
 
-  const ctaHref = isLoggedIn ? "/" : "/inscription";
+  const ctaHref = isLoggedIn ? "/" : "/sign-up";
   const ctaLabel = isLoggedIn ? "Ouvrir le studio" : "Commencer maintenant";
   const secondaryCtaLabel = isLoggedIn
     ? "Ouvrir le studio"

@@ -9,7 +9,7 @@ export default function SignOutButton() {
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/connexion");
+    router.push("/sign-in");
     router.refresh();
   }
 

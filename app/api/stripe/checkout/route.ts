@@ -94,8 +94,8 @@ export async function POST(req: NextRequest) {
       mode: "subscription",
       customer: customerId,
       line_items: [{ price: priceIdFor(planId, period), quantity: 1 }],
-      success_url: `${origin}/compte?checkout=success`,
-      cancel_url: `${origin}/tarifs`,
+      success_url: `${origin}/account?checkout=success`,
+      cancel_url: `${origin}/pricing`,
       metadata: { supabase_user_id: user.id, plan: planId, period },
     });
 

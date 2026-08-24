@@ -34,7 +34,7 @@ export default function ConnexionPage() {
         return;
       }
 
-      router.push("/compte");
+      router.push("/account");
       router.refresh();
     } catch {
       setError("Une erreur est survenue, réessaie dans quelques instants.");
@@ -106,7 +106,7 @@ export default function ConnexionPage() {
 
         <p className="mt-6 text-center text-sm text-neutral-400">
           Pas encore de compte ?{" "}
-          <Link href="/inscription" className="text-primary-soft hover:underline">
+          <Link href="/sign-up" className="text-primary-soft hover:underline">
             S&apos;inscrire
           </Link>
         </p>

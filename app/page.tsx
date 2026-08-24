@@ -450,7 +450,7 @@ export default function Home() {
   const isSubscribed = isLoggedIn && !!planId;
   /**
    * Le Snap Rouge est un avantage des paliers Essentiel et Ultimate, annoncé
-   * comme tel sur /tarifs. Un abonné Découverte génère normalement mais n'y
+   * comme tel sur /pricing. Un abonné Découverte génère normalement mais n'y
    * a pas accès : si cette condition saute, la grille tarifaire ment.
    */
   const hasSnapRouge = planId === "essentiel" || planId === "ultimate";
@@ -1075,7 +1075,7 @@ export default function Home() {
                         image en pleine qualité.
                       </p>
                       <Link
-                        href={isLoggedIn ? "/tarifs" : "/inscription"}
+                        href={isLoggedIn ? "/pricing" : "/sign-up"}
                         className="mt-1 inline-flex items-center justify-center rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-ink transition hover:bg-primary-soft"
                       >
                         {isLoggedIn ? "Voir les paliers" : "Créer mon compte"}
@@ -1250,7 +1250,7 @@ export default function Home() {
                           qu'un vide. Ce bloc n'est atteignable que par un
                           abonné (le paywall arrête les autres avant). */}
                       <Link
-                        href="/tarifs"
+                        href="/pricing"
                         className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-red-600/40 bg-gradient-to-b from-neutral-950 to-black px-5 py-3.5 text-sm font-black uppercase tracking-wide text-red-400/80 transition duration-200 hover:border-red-600 hover:text-red-400 sm:w-auto"
                       >
                         <svg
@@ -1646,7 +1646,7 @@ export default function Home() {
                       pleine qualité.
                     </p>
                     <Link
-                      href={isLoggedIn ? "/tarifs" : "/inscription"}
+                      href={isLoggedIn ? "/pricing" : "/sign-up"}
                       className="mt-1 inline-flex items-center justify-center rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-ink transition hover:bg-primary-soft"
                     >
                       {isLoggedIn ? "Voir les paliers" : "Créer mon compte"}

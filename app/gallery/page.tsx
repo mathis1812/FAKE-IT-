@@ -18,7 +18,7 @@ export default async function GaleriePage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/connexion");
+    redirect("/sign-in");
   }
 
   const { data: entries } = await supabase

@@ -42,7 +42,7 @@ export default function InscriptionPage() {
         return;
       }
 
-      router.push("/compte");
+      router.push("/account");
       router.refresh();
     } catch {
       setError("Une erreur est survenue, réessaie dans quelques instants.");
@@ -115,7 +115,7 @@ export default function InscriptionPage() {
 
         <p className="mt-6 text-center text-sm text-neutral-400">
           Déjà un compte ?{" "}
-          <Link href="/connexion" className="text-primary-soft hover:underline">
+          <Link href="/sign-in" className="text-primary-soft hover:underline">
             Se connecter
           </Link>
         </p>

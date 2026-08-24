@@ -9,9 +9,9 @@ const MOBILE_BREAKPOINT_QUERY = "(min-width: 768px)";
 
 const NAV_ITEMS = [
   { href: "/", label: "Accueil" },
-  { href: "/galerie", label: "Galerie" },
-  { href: "/tarifs", label: "Tarifs" },
-  { href: "/a-propos", label: "À propos" },
+  { href: "/gallery", label: "Galerie" },
+  { href: "/pricing", label: "Tarifs" },
+  { href: "/about", label: "À propos" },
 ] as const;
 
 /**
@@ -127,7 +127,7 @@ export default function SiteHeader() {
             </nav>
             {isLoggedIn !== null && (
               <Link
-                href={isLoggedIn ? "/compte" : "/connexion"}
+                href={isLoggedIn ? "/account" : "/sign-in"}
                 className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-neutral-300 transition hover:border-white/20 hover:text-white"
               >
                 {isLoggedIn ? "Mon compte" : "Connexion"}
@@ -190,7 +190,7 @@ export default function SiteHeader() {
                 })}
                 {isLoggedIn !== null && (
                   <Link
-                    href={isLoggedIn ? "/compte" : "/connexion"}
+                    href={isLoggedIn ? "/account" : "/sign-in"}
                     onClick={() => setOpen(false)}
                     className="rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-neutral-300 transition hover:bg-white/[0.04] hover:text-white"
                   >

@@ -39,7 +39,7 @@ export default async function ComptePage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/connexion");
+    redirect("/sign-in");
   }
 
   const {
@@ -138,7 +138,7 @@ export default async function ComptePage() {
               un palier supérieur pour débloquer une meilleure résolution.
             </p>
             <Link
-              href="/tarifs"
+              href="/pricing"
               className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-ink transition hover:bg-primary-soft"
             >
               Voir les paliers
@@ -234,7 +234,7 @@ export default async function ComptePage() {
                 <ManageSubscriptionButton />
               ) : (
                 <Link
-                  href="/tarifs"
+                  href="/pricing"
                   className="flex w-full items-center justify-center rounded-2xl border border-primary/40 px-4 py-3 text-sm font-semibold text-primary-soft transition hover:border-primary hover:text-primary"
                 >
                   Voir les offres

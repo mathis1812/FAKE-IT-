@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 const LEGAL_LINKS = [
-  { href: "/mentions-legales", label: "Mentions légales" },
-  { href: "/cgv", label: "CGV" },
-  { href: "/confidentialite", label: "Confidentialité" },
+  { href: "/legal", label: "Mentions légales" },
+  { href: "/terms", label: "CGV" },
+  { href: "/privacy", label: "Confidentialité" },
 ] as const;
 
 /** Pied de page partagé : liens légaux, purement présentationnel. */

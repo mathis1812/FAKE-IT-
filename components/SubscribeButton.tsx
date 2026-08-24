@@ -19,7 +19,7 @@ export default function SubscribeButton({
 
   async function handleClick() {
     if (!isLoggedIn) {
-      router.push("/connexion");
+      router.push("/sign-in");
       return;
     }
 

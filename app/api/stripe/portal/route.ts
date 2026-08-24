@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     try {
       const session = await stripe.billingPortal.sessions.create({
         customer: customerId,
-        return_url: `${origin}/compte`,
+        return_url: `${origin}/account`,
       });
 
       return NextResponse.json({ url: session.url });
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${origin}/compte?upgrade=success`,
+      return_url: `${origin}/account?upgrade=success`,
       flow_data: {
         type: "subscription_update_confirm",
         subscription_update_confirm: {
