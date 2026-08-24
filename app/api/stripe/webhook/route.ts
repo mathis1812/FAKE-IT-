@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Clé API manquante. Définissez STRIPE_SECRET_KEY dans vos variables d'environnement.",
+          "Missing API key. Set STRIPE_SECRET_KEY in your environment variables.",
       },
       { status: 500 },
     );
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   if (!signature || !webhookSecret) {
     return NextResponse.json(
-      { error: "Configuration webhook manquante." },
+      { error: "Missing webhook configuration." },
       { status: 500 },
     );
   }
@@ -51,9 +51,9 @@ export async function POST(req: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Signature invalide.";
+    const message = err instanceof Error ? err.message : "Invalid signature.";
     return NextResponse.json(
-      { error: `Webhook invalide : ${message}` },
+      { error: `Invalid webhook: ${message}` },
       { status: 400 },
     );
   }
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
 
       if (updateError) {
         console.error(
-          `[stripe-webhook] échec update profiles pour ${event.type} (event ${event.id}):`,
+          `[stripe-webhook] failed to update profiles for ${event.type} (event ${event.id}):`,
           updateError,
         );
         dbWriteFailed = true;
@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
           }
         } else {
           console.error(
-            `[stripe-webhook] resolvePriceId introuvable pour priceId=${priceId} (subscriptionId=${subscriptionId}, event ${event.id})`,
+            `[stripe-webhook] resolvePriceId not found for priceId=${priceId} (subscriptionId=${subscriptionId}, event ${event.id})`,
           );
         }
       }
@@ -250,7 +250,7 @@ export async function POST(req: NextRequest) {
 
   if (dbWriteFailed) {
     return NextResponse.json(
-      { error: "Échec de mise à jour du profil, réessaie." },
+      { error: "Profile update failed, please try again." },
       { status: 500 },
     );
   }

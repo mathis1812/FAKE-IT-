@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Clé API manquante. Définissez STRIPE_SECRET_KEY dans vos variables d'environnement.",
+          "Missing API key. Set STRIPE_SECRET_KEY in your environment variables.",
       },
       { status: 500 },
     );
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
   if (!user) {
     return NextResponse.json(
-      { error: "Connecte-toi pour t'abonner." },
+      { error: "Sign in to subscribe." },
       { status: 401 },
     );
   }
@@ -41,14 +41,14 @@ export async function POST(req: NextRequest) {
     body = (await req.json()) as CheckoutBody;
   } catch {
     return NextResponse.json(
-      { error: "Requête invalide : corps JSON illisible." },
+      { error: "Invalid request: unreadable JSON body." },
       { status: 400 },
     );
   }
 
   const planId = body.plan as PlanId | undefined;
   if (!planId || !(planId in PLANS)) {
-    return NextResponse.json({ error: "Palier inconnu." }, { status: 400 });
+    return NextResponse.json({ error: "Unknown plan." }, { status: 400 });
   }
 
   const period: BillingPeriod = body.period === "annual" ? "annual" : "monthly";
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Tu as déjà un abonnement actif. Gère ton palier depuis le portail d'abonnement.",
+          "You already have an active subscription. Manage your plan from the subscription portal.",
       },
       { status: 400 },
     );

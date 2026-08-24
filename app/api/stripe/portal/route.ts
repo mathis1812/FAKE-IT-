@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Clé API manquante. Définissez STRIPE_SECRET_KEY dans vos variables d'environnement.",
+          "Missing API key. Set STRIPE_SECRET_KEY in your environment variables.",
       },
       { status: 500 },
     );
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
   if (!user) {
     return NextResponse.json(
-      { error: "Connecte-toi pour gérer ton abonnement." },
+      { error: "Sign in to manage your subscription." },
       { status: 401 },
     );
   }
@@ -44,14 +44,14 @@ export async function POST(req: NextRequest) {
     }
   } catch {
     return NextResponse.json(
-      { error: "Requête invalide : corps JSON illisible." },
+      { error: "Invalid request: unreadable JSON body." },
       { status: 400 },
     );
   }
 
   const targetPlan = body.targetPlan as PlanId | undefined;
   if (targetPlan && !(targetPlan in PLANS)) {
-    return NextResponse.json({ error: "Palier inconnu." }, { status: 400 });
+    return NextResponse.json({ error: "Unknown plan." }, { status: 400 });
   }
 
   const { data: profile } = await supabase
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 
   if (!profile?.stripe_customer_id) {
     return NextResponse.json(
-      { error: "Aucun abonnement actif." },
+      { error: "No active subscription." },
       { status: 400 },
     );
   }
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
   const subscriptionId = profile.stripe_subscription_id as string | null;
   if (!subscriptionId) {
     return NextResponse.json(
-      { error: "Aucun abonnement actif à modifier." },
+      { error: "No active subscription to change." },
       { status: 400 },
     );
   }
@@ -101,12 +101,12 @@ export async function POST(req: NextRequest) {
     const resolved = resolvePriceId(currentItem?.price.id);
     if (!resolved) {
       console.error(
-        `Prix Stripe non reconnu (${currentItem?.price.id}) pour l'abonnement ${subscriptionId} de l'utilisateur ${user.id}.`,
+        `Unrecognized Stripe price (${currentItem?.price.id}) for subscription ${subscriptionId} of user ${user.id}.`,
       );
       return NextResponse.json(
         {
           error:
-            "Impossible de déterminer ta périodicité de facturation actuelle. Contacte le support pour changer de palier.",
+            "Unable to determine your current billing period. Contact support to change plans.",
         },
         { status: 500 },
       );

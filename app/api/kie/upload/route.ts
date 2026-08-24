@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Clé API manquante. Définissez KIE_API_KEY dans vos variables d'environnement.",
+          "Missing API key. Set KIE_API_KEY in your environment variables.",
       },
       { status: 500 },
     );
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     incomingForm = await req.formData();
   } catch {
     return NextResponse.json(
-      { error: "Requête invalide : formulaire illisible." },
+      { error: "Invalid request: unreadable form." },
       { status: 400 },
     );
   }
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   const file = incomingForm.get("file");
   if (!(file instanceof File)) {
     return NextResponse.json(
-      { error: "Fichier manquant. Envoyez un champ 'file'." },
+      { error: "Missing file. Send a 'file' field." },
       { status: 400 },
     );
   }
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Impossible de contacter le service d'upload. Vérifiez votre connexion et réessayez.",
+          "Unable to contact the upload service. Check your connection and try again.",
       },
       { status: 502 },
     );
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     json = await res.json();
   } catch {
     return NextResponse.json(
-      { error: "Réponse illisible du service d'upload." },
+      { error: "Unreadable response from the upload service." },
       { status: 502 },
     );
   }
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
   if (!res.ok || !json.success || !json.data?.downloadUrl) {
     return NextResponse.json(
       {
-        error: `Échec de l'upload (${res.status}). ${json.msg ?? ""}`.trim(),
+        error: `Upload failed (${res.status}). ${json.msg ?? ""}`.trim(),
       },
       { status: 502 },
     );

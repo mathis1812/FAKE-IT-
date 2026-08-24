@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Clé API manquante. Définissez KIE_API_KEY dans vos variables d'environnement.",
+          "Missing API key. Set KIE_API_KEY in your environment variables.",
       },
       { status: 500 },
     );
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Clé API manquante. Définissez GEMINI_API_KEY dans vos variables d'environnement.",
+          "Missing API key. Set GEMINI_API_KEY in your environment variables.",
       },
       { status: 500 },
     );
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     body = (await req.json()) as GenerateBody;
   } catch {
     return NextResponse.json(
-      { error: "Requête invalide : corps JSON illisible." },
+      { error: "Invalid request: unreadable JSON body." },
       { status: 400 },
     );
   }
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
   if (!sourceImageUrl || typeof sourceImageUrl !== "string") {
     return NextResponse.json(
-      { error: "Image manquante. Uploadez une photo puis réessayez." },
+      { error: "Missing image. Upload a photo and try again." },
       { status: 400 },
     );
   }
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
 
   if (placeUrls.length > MAX_PLACE_IMAGES) {
     return NextResponse.json(
-      { error: `Maximum ${MAX_PLACE_IMAGES} photos du lieu.` },
+      { error: `Maximum ${MAX_PLACE_IMAGES} place photos.` },
       { status: 400 },
     );
   }
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Ajoutez une photo du lieu, ou décrivez la scène souhaitée dans la note.",
+          "Add a place photo or describe the desired scene in the note.",
       },
       { status: 400 },
     );
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
 
   if (!user) {
     return NextResponse.json(
-      { error: "Connectez-vous pour générer une image." },
+      { error: "Sign in to generate an image." },
       { status: 401 },
     );
   }
@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
     .single();
   if (profileError) {
     console.error(
-      `Échec de la lecture du palier pour l'utilisateur ${user.id} (repli sur 1K) :`,
+      `Failed to read plan for user ${user.id} (falling back to 1K):`,
       profileError.message,
     );
   }
@@ -148,9 +148,9 @@ export async function POST(req: NextRequest) {
   try {
     hasCredits = await spendCredits(user.id, IMAGE_GENERATION_COST);
   } catch (err) {
-    console.error("Échec de la vérification des crédits :", err);
+    console.error("Failed to check credits:", err);
     return NextResponse.json(
-      { error: "Erreur interne lors de la vérification des crédits." },
+      { error: "Internal error while checking credits." },
       { status: 500 },
     );
   }
@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Crédits insuffisants. Rendez-vous sur la page Tarifs pour recharger votre compte.",
+          "Insufficient credits. Go to the Pricing page to recharge your account.",
       },
       { status: 402 },
     );
@@ -204,9 +204,9 @@ export async function POST(req: NextRequest) {
     const message =
       err instanceof Error
         ? err.message
-        : "Erreur inconnue lors de la génération de l'image.";
+        : "Unknown error while generating the image.";
     return NextResponse.json(
-      { error: `Erreur du service de génération Gemini. ${message}` },
+      { error: `Gemini generation service error. ${message}` },
       { status: 502 },
     );
   }
@@ -220,16 +220,16 @@ export async function POST(req: NextRequest) {
       user.id,
       bytes,
       mimeType,
-      label?.trim() || "Génération image",
+      label?.trim() || "Image generation",
     );
     return NextResponse.json({ imageUrl });
   } catch (err) {
-    console.error("Échec de la persistance de l'image générée :", err);
+    console.error("Failed to save the generated image:", err);
     await refundCredits(user.id, IMAGE_GENERATION_COST);
     return NextResponse.json(
       {
         error:
-          "L'image a bien été générée mais son enregistrement a échoué. Réessayez dans quelques instants.",
+          "The image was generated successfully but saving failed. Try again in a few moments.",
       },
       { status: 502 },
     );
