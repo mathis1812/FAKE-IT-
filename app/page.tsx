@@ -828,7 +828,7 @@ export default function Home() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        setVideoError("Log in to generate a video.");
+        setVideoError("Sign in to generate a video.");
         return;
       }
       const sourceVideoUrl = await uploadVideoDirect(videoSource.file, user.id);
