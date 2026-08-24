@@ -84,7 +84,7 @@ export default function CgvPage() {
             </h3>
             <p>
               The user may cancel their subscription at any time from their
-              billing area (accessible via the Pricing page). Cancellation
+              billing area (accessible via the account page). Cancellation
               takes effect at the end of the current period already paid
               for; no pro-rata refund is issued for the current period.
             </p>
