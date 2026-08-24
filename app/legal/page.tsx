@@ -6,10 +6,10 @@ export default function MentionsLegalesPage() {
     <div className="animate-fade-up mx-auto max-w-3xl py-8">
       <Panel className="p-6 sm:p-8">
         <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
-          Informations légales
+          Legal information
         </p>
         <h2 className="font-display mt-3 text-3xl font-semibold leading-tight tracking-tight text-white">
-          Mentions légales
+          Legal notice
         </h2>
 
         <LegalIdentityNotice />
@@ -17,19 +17,19 @@ export default function MentionsLegalesPage() {
         <div className="space-y-6 text-sm leading-relaxed text-neutral-400">
           <section>
             <h3 className="mb-2 text-base font-semibold text-neutral-100">
-              1. Éditeur du site
+              1. Site publisher
             </h3>
             <p>
-              Le site Bluminoo Studio est édité par Mathis Vergne, à titre
-              individuel.
+              The Bluminoo Studio site is published by Mathis Vergne, as an
+              individual.
               <br />
-              Forme juridique : <em>en cours de réimmatriculation</em>
+              Legal form: <em>re-registration in progress</em>
               <br />
-              Numéro SIRET : <em>en cours de réimmatriculation</em>
+              SIRET number: <em>re-registration in progress</em>
               <br />
-              Adresse : <em>en cours de mise à jour</em>
+              Address: <em>currently being updated</em>
               <br />
-              Contact :{" "}
+              Contact:{" "}
               <a
                 href="mailto:mathisvergne27@gmail.com"
                 className="text-primary-soft underline underline-offset-2 hover:text-primary"
@@ -37,50 +37,45 @@ export default function MentionsLegalesPage() {
                 mathisvergne27@gmail.com
               </a>
             </p>
-            <p className="mt-2">
-              Directeur de la publication : Mathis Vergne.
-            </p>
+            <p className="mt-2">Publication director: Mathis Vergne.</p>
           </section>
 
           <section>
             <h3 className="mb-2 text-base font-semibold text-neutral-100">
-              2. Hébergement
+              2. Hosting
             </h3>
             <p>
-              Le site est hébergé par Vercel Inc., 340 S Lemon Ave #4133,
-              Walnut, CA 91789, États-Unis.
+              The site is hosted by Vercel Inc., 340 S Lemon Ave #4133,
+              Walnut, CA 91789, United States.
             </p>
             <p className="mt-2">
-              La base de données et l&apos;authentification sont gérées par
-              Supabase Inc.
+              The database and authentication are managed by Supabase Inc.
             </p>
           </section>
 
           <section>
             <h3 className="mb-2 text-base font-semibold text-neutral-100">
-              3. Propriété intellectuelle
+              3. Intellectual property
             </h3>
             <p>
-              L&apos;ensemble des éléments du site (textes, mise en page,
-              logo, charte graphique) est protégé au titre du droit
-              d&apos;auteur. Toute reproduction sans autorisation préalable
-              est interdite.
+              All elements of the site (text, layout, logo, visual identity)
+              are protected under copyright law. Any reproduction without
+              prior authorization is prohibited.
             </p>
           </section>
 
           <section>
             <h3 className="mb-2 text-base font-semibold text-neutral-100">
-              4. Génération par intelligence artificielle
+              4. Generation by artificial intelligence
             </h3>
             <p>
-              Les images et vidéos produites par le service sont générées
-              automatiquement par des modèles d&apos;intelligence artificielle
-              tiers accessibles via kie.ai (Nano Banana Pro / Gemini 3 Pro
-              Image pour l&apos;image, Kling 3.0 pour la vidéo) à partir des
-              photos et instructions fournies par
-              l&apos;utilisateur. Bluminoo Studio ne garantit pas
-              l&apos;exactitude, la conformité ou l&apos;absence
-              d&apos;erreur des contenus générés.
+              The images and videos produced by the service are generated
+              automatically by third-party artificial intelligence models
+              accessible via kie.ai (Nano Banana Pro / Gemini 3 Pro Image
+              for images, Kling 3.0 for video) from the photos and
+              instructions supplied by the user. Bluminoo Studio does not
+              guarantee the accuracy, compliance, or error-free nature of
+              the generated content.
             </p>
           </section>
 
@@ -89,8 +84,7 @@ export default function MentionsLegalesPage() {
               5. Contact
             </h3>
             <p>
-              Pour toute question relative au site ou à ces mentions
-              légales :{" "}
+              For any question regarding the site or this legal notice:{" "}
               <a
                 href="mailto:mathisvergne27@gmail.com"
                 className="text-primary-soft underline underline-offset-2 hover:text-primary"
