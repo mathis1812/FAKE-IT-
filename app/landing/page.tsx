@@ -127,7 +127,7 @@ export default function LandingPage() {
           Exclusive feature
         </p>
         <h2 className="font-display mt-4 text-3xl font-semibold text-white sm:text-4xl">
-          Send your photos as an undetectable Red Snap
+          Turn your photos into undetectable Red Snaps
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-neutral-300">
           No more "Media loaded" watermark giving away an imported image.
