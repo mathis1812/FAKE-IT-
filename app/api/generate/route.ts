@@ -7,7 +7,7 @@ import {
 } from "@/lib/credits";
 import { persistImageBytes } from "@/lib/gallery-server";
 import { generateGeminiImage } from "@/lib/gemini-jobs";
-import { buildPlacePrompt } from "@/lib/place-prompt";
+import { buildPlacePrompt, buildScenePrompt } from "@/lib/place-prompt";
 import { PLANS, type PlanId } from "@/lib/stripe";
 import {
   DISALLOWED_ASSET_URL_MESSAGE,
@@ -167,14 +167,21 @@ export async function POST(req: NextRequest) {
     finalPrompt = buildPlacePrompt(
       typeof userNote === "string" ? userNote : undefined,
     );
+  } else if (objectImageUrl && typeof objectImageUrl === "string") {
+    // Ancien flux d'ajout d'objet : édition sur place, l'arrière-plan
+    // d'origine est conservé. Il ne passe pas par buildScenePrompt, qui
+    // demande au contraire de construire un décor — les deux se
+    // contrediraient.
+    imageInput.push(objectImageUrl);
+    finalPrompt =
+      (prompt as string).trim() +
+      " Integrate the reference object shown in the second image photorealistically, " +
+      "while preserving the subject, pose, lighting and background from the first image.";
   } else {
-    finalPrompt = (prompt as string).trim();
-    if (objectImageUrl && typeof objectImageUrl === "string") {
-      imageInput.push(objectImageUrl);
-      finalPrompt +=
-        " Integrate the reference object shown in the second image photorealistically, " +
-        "while preserving the subject, pose, lighting and background from the first image.";
-    }
+    // Sans photo de lieu, la description libre du client est la seule
+    // indication disponible. Elle est encadrée par le même socle de
+    // photoréalisme plutôt que d'être envoyée telle quelle.
+    finalPrompt = buildScenePrompt(prompt as string);
   }
 
   let bytes: Buffer;
