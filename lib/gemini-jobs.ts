@@ -1,4 +1,11 @@
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
+// La fonction Vercel qui appelle ceci a un budget total de 300 s (voir
+// maxDuration dans app/api/generate/route.ts), dont jusqu'à 45 s peuvent
+// déjà être pris par l'analyse vision optionnelle des photos du lieu. Sans
+// cette limite, un appel Gemini qui traîne mangeait tout le budget restant
+// en silence avant que Vercel ne coupe la fonction sans message clair ni
+// remboursement propre côté utilisateur.
+const GEMINI_TIMEOUT_MS = 240_000;
 // gemini-3-pro-image-preview a été retiré par Google le 25/06/2026 ;
 // gemini-3-pro-image (Nano Banana Pro, sans suffixe -preview) est son
 // remplacement officiel — voir ai.google.dev/gemini-api/docs/deprecations.
@@ -54,26 +61,41 @@ export async function generateGeminiImage(
     })),
   );
 
-  const res = await fetch(
-    `${GEMINI_API_BASE}/models/${MODEL_ID}:generateContent`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: input.prompt }, ...imageParts],
-          },
-        ],
-        generationConfig: {
-          imageConfig: { imageSize: input.resolution },
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(
+      `${GEMINI_API_BASE}/models/${MODEL_ID}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
         },
-      }),
-    },
-  );
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: input.prompt }, ...imageParts],
+            },
+          ],
+          generationConfig: {
+            imageConfig: { imageSize: input.resolution },
+          },
+        }),
+        signal: controller.signal,
+      },
+    );
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error(
+        `Gemini generation timed out after ${GEMINI_TIMEOUT_MS / 1000}s. Please try again.`,
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 
   const raw = await res.text();
   let json: GeminiGenerateContentResponse;

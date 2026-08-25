@@ -623,32 +623,32 @@ export default function Home() {
     try {
       const blob = await (await fetch(prepared.previewUrl)).blob();
       if (blob.size > MAX_VIDEO_FILE_BYTES) {
-        setError(
+        throw new Error(
           "Image too large after compression (max 4MB). Try a simpler photo.",
         );
-        return;
       }
       const file = new File([blob], fileName || "image.jpg", {
         type: prepared.mimeType,
       });
-      const sourceImageUrl = await uploadImage(file);
 
-      const placeImageUrls: string[] = [];
-      for (let i = 0; i < placeImages.length; i++) {
-        const placeBlob = await (
-          await fetch(placeImages[i].previewUrl)
-        ).blob();
-        if (placeBlob.size > MAX_VIDEO_FILE_BYTES) {
-          setError(
-            "Location photo too large after compression (max 4MB).",
-          );
-          return;
-        }
-        const placeFile = new File([placeBlob], `lieu-${i + 1}.jpg`, {
-          type: placeImages[i].mimeType,
-        });
-        placeImageUrls.push(await uploadImage(placeFile));
-      }
+      // Uploadées en parallèle plutôt qu'une à une : chaque photo est
+      // indépendante des autres, les envoyer séquentiellement n'ajoutait
+      // que de l'attente avant même que la génération ne commence.
+      const [sourceImageUrl, ...placeImageUrls] = await Promise.all([
+        uploadImage(file),
+        ...placeImages.map(async (placeImage, i) => {
+          const placeBlob = await (await fetch(placeImage.previewUrl)).blob();
+          if (placeBlob.size > MAX_VIDEO_FILE_BYTES) {
+            throw new Error(
+              "Location photo too large after compression (max 4MB).",
+            );
+          }
+          const placeFile = new File([placeBlob], `lieu-${i + 1}.jpg`, {
+            type: placeImage.mimeType,
+          });
+          return uploadImage(placeFile);
+        }),
+      ]);
 
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -1403,7 +1403,7 @@ export default function Home() {
                   disabled={loading || !prepared}
                   className="flex-1 cursor-pointer rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-ink transition duration-200 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {loading ? "Generating… (~15-30s)" : "Generate"}
+                  {loading ? "Generating…" : "Generate"}
                 </button>
               )}
               {prepared && (
