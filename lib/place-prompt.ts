@@ -1,6 +1,19 @@
 const KIE_API_BASE = "https://api.kie.ai";
 
 /**
+ * Bascule de comparaison (25/08) : quand elle échoue, l'analyse kie.ai
+ * retombe déjà sur `fallbackPlacePrompt`, envoyé tel quel à Gemini qui
+ * analyse alors lui-même la scène (il est multimodal, il voit les mêmes
+ * photos). Ce chemin de repli tourne en production sans dégradation
+ * signalée à chaque échec de kie.ai. `SKIP_PLACE_VISION_ANALYSIS=true`
+ * l'utilise systématiquement, sans appeler kie.ai du tout, pour comparer
+ * la qualité sur de vraies générations avant de décider de retirer ou non
+ * l'appel d'analyse séparé. Non défini = comportement actuel inchangé.
+ */
+const SKIP_VISION_ANALYSIS =
+  process.env.SKIP_PLACE_VISION_ANALYSIS?.trim() === "true";
+
+/**
  * Modèle chat vision kie.ai utilisé pour analyser les photos du lieu.
  * Même clé API que les jobs image/vidéo (Authorization: Bearer).
  */
@@ -59,6 +72,10 @@ export async function buildPlacePrompt(
   placeImageUrls: string[],
   userNote?: string,
 ): Promise<string> {
+  if (SKIP_VISION_ANALYSIS) {
+    return fallbackPlacePrompt(userNote);
+  }
+
   const note = userNote?.trim();
   const userContent: Array<Record<string, unknown>> = [
     {
