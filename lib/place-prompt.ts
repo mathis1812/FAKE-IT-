@@ -26,6 +26,12 @@ export function buildPlacePrompt(userNote?: string): string {
     "depth of field and notable background elements. " +
     "Then place the subject naturally inside that exact location. " +
     "Keep the subject perfectly identical: same face, identity, skin tone, hair, clothing, pose and expression. " +
+    "Placement rules, treat these as hard constraints: choose an open, unobstructed area of the floor with enough " +
+    "clear space for the whole body; never let the subject intersect, merge with or pass through furniture, objects " +
+    "or clutter; if an object genuinely stands between the camera and the subject, it must occlude the subject " +
+    "cleanly along a sharp, anatomically correct silhouette edge, never blend into the body; plant both feet on the " +
+    "floor plane at the correct perspective with a contact shadow; scale the subject using the room's own references " +
+    "(door and ceiling height, furniture, eye level) so the height reads as physically plausible. " +
     "Rebuild the background using the real geometry, materials and recognizable details of the reference location. " +
     "Relight the subject to match the location's lighting direction, color temperature and contrast; add physically " +
     "coherent shadows, reflections and color grading. " +

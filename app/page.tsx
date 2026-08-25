@@ -235,6 +235,19 @@ async function uploadImage(file: File): Promise<string> {
   return data.fileUrl as string;
 }
 
+/** Relit l'aperçu compressé, vérifie sa taille, puis l'héberge. */
+async function prepareAndUpload(
+  image: PreparedImage,
+  name: string,
+  tooLargeMessage: string,
+): Promise<string> {
+  const blob = await (await fetch(image.previewUrl)).blob();
+  if (blob.size > MAX_VIDEO_FILE_BYTES) {
+    throw new Error(tooLargeMessage);
+  }
+  return uploadImage(new File([blob], name, { type: image.mimeType }));
+}
+
 function DropZone({
   label,
   badge,
@@ -368,12 +381,23 @@ const GENERATION_LOADING_MESSAGES = [
 ];
 
 /**
+ * Durées typiques observées, servant à calibrer la barre de progression.
+ * L'image est passée d'environ 70 s à environ 30 s le 25/08, quand
+ * l'analyse vision séparée a été fusionnée dans l'appel Gemini. Une barre
+ * calée sur l'ancienne durée plafonnait vers 35 % puis sautait d'un coup
+ * à terminé, ce qui se lit comme un bug plutôt que comme une réussite.
+ */
+const IMAGE_EXPECTED_SECONDS = 30;
+const VIDEO_EXPECTED_SECONDS = 90;
+
+/**
  * Progression purement perçue, sans lien avec l'état réel côté Gemini
  * (image) ou fal.ai (vidéo) : grimpe vite au début puis ralentit et
  * plafonne à 92%, pour ne jamais laisser croire que c'est fini avant que
- * ça le soit vraiment.
+ * ça le soit vraiment. `expectedSeconds` place le coude de la courbe :
+ * à cette durée, la barre atteint environ 86 %.
  */
-function useElapsedProgress(active: boolean) {
+function useElapsedProgress(active: boolean, expectedSeconds: number) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
@@ -389,7 +413,7 @@ function useElapsedProgress(active: boolean) {
 
   const progressPercent = Math.min(
     92,
-    Math.round(100 * (1 - Math.exp(-elapsedSeconds / 70))),
+    Math.round(100 * (1 - Math.exp((-2 * elapsedSeconds) / expectedSeconds))),
   );
 
   return { elapsedSeconds, progressPercent };
@@ -456,9 +480,9 @@ export default function Home() {
   const hasRedSnap = planId === "essentiel" || planId === "ultimate";
 
   const { elapsedSeconds: imageElapsed, progressPercent: imageProgress } =
-    useElapsedProgress(loading);
+    useElapsedProgress(loading, IMAGE_EXPECTED_SECONDS);
   const { elapsedSeconds: videoElapsed, progressPercent: videoProgress } =
-    useElapsedProgress(videoLoading);
+    useElapsedProgress(videoLoading, VIDEO_EXPECTED_SECONDS);
 
   const refreshCredits = useCallback(async () => {
     const supabase = createClient();
@@ -520,6 +544,27 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [loading, videoLoading]);
 
+  /**
+   * Hébergement des photos lancé dès la sélection, pendant que le client
+   * rédige sa description, plutôt qu'au clic sur Générer : autant de
+   * secondes retirées de l'attente perçue. Clé = URL d'aperçu, unique par
+   * image préparée. Un échec est retiré du cache pour qu'un réessai
+   * reparte de zéro au lieu de resservir la même erreur.
+   */
+  const uploadCacheRef = useRef(new Map<string, Promise<string>>());
+
+  const ensureUploaded = useCallback(
+    (image: PreparedImage, name: string, tooLargeMessage: string) => {
+      const cached = uploadCacheRef.current.get(image.previewUrl);
+      if (cached) return cached;
+      const pending = prepareAndUpload(image, name, tooLargeMessage);
+      pending.catch(() => uploadCacheRef.current.delete(image.previewUrl));
+      uploadCacheRef.current.set(image.previewUrl, pending);
+      return pending;
+    },
+    [],
+  );
+
   const handleFile = useCallback(async (file: File) => {
     setError("");
     setResult("");
@@ -535,6 +580,16 @@ export default function Home() {
       const img = await prepareImage(file);
       setPrepared(img);
       setFileName(file.name);
+      // Uniquement pour un abonné : le paywall garantit qu'aucune photo
+      // d'un visiteur non abonné ne quitte son navigateur. Ne pas lever
+      // cette condition.
+      if (isSubscribed) {
+        void ensureUploaded(
+          img,
+          file.name || "image.jpg",
+          "Image too large after compression (max 4MB). Try a simpler photo.",
+        );
+      }
     } catch (err) {
       setError(
         err instanceof Error
@@ -542,7 +597,7 @@ export default function Home() {
           : "Unable to prepare the image.",
       );
     }
-  }, []);
+  }, [isSubscribed, ensureUploaded]);
 
   const onInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -566,9 +621,22 @@ export default function Home() {
     }
     try {
       const prepared = await Promise.all(files.map((f) => prepareImage(f)));
-      setPlaceImages((current) =>
-        [...current, ...prepared].slice(0, MAX_PLACE_IMAGES),
-      );
+      setPlaceImages((current) => {
+        const next = [...current, ...prepared].slice(0, MAX_PLACE_IMAGES);
+        // Même règle que pour la photo du sujet : pré-envoi réservé aux
+        // abonnés. On n'héberge que celles réellement retenues après la
+        // troncature, jamais les photos surnuméraires.
+        if (isSubscribed) {
+          next.forEach((image, i) => {
+            void ensureUploaded(
+              image,
+              `lieu-${i + 1}.jpg`,
+              "Location photo too large after compression (max 4MB).",
+            );
+          });
+        }
+        return next;
+      });
     } catch (err) {
       setError(
         err instanceof Error
@@ -576,7 +644,7 @@ export default function Home() {
           : "Unable to prepare the image.",
       );
     }
-  }, []);
+  }, [isSubscribed, ensureUploaded]);
 
   const onDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
@@ -621,33 +689,23 @@ export default function Home() {
     }
 
     try {
-      const blob = await (await fetch(prepared.previewUrl)).blob();
-      if (blob.size > MAX_VIDEO_FILE_BYTES) {
-        throw new Error(
-          "Image too large after compression (max 4MB). Try a simpler photo.",
-        );
-      }
-      const file = new File([blob], fileName || "image.jpg", {
-        type: prepared.mimeType,
-      });
-
-      // Uploadées en parallèle plutôt qu'une à une : chaque photo est
-      // indépendante des autres, les envoyer séquentiellement n'ajoutait
-      // que de l'attente avant même que la génération ne commence.
+      // Les photos sont normalement déjà hébergées depuis leur sélection :
+      // ensureUploaded resert alors l'envoi en cours ou terminé. Sinon
+      // (photo choisie avant l'abonnement), il le lance ici. En parallèle
+      // dans tous les cas : ces envois sont indépendants les uns des autres.
       const [sourceImageUrl, ...placeImageUrls] = await Promise.all([
-        uploadImage(file),
-        ...placeImages.map(async (placeImage, i) => {
-          const placeBlob = await (await fetch(placeImage.previewUrl)).blob();
-          if (placeBlob.size > MAX_VIDEO_FILE_BYTES) {
-            throw new Error(
-              "Location photo too large after compression (max 4MB).",
-            );
-          }
-          const placeFile = new File([placeBlob], `lieu-${i + 1}.jpg`, {
-            type: placeImage.mimeType,
-          });
-          return uploadImage(placeFile);
-        }),
+        ensureUploaded(
+          prepared,
+          fileName || "image.jpg",
+          "Image too large after compression (max 4MB). Try a simpler photo.",
+        ),
+        ...placeImages.map((placeImage, i) =>
+          ensureUploaded(
+            placeImage,
+            `lieu-${i + 1}.jpg`,
+            "Location photo too large after compression (max 4MB).",
+          ),
+        ),
       ]);
 
       const res = await fetch("/api/generate", {
@@ -697,7 +755,15 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [prepared, userNote, fileName, placeImages, refreshCredits, isSubscribed]);
+  }, [
+    prepared,
+    userNote,
+    fileName,
+    placeImages,
+    refreshCredits,
+    isSubscribed,
+    ensureUploaded,
+  ]);
 
   /**
    * Sur mobile, un lien `download` ouvre l'image dans un onglet au lieu de
