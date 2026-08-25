@@ -34,19 +34,10 @@ type GenerateBody = {
 };
 
 export async function POST(req: NextRequest) {
-  // Deux fournisseurs distincts : kie.ai analyse les photos du lieu et
-  // héberge les uploads, Gemini génère l'image.
-  const kieApiKey = process.env.KIE_API_KEY?.trim();
-  if (!kieApiKey) {
-    return NextResponse.json(
-      {
-        error:
-          "Missing API key. Set KIE_API_KEY in your environment variables.",
-      },
-      { status: 500 },
-    );
-  }
-
+  // Un seul fournisseur sur le chemin de génération depuis le 25/08 :
+  // Gemini analyse les photos du lieu et génère l'image en une passe. kie.ai
+  // ne sert plus qu'à héberger les uploads, via app/api/kie/upload, qui
+  // vérifie sa propre clé.
   const geminiApiKey = process.env.GEMINI_API_KEY?.trim();
   if (!geminiApiKey) {
     return NextResponse.json(
@@ -168,15 +159,12 @@ export async function POST(req: NextRequest) {
   let finalPrompt: string;
   if (placeUrls.length > 0) {
     imageInput.push(...placeUrls);
-    // Étape d'analyse : un modèle vision examine les photos du lieu
-    // (éclairage, matériaux, ambiance, angle) et produit un prompt structuré.
-    // buildPlacePrompt rattrape ses propres erreurs et retombe sur un prompt
-    // de secours : il ne peut donc pas lever, ce qui autorise cet appel hors
-    // du try/catch de remboursement. Ne pas casser cette propriété.
-    finalPrompt = await buildPlacePrompt(
-      kieApiKey,
-      sourceImageUrl,
-      placeUrls,
+    // Gemini reçoit les photos du lieu et fait l'analyse lui-même : le prompt
+    // porte la grille de critères (lumière, matières, angle, profondeur de
+    // champ) autrefois confiée à un appel vision séparé. Purement local, sans
+    // appel réseau : ne peut pas lever, d'où sa place hors du try/catch de
+    // remboursement. Ne pas casser cette propriété.
+    finalPrompt = buildPlacePrompt(
       typeof userNote === "string" ? userNote : undefined,
     );
   } else {
