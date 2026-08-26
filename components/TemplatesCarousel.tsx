@@ -77,14 +77,20 @@ export default function TemplatesCarousel() {
       className="mt-9"
       style={
         {
-          "--carte": "min(422px, 82vw)",
-          "--ecart": "16px",
+          "--carte": "min(440px, 100vw - 80px)",
+          "--ecart": "12px",
         } as React.CSSProperties
       }
     >
-      <div className="overflow-hidden">
+      {/* -my-8 / py-8 : l'ombre portée des cartes doit pouvoir déborder sans
+          être rognée par le overflow-hidden qui masque les cartes voisines.
+          touch-pan-y laisse le défilement vertical de la page passer. */}
+      <div className="mx-auto -my-8 w-full max-w-[560px] touch-pan-y overflow-hidden py-8">
+        {/* Le padding-left centre la carte active dans le conteneur : à
+            560px de large pour une carte de 440px, il vaut 60px de chaque
+            côté. La carte suivante reste ainsi visible en amorce. */}
         <div
-          className="flex transition-transform duration-500 ease-out"
+          className="flex pl-[calc((100%-var(--carte))/2)] transition-transform duration-500 ease-out"
           style={{
             transform: `translateX(calc(${-index} * (var(--carte) + var(--ecart))))`,
           }}
@@ -99,7 +105,7 @@ export default function TemplatesCarousel() {
                   src={showAfter ? template.after : template.before}
                   alt={template.alt}
                   fill
-                  sizes="(max-width: 520px) 82vw, 422px"
+                  sizes="(max-width: 520px) calc(100vw - 80px), 440px"
                   className="select-none object-cover"
                 />
                 <span className="absolute left-4 top-4 rounded-full bg-black/55 px-3 py-1.5 text-[13px] font-semibold text-white backdrop-blur-sm">
