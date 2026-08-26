@@ -8,16 +8,33 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#0a0810",
+        // Palette relevée sur usenoway.com : noir pur, accent bleu vif, et
+        // un grand panneau clair qui vient trancher dans le noir.
+        ink: "#000000",
+        panel: "#0c1111",
+        line: "#232828",
+        light: "#fbfbfb",
+        muted: "#a8a8a8",
+        faint: "#4f4f4f",
         primary: {
-          DEFAULT: "#a855f7",
-          soft: "#d8b4fe",
-          deep: "#7e22ce",
+          DEFAULT: "#0285fe",
+          soft: "#4da8ff",
+          deep: "#0166c7",
         },
       },
       fontFamily: {
-        display: ["var(--font-display)", "serif"],
-        body: ["var(--font-body)", "sans-serif"],
+        // Une seule famille sur tout le site, comme le modèle. Les deux
+        // alias sont conservés le temps de la refonte : le balisage existant
+        // utilise encore font-display et font-body un peu partout.
+        display: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        body: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+      },
+      letterSpacing: {
+        // L'interlettrage négatif des titres est la signature typographique
+        // du modèle : -1px à 40px, -0.8px à 32px.
+        title: "-0.025em",
+        display: "-0.03em",
       },
       animation: {
         "fade-up": "fade-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) both",
