@@ -5,8 +5,9 @@ const SESSION_STORAGE_KEY = "bluminoo_landing_session_id";
 
 export type LandingCtaId =
   | "hero_primary"
-  | "difference_link"
-  | "difference_cta"
+  | "panel_templates"
+  | "panel_free_mode"
+  | "panel_snapchat"
   | "final_cta";
 
 /**

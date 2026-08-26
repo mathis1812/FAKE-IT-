@@ -3,24 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import HeroSlider from "@/components/HeroSlider";
+import TemplatesCarousel from "@/components/TemplatesCarousel";
 import TestimonialMarquee from "@/components/TestimonialMarquee";
-import { trackLandingCtaClick, trackLandingPageView } from "@/lib/analytics";
+import {
+  trackLandingCtaClick,
+  trackLandingPageView,
+  type LandingCtaId,
+} from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
-
-const FEATURES = [
-  {
-    title: "Ultra-realistic",
-    text: "Lighting, textures, your face, and the original framing all stay intact. The result passes for a real photo.",
-  },
-  {
-    title: "In a real place",
-    text: "Add 1 to 3 photos of a spot and put yourself right in it. The setting, mood, and light are analyzed automatically.",
-  },
-  {
-    title: "Photo or video",
-    text: "Create a lifestyle image, or bring your scene to life as a short video ready to post to your story.",
-  },
-];
 
 const FAQ_ITEMS = [
   {
@@ -55,6 +45,58 @@ const FAQ_ITEMS = [
   },
 ];
 
+/** Libellé de bloc du panneau clair : crochets bleus, texte gris espacé. */
+function PanelEyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="flex items-center gap-2 text-[15px] font-medium tracking-[0.06em] text-[#4f4f4f]">
+      <span aria-hidden className="text-[17px] font-normal text-primary">
+        [
+      </span>
+      {children}
+      <span aria-hidden className="text-[17px] font-normal text-primary">
+        ]
+      </span>
+    </p>
+  );
+}
+
+/** Même gabarit de bouton que le hero, en pleine largeur du bloc. */
+function PanelCta({
+  href,
+  label,
+  ctaId,
+}: {
+  href: string;
+  label: string;
+  ctaId: LandingCtaId;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={() => trackLandingCtaClick(ctaId)}
+      className="mt-9 flex h-[52px] w-full shrink-0 items-center justify-center gap-[22px] rounded-3xl bg-primary text-[17px] font-semibold text-white shadow-[0_0_18px_rgba(2,133,254,0.45),0_0_44px_rgba(2,133,254,0.22)] transition active:opacity-90"
+    >
+      {label}
+      <span
+        aria-hidden
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[15px] border border-white/25 bg-white/20"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+        >
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+      </span>
+    </Link>
+  );
+}
+
 export default function LandingPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -81,16 +123,13 @@ export default function LandingPage() {
 
   const ctaHref = isLoggedIn ? "/" : "/sign-up";
   const ctaLabel = isLoggedIn ? "Open the studio" : "Get started now";
-  const secondaryCtaLabel = isLoggedIn
-    ? "Open the studio"
-    : "Start with Bluminoo";
 
   return (
     <div className="mx-auto max-w-6xl px-4 animate-fade-up">
       {/* HERO — fond noir plein, sans mosaïque derrière : le contraste vient
           du seul bloc média, comme sur le modèle. */}
       <section className="relative flex flex-col items-center gap-5 px-2 pb-16 pt-12 text-center sm:pt-16">
-        <h1 className="max-w-[16ch] text-[40px] font-bold leading-[1.06] tracking-[-0.03em] text-white sm:text-[56px]">
+        <h1 className="mx-auto max-w-[15ch] text-[2.5rem] font-[550] leading-[1.08] tracking-tight text-white">
           Turn any photo into{" "}
           <span className="bg-gradient-to-r from-[#0285fe] to-[#5ac8fa] bg-clip-text text-transparent">
             an unreal scene
@@ -98,7 +137,7 @@ export default function LandingPage() {
           .
         </h1>
 
-        <p className="max-w-[34ch] text-base leading-relaxed text-muted">
+        <p className="mx-auto max-w-[38ch] text-[17px] leading-[1.55] text-white/60">
           Edit your photos with AI and bring them to life as video. Striking
           results, in seconds.
         </p>
@@ -106,12 +145,12 @@ export default function LandingPage() {
         <Link
           href={ctaHref}
           onClick={() => trackLandingCtaClick("hero_primary")}
-          className="mt-3 inline-flex w-full max-w-[440px] items-center justify-center gap-4 rounded-full bg-primary py-4 text-base font-semibold text-white shadow-[0_0_45px_rgba(2,133,254,0.45)] transition hover:bg-primary-soft"
+          className="mt-3 flex h-[52px] w-full max-w-[440px] shrink-0 items-center justify-center gap-[22px] self-center rounded-3xl bg-primary text-[17px] font-semibold text-white shadow-[0_0_18px_rgba(2,133,254,0.45),0_0_44px_rgba(2,133,254,0.22)] transition active:opacity-90"
         >
           {ctaLabel}
           <span
             aria-hidden
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/25"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[15px] border border-white/25 bg-white/20"
           >
             <svg
               viewBox="0 0 24 24"
@@ -139,116 +178,165 @@ export default function LandingPage() {
         <TestimonialMarquee />
       </div>
 
-      {/* SOLUTION EXCLUSIVE — le Snap Rouge, mis en avant seul. */}
-      <section className="relative overflow-hidden rounded-[2rem] border border-primary/20 bg-primary/10 px-6 py-14 text-center sm:px-12">
-        <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
-          Exclusive feature
-        </p>
-        <h2 className="font-display mt-4 text-3xl font-semibold text-white sm:text-4xl">
-          Turn your photos into undetectable Red Snaps
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-neutral-300">
-          No more &ldquo;Media loaded&rdquo; watermark giving away an imported image.
-          Your photo goes out like a real snap taken on the spot.
-        </p>
-      </section>
-
-      {/* LE PRINCIPE — un lieu de référence, un type de scène produit.
-          Les deux photos ne sont pas liées : aucune n'est le résultat de
-          l'autre, on illustre juste les deux bouts du principe. */}
-      <section className="py-20 sm:py-28">
-        <div className="text-center">
-          <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
-            How it works
-          </p>
-          <h2 className="font-display mt-3 text-4xl font-semibold text-white sm:text-5xl">
-            Your photo, any place you pick
-          </h2>
+      {/* PANNEAU CLAIR — le geste visuel fort du modèle : un grand pavé
+          #fbfbfb à coins 28px encastré dans le noir, texte sombre dedans.
+          Trois blocs de structure identique, séparés par un filet.
+          Dimensions relevées : pt-20 / pb-[72px], colonne de texte plafonnée
+          à 440px, filet my-14. */}
+      <section className="mb-14 rounded-[28px] bg-light pb-[72px] pt-20 text-black">
+        <div className="px-6">
+          <div className="mx-auto w-full max-w-[440px]">
+            <PanelEyebrow>TEMPLATES</PanelEyebrow>
+            <h2 className="mt-6 text-[2rem] font-[550] leading-[1.12] tracking-tight text-[#0f0f10]">
+              Create in one click with templates
+            </h2>
+            <p className="mt-5 text-[16px] leading-[1.55] text-[#4f4f4f]">
+              Browse a full catalogue of ready-made templates: viral pranks,
+              vehicle swaps, voxel worlds and plenty more. Pick one, add your
+              photo, and it is ready to send.
+            </p>
+            <PanelCta href={ctaHref} label={ctaLabel} ctaId="panel_templates" />
+          </div>
         </div>
 
-        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <figure className="overflow-hidden rounded-3xl border border-white/10">
-            <img
-              src="/landing/restaurant.jpg"
-              alt="Photo of a restaurant used as the reference location"
-              width={1024}
-              height={1024}
-              loading="lazy"
-              className="h-72 w-full object-cover"
-            />
-            <figcaption className="border-t border-white/10 bg-white/[0.02] px-5 py-4">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-500">
-                The place
-              </span>
-              <p className="mt-1 text-sm text-neutral-300">
-                The photo of the place you provide.
-              </p>
-            </figcaption>
-          </figure>
+        {/* Hors de la colonne de 440px : les cartes doivent pouvoir dépasser
+            sur les côtés, la suivante restant visible en amorce. */}
+        <TemplatesCarousel />
 
-          <figure className="overflow-hidden rounded-3xl border border-primary/30">
-            <img
-              src="/landing/rooftop.jpg"
-              alt="Example of the kind of scene Bluminoo produces in an outdoor setting"
-              width={1024}
-              height={1024}
-              loading="lazy"
-              className="h-72 w-full object-cover"
-            />
-            <figcaption className="border-t border-primary/20 bg-primary/[0.06] px-5 py-4">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-soft">
-                The result
-              </span>
-              <p className="mt-1 text-sm text-neutral-200">
-                The kind of scene Bluminoo produces.
-              </p>
-            </figcaption>
-          </figure>
-        </div>
+        <div className="px-6">
+          <div className="mx-auto w-full max-w-[440px]">
+            <hr className="my-14 h-px border-0 bg-[rgba(15,15,16,0.12)]" />
 
-        <div className="mt-8 text-center">
-          <Link
-            href={ctaHref}
-            onClick={() => trackLandingCtaClick("difference_link")}
-            className="text-sm font-medium text-primary-soft underline-offset-4 transition hover:text-primary hover:underline"
-          >
-            {secondaryCtaLabel}
-          </Link>
-        </div>
-      </section>
+            <PanelEyebrow>FREE MODE</PanelEyebrow>
+            <h2 className="mt-6 text-[2rem] font-[550] leading-[1.12] tracking-tight text-[#0f0f10]">
+              Generate without limits in free mode
+            </h2>
+            <p className="mt-5 text-[16px] leading-[1.55] text-[#4f4f4f]">
+              Bring your own ideas to life. Describe the scene you have in mind,
+              create images up to 4K, then turn any of them into video.
+            </p>
+            <PanelCta href={ctaHref} label={ctaLabel} ctaId="panel_free_mode" />
 
-      {/* LA DIFFÉRENCE BLUMINOO — arguments produit */}
-      <section className="pb-20 sm:pb-28">
-        <div className="text-center">
-          <h2 className="font-display text-4xl font-semibold text-white sm:text-5xl">
-            The Bluminoo difference
-          </h2>
-        </div>
-
-        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-3">
-          {FEATURES.map((feature) => (
-            <div
-              key={feature.title}
-              className="rounded-3xl border border-white/10 bg-white/[0.02] p-6"
-            >
-              <h3 className="font-display text-xl font-semibold text-white">
-                {feature.title}
-              </h3>
-              <p className="mt-3 text-sm leading-relaxed text-neutral-400">
-                {feature.text}
-              </p>
+            {/* Aperçu de la barre de saisie du studio, reconstruit en CSS. */}
+            <div className="mt-9 rounded-3xl bg-[rgba(15,15,16,0.05)] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-[15px] text-[rgba(15,15,16,0.45)]">
+                  Describe what you want to change…
+                </p>
+                <span
+                  aria-hidden
+                  className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-[rgba(15,15,16,0.35)] text-[10px] font-semibold text-[rgba(15,15,16,0.45)]"
+                >
+                  i
+                </span>
+              </div>
+              <div className="mt-6 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="rounded-full bg-[#3f3f42] px-3.5 py-1.5 text-[13px] font-semibold text-white">
+                    Photo
+                  </span>
+                  <span className="rounded-full bg-[rgba(15,15,16,0.08)] px-3.5 py-1.5 text-[13px] font-medium text-[rgba(15,15,16,0.45)]">
+                    Video
+                  </span>
+                  <span className="rounded-full bg-[rgba(15,15,16,0.08)] px-3 py-1.5 text-[13px] font-medium text-[rgba(15,15,16,0.45)]">
+                    4K
+                  </span>
+                </div>
+                <span className="flex items-center gap-2 rounded-full bg-[#3f3f42] px-3 py-1.5 text-[13px] font-semibold text-white">
+                  250
+                  <span
+                    aria-hidden
+                    className="flex h-5 w-5 items-center justify-center rounded-full bg-white/25"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-3 w-3"
+                    >
+                      <path d="M12 19V5M5 12l7-7 7 7" />
+                    </svg>
+                  </span>
+                </span>
+              </div>
             </div>
-          ))}
-        </div>
 
-        <div className="mt-10 text-center">
-          <Link
-            href={ctaHref}
-            onClick={() => trackLandingCtaClick("difference_cta")}
-            className="inline-flex items-center justify-center rounded-2xl border border-primary/40 px-8 py-4 text-sm font-semibold text-primary-soft transition hover:border-primary hover:text-primary"
-          >
-            {secondaryCtaLabel}
-          </Link>
+            <hr className="my-14 h-px border-0 bg-[rgba(15,15,16,0.12)]" />
+
+            <PanelEyebrow>SNAPCHAT</PanelEyebrow>
+            <h2 className="mt-6 text-[2rem] font-[550] leading-[1.12] tracking-tight text-[#0f0f10]">
+              Send your creations as a Red Snap
+            </h2>
+            <p className="mt-5 text-[16px] leading-[1.55] text-[#4f4f4f]">
+              Share what you generate straight to a Red Snap, so it lands like a
+              photo taken on the spot, without the &ldquo;Media loaded&rdquo;
+              tag giving it away.
+            </p>
+            <PanelCta href={ctaHref} label={ctaLabel} ctaId="panel_snapchat" />
+
+            {/* Aperçu d'une conversation, reconstruit en CSS. */}
+            <div className="mt-9 rounded-3xl bg-[rgba(15,15,16,0.05)] p-4">
+              <div className="flex items-center gap-2.5">
+                <span aria-hidden className="text-[rgba(15,15,16,0.5)]">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                  >
+                    <path d="M15 18l-6-6 6-6" />
+                  </svg>
+                </span>
+                <span
+                  aria-hidden
+                  className="h-7 w-7 shrink-0 rounded-full bg-[rgba(15,15,16,0.18)]"
+                />
+                <span className="text-[15px] font-semibold text-[#0f0f10]">
+                  Alex
+                </span>
+                <span
+                  aria-hidden
+                  className="ml-auto flex items-center gap-3 text-[rgba(15,15,16,0.5)]"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+                    <path d="M6.6 10.8a15 15 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.6 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.6 3.6a1 1 0 01-.25 1l-2.25 2.2z" />
+                  </svg>
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+                    <path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4z" />
+                  </svg>
+                </span>
+              </div>
+
+              <div className="mt-3 rounded-2xl border-l-[3px] border-[#f23b3b] bg-white p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px] font-bold text-[#f23b3b]">Me</span>
+                  <span className="text-[12px] text-[rgba(15,15,16,0.4)]">
+                    10:44
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center gap-2 rounded-xl border border-[rgba(15,15,16,0.10)] px-3 py-2">
+                  <span aria-hidden className="text-[#f23b3b]">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="h-3.5 w-3.5"
+                    >
+                      <path d="M6 4l14 8-14 8V4z" />
+                    </svg>
+                  </span>
+                  <span className="text-[14px] font-semibold text-[#0f0f10]">
+                    Sent
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
