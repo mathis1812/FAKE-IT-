@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import HeroShowcaseMosaic from "@/components/HeroShowcaseMosaic";
+import HeroSlider from "@/components/HeroSlider";
 import TestimonialMarquee from "@/components/TestimonialMarquee";
 import { trackLandingCtaClick, trackLandingPageView } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
@@ -87,31 +87,49 @@ export default function LandingPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 animate-fade-up">
-      {/* HERO — pas de fond opaque : StudioBackdrop (monté dans
-          app/layout.tsx) doit rester visible derrière. */}
-      <section className="relative flex min-h-[80vh] flex-col items-center justify-center py-20 text-center">
-        <HeroShowcaseMosaic />
-
-        <span className="relative rounded-full border border-white/10 bg-black/40 px-5 py-2 text-[11px] font-medium uppercase tracking-[0.18em] text-primary-soft">
-          New version available
-        </span>
-
-        <h1 className="font-display relative mt-8 max-w-4xl [text-shadow:0_2px_28px_rgba(0,0,0,0.75)] text-5xl font-semibold leading-[0.95] tracking-[-0.03em] text-white sm:text-7xl md:text-8xl">
-          Fake it &apos;til you make it
+      {/* HERO — fond noir plein, sans mosaïque derrière : le contraste vient
+          du seul bloc média, comme sur le modèle. */}
+      <section className="relative flex flex-col items-center gap-5 px-2 pb-16 pt-12 text-center sm:pt-16">
+        <h1 className="max-w-[16ch] text-[40px] font-bold leading-[1.06] tracking-[-0.03em] text-white sm:text-[56px]">
+          Turn any photo into{" "}
+          <span className="bg-gradient-to-r from-[#0285fe] to-[#5ac8fa] bg-clip-text text-transparent">
+            an unreal scene
+          </span>
+          .
         </h1>
 
-        <p className="relative mt-6 max-w-2xl text-base leading-relaxed text-neutral-200 [text-shadow:0_1px_18px_rgba(0,0,0,0.8)] sm:text-lg">
-          The perfect AI to impress everyone around you with one photo,
-          in a single click.
+        <p className="max-w-[34ch] text-base leading-relaxed text-muted">
+          Edit your photos with AI and bring them to life as video. Striking
+          results, in seconds.
         </p>
 
         <Link
           href={ctaHref}
           onClick={() => trackLandingCtaClick("hero_primary")}
-          className="relative mt-10 inline-flex items-center justify-center rounded-2xl bg-primary px-8 py-4 text-sm font-semibold text-ink transition hover:bg-primary-soft"
+          className="mt-3 inline-flex w-full max-w-[440px] items-center justify-center gap-4 rounded-full bg-primary py-4 text-base font-semibold text-white shadow-[0_0_45px_rgba(2,133,254,0.45)] transition hover:bg-primary-soft"
         >
           {ctaLabel}
+          <span
+            aria-hidden
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/25"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
+            >
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </span>
         </Link>
+
+        <div className="mt-8 flex w-full justify-center">
+          <HeroSlider />
+        </div>
       </section>
 
       {/* mx-[calc(50%-50vw)] + w-screen : seul le bandeau doit aller bord à
