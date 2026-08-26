@@ -12,15 +12,38 @@ import { TESTIMONIALS, type Testimonial } from "@/lib/testimonials";
  * exactement la largeur d'une copie) avant de repartir. L'œil ne voit
  * jamais le saut. Retirer la duplication casserait l'effet.
  */
-function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
+/** Étoile pleine 12×12, dans l'accent — identique aux cinq de chaque carte. */
+function Star() {
   return (
-    <figure className="flex w-[300px] shrink-0 flex-col justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:w-[360px]">
-      <blockquote className="text-sm leading-relaxed text-neutral-300">
-        &ldquo;{testimonial.quote}&rdquo;
-      </blockquote>
-      <figcaption className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-soft">
-        — {testimonial.name}
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="#0285fe" aria-hidden>
+      <path d="M12 2.5l2.9 5.9 6.5.95-4.7 4.58 1.11 6.47L12 17.35l-5.81 3.05 1.11-6.47-4.7-4.58 6.5-.95L12 2.5z" />
+    </svg>
+  );
+}
+
+function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
+  const initial = testimonial.name.trim().charAt(0).toUpperCase();
+  return (
+    <figure className="carte-avis mr-3 flex w-[280px] shrink-0 flex-col gap-2 rounded-2xl border border-line px-3.5 py-3 text-left">
+      <figcaption className="flex items-center gap-2">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-[12px] font-semibold text-white/80">
+          {initial}
+        </span>
+        <span className="min-w-0 truncate text-[14px] font-medium text-white">
+          {testimonial.name}
+        </span>
+        <span className="ml-auto flex items-center">
+          <div className="flex shrink-0 gap-0.5">
+            {Array.from({ length: 5 }, (_, i) => (
+              <Star key={i} />
+            ))}
+          </div>
+          <span className="sr-only">5 out of 5 stars</span>
+        </span>
       </figcaption>
+      <blockquote className="text-[14px] leading-[1.45] text-white/85">
+        {testimonial.quote}
+      </blockquote>
     </figure>
   );
 }
@@ -41,7 +64,7 @@ function MarqueeRow({
   return (
     <div className="group flex overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_4rem,black_calc(100%-4rem),transparent)] motion-reduce:overflow-x-auto">
       <div
-        className={`flex shrink-0 gap-4 pr-4 ${animation} ${pausedClass} group-hover:[animation-play-state:paused] motion-reduce:animate-none`}
+        className={`flex shrink-0 ${animation} ${pausedClass} group-hover:[animation-play-state:paused] motion-reduce:animate-none`}
       >
         {items.map((t) => (
           <TestimonialCard key={`a-${t.name}`} testimonial={t} />
@@ -49,7 +72,7 @@ function MarqueeRow({
       </div>
       <div
         aria-hidden
-        className={`flex shrink-0 gap-4 pr-4 ${animation} ${pausedClass} group-hover:[animation-play-state:paused] motion-reduce:animate-none motion-reduce:hidden`}
+        className={`flex shrink-0 ${animation} ${pausedClass} group-hover:[animation-play-state:paused] motion-reduce:animate-none motion-reduce:hidden`}
       >
         {items.map((t) => (
           <TestimonialCard key={`b-${t.name}`} testimonial={t} />
@@ -116,7 +139,7 @@ export default function TestimonialMarquee() {
   return (
     <section className="relative overflow-hidden py-16">
       <h2 className="sr-only">What our users say</h2>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         <MarqueeRow items={topRow} direction="left" isPaused={isPaused} />
         <MarqueeRow items={bottomRow} direction="right" isPaused={isPaused} />
       </div>
