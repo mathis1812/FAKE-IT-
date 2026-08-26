@@ -183,7 +183,7 @@ export default function LandingPage() {
           Trois blocs de structure identique, séparés par un filet.
           Dimensions relevées : pt-20 / pb-[72px], colonne de texte plafonnée
           à 440px, filet my-14. */}
-      <section className="mb-14 rounded-[28px] bg-light pb-[72px] pt-20 text-black">
+      <section className="mx-[calc(50%-50vw)] mb-14 w-screen rounded-[28px] bg-light pb-[72px] pt-20 text-black">
         <div className="px-6">
           <div className="mx-auto w-full max-w-[440px]">
             <PanelEyebrow>TEMPLATES</PanelEyebrow>
