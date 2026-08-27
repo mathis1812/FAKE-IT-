@@ -193,9 +193,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Un gabarit porte un prompt complet, déjà rédigé pour l'opération voulue
+  // (ex. remplacer le véhicule visible par un modèle donné). Le repasser
+  // dans buildScenePrompt lui ajouterait « garde le même sujet
+  // reconnaissable », qui contredirait un remplacement d'identité — cette
+  // ligne n'a de sens que pour la description libre du studio, écrite sans
+  // ce socle.
+  const isTemplatePrompt = typeof templateSlug === "string" && templateSlug.trim();
+
   const imageInput = [sourceImageUrl];
   let finalPrompt: string;
-  if (placeUrls.length > 0) {
+  if (isTemplatePrompt) {
+    finalPrompt = (prompt as string).trim();
+  } else if (placeUrls.length > 0) {
     imageInput.push(...placeUrls);
     // Gemini reçoit les photos du lieu et fait l'analyse lui-même : le prompt
     // porte la grille de critères (lumière, matières, angle, profondeur de

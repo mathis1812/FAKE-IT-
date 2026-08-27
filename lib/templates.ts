@@ -25,6 +25,8 @@
  * peut fournir son propre exemple si son rendu diffère nettement.
  */
 
+import { buildVehicleSwapPrompt } from "@/lib/place-prompt";
+
 export type TemplateVariant = {
   /** Identifiant d'URL : la page vit sur /templates/<gabarit>/<variante>. */
   slug: string;
@@ -108,7 +110,54 @@ export type TemplateCategory = {
   templates: Template[];
 };
 
-export const TEMPLATE_CATEGORIES: TemplateCategory[] = [];
+/**
+ * Catégorie vedette, relevée sur le modèle : 21 modèles, tous sans variante
+ * — le client dépose une photo de son véhicule, choisit un modèle, obtient
+ * le remplacement. Les slugs suivent ceux du modèle, y compris l'écart
+ * apparent slug/libellé sur « temerario » (Huracán Tecnica) : c'est ainsi
+ * qu'il est nommé côté source, laissé tel quel plutôt que corrigé sans
+ * certitude.
+ */
+const VEHICLE_MODELS: { slug: string; label: string; target: string }[] = [
+  { slug: "aventador-svj", label: "Aventador SVJ", target: "Lamborghini Aventador SVJ" },
+  { slug: "gt3-rs", label: "911 GT3 RS", target: "Porsche 911 GT3 RS" },
+  { slug: "chiron", label: "Chiron Super Sport", target: "Bugatti Chiron Super Sport" },
+  { slug: "revuelto", label: "Revuelto", target: "Lamborghini Revuelto" },
+  { slug: "m4", label: "M4 Competition", target: "BMW M4 Competition" },
+  { slug: "rs6", label: "RS6 C8", target: "Audi RS6 Avant C8" },
+  { slug: "rs3", label: "RS3 8Y", target: "Audi RS3 8Y" },
+  { slug: "812-superfast", label: "812 Superfast", target: "Ferrari 812 Superfast" },
+  { slug: "amg-gt-black-series", label: "AMG GT Black Series", target: "Mercedes-AMG GT Black Series" },
+  { slug: "sf90", label: "SF90 Stradale", target: "Ferrari SF90 Stradale" },
+  { slug: "m3", label: "M3 Competition", target: "BMW M3 Competition" },
+  { slug: "911-turbo-s", label: "911 Turbo S", target: "Porsche 911 Turbo S" },
+  { slug: "huracan-sto", label: "Huracán STO", target: "Lamborghini Huracán STO" },
+  { slug: "golf-r", label: "Golf R", target: "Volkswagen Golf R" },
+  { slug: "c63-s", label: "C 63 S", target: "Mercedes-AMG C 63 S" },
+  { slug: "a45-s", label: "A 45 S", target: "Mercedes-AMG A 45 S" },
+  { slug: "temerario", label: "Huracán Tecnica", target: "Lamborghini Huracán Tecnica" },
+  { slug: "gtr-nismo", label: "GT-R Nismo", target: "Nissan GT-R Nismo" },
+  { slug: "r8", label: "R8 V10", target: "Audi R8 V10" },
+  { slug: "m2", label: "M2", target: "BMW M2" },
+  { slug: "720s", label: "720S", target: "McLaren 720S" },
+];
+
+export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
+  {
+    slug: "swap-vehicule",
+    title: "Swap vehicle",
+    featured: true,
+    featuredImage: "/templates/aventador-svj-card.jpg",
+    templates: VEHICLE_MODELS.map(({ slug, label, target }) => ({
+      slug,
+      label,
+      cardImage: `/templates/${slug}-card.jpg`,
+      exampleImage: `/templates/${slug}.jpg`,
+      tips: ["Full car visible", "Plate area unobstructed"],
+      prompt: buildVehicleSwapPrompt(target),
+    })),
+  },
+];
 
 /** Vrai si le gabarit passe par un écran de choix avant l'import. */
 export function hasVariants(

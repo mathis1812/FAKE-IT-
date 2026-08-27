@@ -52,6 +52,28 @@ export function buildPlacePrompt(userNote?: string): string {
  * cette phrase brute partait seule et la qualité dépendait entièrement de
  * la façon dont le client l'avait tournée.
  */
+/**
+ * Prompt utilisé par les gabarits de remplacement d'objet (swap véhicule) :
+ * la photo montre un véhicule que le rendu doit remplacer par un modèle
+ * donné, tout en gardant la scène réelle — lieu, angle, lumière — inchangée.
+ *
+ * Ne réutilise pas `buildScenePrompt` : celui-ci ajoute « garde le même
+ * sujet reconnaissable », qui contredit directement un remplacement
+ * d'identité. Les deux prompts servent des opérations opposées et ne
+ * doivent jamais partager cette ligne.
+ */
+export function buildVehicleSwapPrompt(targetVehicle: string): string {
+  return (
+    `The photograph shows a vehicle. Produce a single photograph of the exact same scene, but with ` +
+    `that vehicle replaced by a ${targetVehicle}. ` +
+    REALISM_CORE +
+    " Keep the location, camera angle, framing, ground and background exactly as photographed. " +
+    "Match the new vehicle's scale, ground contact and cast shadow to the original vehicle's position. " +
+    "Any license plate must read as an unreadable, plausible plate — never the plate from the source " +
+    "photo, never a real one."
+  );
+}
+
 export function buildScenePrompt(description: string): string {
   return (
     "The image shows the subject. Produce a single photograph of that same subject in the scene " +
