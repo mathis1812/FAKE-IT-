@@ -19,11 +19,13 @@ import type { TemplateView, VariantView } from "@/lib/templates";
 /**
  * Écran d'import d'un gabarit, dernier niveau du parcours.
  *
- * L'exemple de résultat occupe tout le cadre, le titre et les consignes sont
- * posés dessus, et l'import tient dans une tuile carrée. Il n'y a pas de
- * champ de description : le prompt appartient au gabarit — ou à la variante
- * choisie à l'écran précédent — et n'est jamais montré. Ne pas l'exposer,
- * même en placeholder ou en attribut.
+ * Structure relevée sur le produit de référence le 27/08 en lisant son DOM :
+ * l'image tient au ratio 9/11 en haut de l'écran, rien n'est écrit dessus.
+ * Titre, consignes, tuile d'import et bouton vivent dans un bloc séparé plus
+ * bas, sur le fond noir de la page. Il n'y a pas de champ de description : le
+ * prompt appartient au gabarit — ou à la variante choisie à l'écran
+ * précédent — et n'est jamais montré. Ne pas l'exposer, même en placeholder
+ * ou en attribut.
  */
 
 /** Durée typique observée d'une génération, pour calibrer la progression. */
@@ -42,6 +44,38 @@ const GENERATION_LOADING_MESSAGES = [
   "Adding the finishing touches…",
   "Finalizing the render…",
 ];
+
+/**
+ * Rythme du fondu avant/après en boucle : le résultat reste visible le plus
+ * longtemps (c'est lui qui vend le gabarit), la photo d'origine n'apparaît
+ * que brièvement pour donner le contexte.
+ *
+ * Le modèle anime cette transition via un dégradé de pixels sur canvas,
+ * relevé mais non repris ici — un fondu croisé simple en approche l'effet
+ * sans reconstituer un algorithme tiré d'un bundle minifié.
+ */
+const REVEAL_HOLD_AFTER_MS = 2_600;
+const REVEAL_HOLD_BEFORE_MS = 1_400;
+const REVEAL_FADE_MS = 700;
+
+/** Boucle un fondu 0↔1 entre les deux temps ci-dessus ; désactivée si `active` est faux. */
+function useBeforeAfterLoop(active: boolean): number {
+  const [showBefore, setShowBefore] = useState(false);
+
+  useEffect(() => {
+    if (!active) {
+      setShowBefore(false);
+      return;
+    }
+    const timer = setTimeout(
+      () => setShowBefore((v) => !v),
+      showBefore ? REVEAL_HOLD_BEFORE_MS : REVEAL_HOLD_AFTER_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [active, showBefore]);
+
+  return showBefore ? 1 : 0;
+}
 
 export default function TemplateGenerator({
   template,
@@ -68,6 +102,9 @@ export default function TemplateGenerator({
   const hasRedSnap = planId === "essentiel" || planId === "ultimate";
 
   const exampleImage = variant?.exampleImage ?? template.exampleImage;
+  const beforeImage = variant?.exampleImage ? undefined : template.beforeImage;
+  const showIdle = !result && !loading && !paywalled;
+  const beforeOpacity = useBeforeAfterLoop(showIdle && !!beforeImage);
 
   const refreshSession = useCallback(async () => {
     const supabase = createClient();
@@ -234,97 +271,149 @@ export default function TemplateGenerator({
   }, [prepared, isSubscribed, ensureUploaded, template.slug, template.label, variant]);
 
   return (
-    <div className="flex min-h-[calc(100dvh-68px)] flex-col">
-      {/* Fond plein cadre : l'exemple de résultat, puis le rendu du client
-          une fois obtenu. C'est lui qui vend le gabarit — il ne se réduit pas
-          à une vignette. */}
-      <div className="relative flex-1 overflow-hidden">
-        {result ? (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={result}
-              alt={`Your ${template.label} result`}
-              className="animate-magic-reveal absolute inset-0 h-full w-full object-cover"
-            />
-            <RevealBurst />
-          </>
-        ) : (
-          <Image
-            src={exampleImage}
-            alt={`Example result — ${template.label}`}
-            fill
-            priority
-            sizes="100vw"
-            className={`object-cover ${paywalled ? "scale-105 blur-xl" : ""}`}
-          />
-        )}
-
-        {loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70 px-6 text-center">
-            <SparkleFrame />
-            <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
-            <p className="text-[15px] text-white/70">
-              {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
-            </p>
-            <div className="h-1 w-40 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-primary transition-[width] duration-1000 ease-linear"
-                style={{ width: `${progressPercent}%` }}
+    // min-h plutôt que h-fixe avec overflow masqué : sur un petit écran ou un
+    // gabarit aux consignes longues, un contenu qui dépasse doit rester
+    // atteignable en défilant, jamais coupé sous le bouton Generate.
+    <div className="flex min-h-[calc(100dvh-68px)] flex-col px-4">
+      {/* Image au ratio 9/11, arrondie en haut seulement — c'est ainsi que le
+          modèle la cadre, sans rien écrit dessus. `-mx-4` neutralise le
+          `px-4` du conteneur pour qu'elle borde l'écran de part en part. */}
+      <div className="relative -mx-4 shrink-0">
+        <div className="relative aspect-[9/11] overflow-hidden rounded-t-3xl bg-black">
+          {result ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={result}
+                alt={`Your ${template.label} result`}
+                className="animate-magic-reveal absolute inset-0 h-full w-full object-cover"
               />
+              <RevealBurst />
+            </>
+          ) : (
+            <>
+              <Image
+                src={exampleImage}
+                alt={`Result — ${template.label}`}
+                fill
+                priority
+                sizes="100vw"
+                className={`object-cover ${paywalled ? "scale-105 blur-xl" : ""}`}
+              />
+              {beforeImage && (
+                <Image
+                  src={beforeImage}
+                  alt=""
+                  aria-hidden
+                  fill
+                  sizes="100vw"
+                  className="pointer-events-none absolute inset-0 object-cover transition-opacity ease-in-out"
+                  style={{
+                    opacity: beforeOpacity,
+                    transitionDuration: `${REVEAL_FADE_MS}ms`,
+                  }}
+                />
+              )}
+            </>
+          )}
+
+          {loading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70 px-6 text-center">
+              <SparkleFrame />
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+              <p className="text-[15px] text-white/70">
+                {GENERATION_LOADING_MESSAGES[loadingMessageIndex]}
+              </p>
+              <div className="h-1 w-40 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-primary transition-[width] duration-1000 ease-linear"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <p className="text-[12px] tabular-nums text-white/40">
+                {elapsedSeconds}s
+              </p>
             </div>
-            <p className="text-[12px] tabular-nums text-white/40">
-              {elapsedSeconds}s
-            </p>
-          </div>
-        )}
+          )}
 
-        {paywalled && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/50 px-8 text-center">
-            <p className="text-[19px] font-semibold text-white">
-              Your scene is ready
-            </p>
-            <p className="text-[15px] leading-[1.5] text-white/70">
-              Subscribe to unlock it and generate as many as you like.
-            </p>
-            <Link
-              href="/pricing"
-              className="mt-1 flex h-12 items-center justify-center rounded-3xl bg-primary px-6 text-[16px] font-semibold text-white transition active:opacity-90"
-            >
-              See the plans
-            </Link>
-          </div>
-        )}
+          {paywalled && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/50 px-8 text-center">
+              <p className="text-[19px] font-semibold text-white">
+                Your scene is ready
+              </p>
+              <p className="text-[15px] leading-[1.5] text-white/70">
+                Subscribe to unlock it and generate as many as you like.
+              </p>
+              <Link
+                href="/pricing"
+                className="mt-1 flex h-12 items-center justify-center rounded-3xl bg-primary px-6 text-[16px] font-semibold text-white transition active:opacity-90"
+              >
+                See the plans
+              </Link>
+            </div>
+          )}
+        </div>
 
-        {/* Bloc d'import posé sur l'image. Le dégradé n'est pas décoratif :
-            sans lui, un texte blanc sur un exemple clair devient illisible. */}
-        {!result && !loading && !paywalled && (
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragging(true);
-            }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setIsDragging(false);
-              const file = e.dataTransfer.files?.[0];
-              if (file) void handleFile(file);
-            }}
-            className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-4 pb-4 pt-24"
-          >
-            <p className="text-[19px] font-semibold text-white">
+        {/* Fond de l'image dans le noir de la page, plutôt qu'une coupure
+            nette : reprend le dégradé exact du modèle. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 -bottom-2 h-[43%]"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.30) 42%, rgba(0,0,0,0.75) 63%, #000 80%, #000 100%)",
+          }}
+        />
+      </div>
+
+      {/* Zone noire entre l'image et le bloc du bas : sur le modèle ce bloc
+          est position:fixed, indépendant de la hauteur de l'image. Le flex-1
+          obtient le même rendu sans figer la position au viewport. */}
+      <div
+        className="min-h-0 flex-1"
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDragging(false);
+          const file = e.dataTransfer.files?.[0];
+          if (file) void handleFile(file);
+        }}
+      />
+
+      {error && (
+        <p role="alert" className="pb-2 text-center text-[14px] text-red-400">
+          {error}
+        </p>
+      )}
+
+      <div className="shrink-0 pb-[calc(env(safe-area-inset-bottom)+8px)]">
+        {result ? (
+          <ResultActions
+            resultUrl={result}
+            hasRedSnap={hasRedSnap}
+            canShare={canShare}
+            onReset={reset}
+            onError={setError}
+          />
+        ) : (
+          <>
+            <p className="text-[22px] font-semibold leading-tight text-white">
               Import a photo
             </p>
 
             {template.tips.length > 0 && (
-              <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[13px] text-white/60">
+              <p className="mb-4 mt-2 text-[14px] font-medium leading-snug text-[#cccccc]">
                 {template.tips.map((tip, index) => (
-                  <span key={tip} className="flex items-center gap-1.5">
+                  <span key={tip}>
                     {index > 0 && (
-                      <span aria-hidden className="text-white/35">
-                        •
-                      </span>
+                      <span
+                        aria-hidden
+                        className="mx-2 inline-block h-1.5 w-1.5 rounded-full bg-current align-middle"
+                      />
                     )}
                     {tip}
                   </span>
@@ -346,9 +435,9 @@ export default function TemplateGenerator({
               }}
             />
 
-            <div className="mt-3">
+            <div className="flex justify-start">
               {prepared ? (
-                <div className="relative h-[190px] w-[190px] overflow-hidden rounded-3xl">
+                <div className="relative aspect-[9/11] w-[24%] overflow-hidden rounded-2xl bg-[#111111]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={prepared.previewUrl}
@@ -359,7 +448,7 @@ export default function TemplateGenerator({
                     type="button"
                     onClick={reset}
                     aria-label="Remove the photo"
-                    className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition active:opacity-70"
+                    className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition active:opacity-70"
                   >
                     <svg
                       aria-hidden
@@ -368,7 +457,7 @@ export default function TemplateGenerator({
                       stroke="currentColor"
                       strokeWidth="2"
                       strokeLinecap="round"
-                      className="h-4 w-4"
+                      className="h-3 w-3"
                     >
                       <path d="M6 6l12 12M18 6L6 18" />
                     </svg>
@@ -379,91 +468,72 @@ export default function TemplateGenerator({
                   type="button"
                   onClick={() => inputRef.current?.click()}
                   aria-label="Choose a photo"
-                  className="relative flex h-[190px] w-[190px] items-center justify-center rounded-3xl bg-black/60 text-primary transition active:opacity-70"
+                  className="relative aspect-[9/11] w-[24%] overflow-hidden rounded-2xl bg-[#111111]"
                 >
-                  {/* Liseré en pointillés tracé en SVG : c'est ainsi qu'il est
-                      fait sur le modèle, et le tiret suit exactement
-                      l'arrondi. */}
                   <svg
                     aria-hidden
                     className="pointer-events-none absolute inset-0 h-full w-full"
                   >
                     <rect
-                      x="1"
-                      y="1"
-                      width="calc(100% - 2px)"
-                      height="calc(100% - 2px)"
-                      rx="23"
+                      x="0"
+                      y="0"
+                      width="100%"
+                      height="100%"
+                      rx="16"
+                      ry="16"
                       fill="none"
                       stroke={isDragging ? "#4da8ff" : "#0285fe"}
-                      strokeWidth="2"
+                      strokeWidth="3"
                       strokeDasharray="8 5"
                     />
                   </svg>
-                  <svg
-                    aria-hidden
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-9 w-9"
-                  >
-                    <path d="M21 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h6" />
-                    <path d="M18 2v6M15 5h6" />
-                    <circle cx="9" cy="9" r="2" />
-                    <path d="M21 15l-5-5L5 21" />
-                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-primary">
+                    <svg
+                      aria-hidden
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-7 w-7"
+                    >
+                      <path d="M16 5h6" />
+                      <path d="M19 2v6" />
+                      <path d="M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5" />
+                      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                      <circle cx="9" cy="9" r="2" />
+                    </svg>
+                  </span>
                 </button>
               )}
             </div>
-          </div>
-        )}
-      </div>
 
-      {error && (
-        <p role="alert" className="px-4 pt-3 text-center text-[14px] text-red-400">
-          {error}
-        </p>
-      )}
-
-      <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3">
-        {result ? (
-          <ResultActions
-            resultUrl={result}
-            hasRedSnap={hasRedSnap}
-            canShare={canShare}
-            onReset={reset}
-            onError={setError}
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={generate}
-            disabled={!prepared || loading}
-            className="flex h-[60px] w-full items-center justify-center gap-2 rounded-full bg-primary text-[17px] font-semibold text-white transition active:opacity-90 disabled:opacity-40"
-          >
-            Generate
-            {/* Le coût est annoncé sur le bouton lui-même : le client sait ce
-                qu'il dépense au moment où il le dépense. */}
-            <span className="flex items-center gap-1 text-[16px] font-semibold tabular-nums text-white/85">
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
-              </svg>
-              {IMAGE_GENERATION_COST}
-            </span>
-          </button>
+            <button
+              type="button"
+              onClick={generate}
+              disabled={!prepared || loading}
+              className="mt-3 flex h-14 w-full items-center justify-center gap-2.5 rounded-3xl bg-primary text-[17px] font-semibold text-white transition active:opacity-90 disabled:opacity-60"
+            >
+              Generate
+              <span className="flex items-center gap-1 text-[17px] font-bold tabular-nums">
+                <svg
+                  width="17"
+                  height="17"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+                </svg>
+                {IMAGE_GENERATION_COST}
+              </span>
+            </button>
+          </>
         )}
       </div>
     </div>

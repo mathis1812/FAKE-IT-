@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Fragment } from "react";
 
 /**
@@ -24,6 +27,11 @@ const LEGAL_LINKS = [
  * sécurité iOS, sinon les liens passent sous la barre d'accueil.
  */
 export default function SiteFooter() {
+  const pathname = usePathname();
+  // Le studio et les écrans de gabarit sont un shell plein écran, sans pied
+  // de page — même retrait que SiteHeader, pour la même raison.
+  if (pathname === "/" || pathname.startsWith("/templates")) return null;
+
   const links = [...PRODUCT_LINKS, ...LEGAL_LINKS];
 
   return (

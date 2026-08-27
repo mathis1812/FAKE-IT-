@@ -70,6 +70,11 @@ type TemplateBase = {
   /** Exemple de résultat, affiché plein cadre. */
   exampleImage: string;
   /**
+   * Photo d'origine générique, affichée en fondu alterné avec le résultat.
+   * Optionnelle : un gabarit sans elle affiche `exampleImage` seul, fixe.
+   */
+  beforeImage?: string;
+  /**
    * Deux consignes de cadrage, très courtes : elles s'affichent sur une
    * seule ligne, séparées par un point médian. Ce sont les conditions qui
    * font rater un rendu, pas un mode d'emploi.
@@ -153,7 +158,8 @@ export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
       label,
       cardImage: `/templates/${slug}-card.jpg`,
       exampleImage: `/templates/${slug}.jpg`,
-      tips: ["Full car visible", "Plate area unobstructed"],
+      beforeImage: `/templates/${slug}-before.jpg`,
+      tips: ["Whole car", "Good angle"],
       prompt: buildVehicleSwapPrompt(target),
     })),
   },
@@ -208,8 +214,8 @@ export function allTemplates(): Template[] {
 
 /** Retire les prompts d'un gabarit avant de le confier à un écran client. */
 export function toTemplateView(template: Template): TemplateView {
-  const { slug, label, cardImage, exampleImage, tips } = template;
-  return { slug, label, cardImage, exampleImage, tips };
+  const { slug, label, cardImage, exampleImage, beforeImage, tips } = template;
+  return { slug, label, cardImage, exampleImage, beforeImage, tips };
 }
 
 /** Idem pour une liste de variantes. */
