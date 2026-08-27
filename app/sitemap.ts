@@ -1,8 +1,19 @@
 import type { MetadataRoute } from "next";
+import { TEMPLATE_CATEGORIES } from "@/lib/templates";
 
 const SITE_URL = "https://bluminoo.vercel.app";
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  // Les pages de gabarit sont dérivées du catalogue plutôt qu'énumérées à la
+  // main : un gabarit ajouté est référencé sans qu'on y pense.
+  const templateRoutes = TEMPLATE_CATEGORIES.flatMap((category) => [
+    { path: `/templates/category/${category.slug}`, priority: 0.6 },
+    ...category.templates.map((template) => ({
+      path: `/templates/${template.slug}`,
+      priority: 0.7,
+    })),
+  ]);
+
   const routes: { path: string; priority: number }[] = [
     { path: "/", priority: 1 },
     { path: "/pricing", priority: 0.8 },
@@ -12,6 +23,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/legal", priority: 0.1 },
     { path: "/terms", priority: 0.1 },
     { path: "/privacy", priority: 0.1 },
+    ...templateRoutes,
   ];
 
   return routes.map(({ path, priority }) => ({
