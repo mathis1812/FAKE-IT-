@@ -133,11 +133,11 @@ const VEHICLE_MODELS: { slug: string; label: string; target: string }[] = [
   { slug: "911-turbo-s", label: "911 Turbo S", target: "Porsche 911 Turbo S" },
   { slug: "huracan-sto", label: "Huracán STO", target: "Lamborghini Huracán STO" },
   { slug: "golf-r", label: "Golf R", target: "Volkswagen Golf R" },
-  { slug: "c63-s", label: "C 63 S", target: "Mercedes-AMG C 63 S" },
+  { slug: "c63-s", label: "C 63 S", target: "Mercedes-AMG C 63 S E Performance" },
   { slug: "a45-s", label: "A 45 S", target: "Mercedes-AMG A 45 S" },
   { slug: "temerario", label: "Huracán Tecnica", target: "Lamborghini Huracán Tecnica" },
   { slug: "gtr-nismo", label: "GT-R Nismo", target: "Nissan GT-R Nismo" },
-  { slug: "r8", label: "R8 V10", target: "Audi R8 V10" },
+  { slug: "r8", label: "R8 V10", target: "Audi R8 V10 performance" },
   { slug: "m2", label: "M2", target: "BMW M2" },
   { slug: "720s", label: "720S", target: "McLaren 720S" },
 ];
