@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { openAuthSheet } from "@/components/AuthSheet";
 import FaqAccordion from "@/components/FaqAccordion";
 import HeroSlider from "@/components/HeroSlider";
 import TemplatesCarousel from "@/components/TemplatesCarousel";
@@ -61,22 +62,30 @@ function PanelEyebrow({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Même gabarit de bouton que le hero, en pleine largeur du bloc. */
-function PanelCta({
-  href,
+/**
+ * Bouton d'appel de la landing, partagé par le hero et les blocs du
+ * panneau clair.
+ *
+ * Un visiteur connecté est envoyé au studio par un vrai lien — la
+ * destination doit rester ouvrable dans un nouvel onglet. Un visiteur
+ * déconnecté ouvre la feuille de connexion sans quitter la page : c'est un
+ * bouton, pas un lien, puisqu'il ne navigue nulle part.
+ */
+function CtaButton({
+  isLoggedIn,
   label,
   ctaId,
+  className,
 }: {
-  href: string;
+  isLoggedIn: boolean;
   label: string;
   ctaId: LandingCtaId;
+  className: string;
 }) {
-  return (
-    <Link
-      href={href}
-      onClick={() => trackLandingCtaClick(ctaId)}
-      className="mt-9 flex h-[52px] w-full shrink-0 items-center justify-center gap-[22px] rounded-3xl bg-primary text-[17px] font-semibold text-white shadow-[0_0_18px_rgba(2,133,254,0.45),0_0_44px_rgba(2,133,254,0.22)] transition active:opacity-90"
-    >
+  const shared = `flex h-[52px] shrink-0 items-center justify-center gap-[22px] rounded-3xl bg-primary text-[17px] font-semibold text-white shadow-[0_0_18px_rgba(2,133,254,0.45),0_0_44px_rgba(2,133,254,0.22)] transition active:opacity-90 ${className}`;
+
+  const content = (
+    <>
       {label}
       <span
         aria-hidden
@@ -94,7 +103,32 @@ function PanelCta({
           <path d="M9 18l6-6-6-6" />
         </svg>
       </span>
-    </Link>
+    </>
+  );
+
+  if (isLoggedIn) {
+    return (
+      <Link
+        href="/"
+        onClick={() => trackLandingCtaClick(ctaId)}
+        className={shared}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        trackLandingCtaClick(ctaId);
+        openAuthSheet();
+      }}
+      className={shared}
+    >
+      {content}
+    </button>
   );
 }
 
@@ -122,7 +156,6 @@ export default function LandingPage() {
       .catch(() => {});
   }, []);
 
-  const ctaHref = isLoggedIn ? "/" : "/sign-up";
   const ctaLabel = isLoggedIn ? "Open the studio" : "Get started now";
 
   return (
@@ -143,29 +176,12 @@ export default function LandingPage() {
           results, in seconds.
         </p>
 
-        <Link
-          href={ctaHref}
-          onClick={() => trackLandingCtaClick("hero_primary")}
-          className="mt-3 flex h-[52px] w-full max-w-[440px] shrink-0 items-center justify-center gap-[22px] self-center rounded-3xl bg-primary text-[17px] font-semibold text-white shadow-[0_0_18px_rgba(2,133,254,0.45),0_0_44px_rgba(2,133,254,0.22)] transition active:opacity-90"
-        >
-          {ctaLabel}
-          <span
-            aria-hidden
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[15px] border border-white/25 bg-white/20"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-4 w-4"
-            >
-              <path d="M9 18l6-6-6-6" />
-            </svg>
-          </span>
-        </Link>
+        <CtaButton
+          isLoggedIn={isLoggedIn}
+          label={ctaLabel}
+          ctaId="hero_primary"
+          className="mt-3 w-full max-w-[440px] self-center"
+        />
 
         <div className="mt-8 flex w-full justify-center">
           <HeroSlider />
@@ -196,7 +212,12 @@ export default function LandingPage() {
               vehicle swaps, voxel worlds and plenty more. Pick one, add your
               photo, and it is ready to send.
             </p>
-            <PanelCta href={ctaHref} label={ctaLabel} ctaId="panel_templates" />
+            <CtaButton
+              isLoggedIn={isLoggedIn}
+              label={ctaLabel}
+              ctaId="panel_templates"
+              className="mt-9 w-full"
+            />
           </div>
         </div>
 
@@ -216,7 +237,12 @@ export default function LandingPage() {
               Bring your own ideas to life. Describe the scene you have in mind,
               create images up to 4K, then turn any of them into video.
             </p>
-            <PanelCta href={ctaHref} label={ctaLabel} ctaId="panel_free_mode" />
+            <CtaButton
+              isLoggedIn={isLoggedIn}
+              label={ctaLabel}
+              ctaId="panel_free_mode"
+              className="mt-9 w-full"
+            />
 
             {/* Aperçu de la barre de saisie du studio, reconstruit en CSS. */}
             <div className="mt-9 rounded-3xl bg-[rgba(15,15,16,0.05)] p-4">
@@ -276,7 +302,12 @@ export default function LandingPage() {
               photo taken on the spot, without the &ldquo;Media loaded&rdquo;
               tag giving it away.
             </p>
-            <PanelCta href={ctaHref} label={ctaLabel} ctaId="panel_snapchat" />
+            <CtaButton
+              isLoggedIn={isLoggedIn}
+              label={ctaLabel}
+              ctaId="panel_snapchat"
+              className="mt-9 w-full"
+            />
 
             {/* Aperçu d'une conversation, reconstruit en CSS. */}
             <div className="mt-9 rounded-3xl bg-[rgba(15,15,16,0.05)] p-4">
