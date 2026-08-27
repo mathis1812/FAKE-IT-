@@ -60,7 +60,7 @@ export default function SiteHeader() {
           // plus la page.
           <button
             type="button"
-            onClick={openAuthSheet}
+            onClick={() => openAuthSheet("signin")}
             className="rounded-full bg-white px-5 py-2.5 text-[15px] font-semibold text-black transition hover:bg-white/90"
           >
             Sign in

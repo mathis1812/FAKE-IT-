@@ -123,7 +123,9 @@ function CtaButton({
       type="button"
       onClick={() => {
         trackLandingCtaClick(ctaId);
-        openAuthSheet();
+        // Ces boutons proposent de commencer, pas de se reconnecter : la
+        // feuille s'ouvre donc sur la création de compte.
+        openAuthSheet("signup");
       }}
       className={shared}
     >
