@@ -496,18 +496,28 @@ export default function Home() {
         {credits !== null && (
           <Link
             href="/pricing"
-            aria-label={`${credits} credits left`}
-            className="pointer-events-auto flex h-[42px] w-[92px] shrink-0 items-center justify-center gap-1 rounded-full border border-[#2d2d2d] bg-[#161616] text-[15px] font-semibold text-white transition active:opacity-80"
+            aria-label={`${credits} credits — see the plans`}
+            className="pointer-events-auto flex h-[42px] w-[92px] shrink-0 items-center justify-center gap-1 rounded-full border border-[#2d2d2d] bg-[#161616] text-white transition active:opacity-80"
           >
             <svg
-              aria-hidden
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
-              fill="currentColor"
-              className="h-4 w-4 text-primary"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
             >
-              <path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5z" />
+              <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
             </svg>
-            {credits.toLocaleString("en-US")}
+            {/* tabular-nums : sans lui, la pastille se décale à chaque
+                changement de crédits, les chiffres n'ayant pas la même
+                largeur dans Geist. */}
+            <span className="text-[15px] font-semibold tabular-nums">
+              {credits.toLocaleString("en-US")}
+            </span>
           </Link>
         )}
       </header>
