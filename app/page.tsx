@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SparkleFrame, RevealBurst } from "@/components/MagicSparkles";
 import { playRevealChime, unlockAudioContext } from "@/lib/reveal-chime";
+import TemplateShelf from "@/components/TemplateShelf";
 import { createClient } from "@/lib/supabase/client";
 import { sendAsRedSnap as sendAsRedSnapFn } from "@/lib/share-utils";
+import { TEMPLATE_CATEGORIES, type Template } from "@/lib/templates";
 
 /**
  * Studio — écran central du produit.
@@ -185,7 +187,10 @@ export default function Home() {
   const [credits, setCredits] = useState<number | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [planId, setPlanId] = useState<string | null>(null);
+  /** Initiale affichée dans la pastille de compte, tirée de l'e-mail. */
+  const [accountInitial, setAccountInitial] = useState("?");
   const inputRef = useRef<HTMLInputElement>(null);
+  const shelfRef = useRef<HTMLDivElement>(null);
 
   /**
    * Paywall : un visiteur non connecté, ou connecté sans abonnement,
@@ -217,8 +222,10 @@ export default function Home() {
     setIsLoggedIn(!!user);
     if (!user) {
       setCredits(null);
+      setAccountInitial("?");
       return;
     }
+    setAccountInitial((user.email?.trim().charAt(0) || "?").toUpperCase());
     const { data } = await supabase
       .from("profiles")
       .select("credits, plan")
@@ -430,34 +437,79 @@ export default function Home() {
   }, []);
 
   const canSubmit = !!prepared && !!userNote.trim() && !loading;
+  const hasTemplates = TEMPLATE_CATEGORIES.length > 0;
+
+  /**
+   * Choisir un gabarit ne génère rien : cela pré-remplit la description et
+   * ramène l'utilisateur en haut, pour qu'il relise et ajuste avant de
+   * lancer. Générer directement dépenserait ses crédits sans qu'il ait vu
+   * ce qui allait être demandé.
+   */
+  const pickTemplate = useCallback((template: Template) => {
+    setUserNote(template.prompt);
+    setError("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
   return (
-    <div className="flex min-h-[calc(100dvh-8rem)] flex-col">
-      {/* Barre supérieure de l'application : identité au centre, crédits à
-          droite. Le menu latéral reste à définir. */}
-      <header className="flex items-center justify-between px-1 pb-6">
-        <div className="w-24" />
+    // pt-16 dégage la hauteur de l'en-tête devenu fixe : sans lui, la carte
+    // d'import passerait dessous.
+    <div className="flex min-h-[calc(100dvh-8rem)] flex-col pt-16">
+      {/* Barre supérieure fixe, posée au-dessus du contenu. Le conteneur ne
+          capte pas le pointeur pour ne pas bloquer le défilement sous lui :
+          seuls les boutons le réactivent. */}
+      <header className="pointer-events-none fixed inset-x-0 top-0 z-50 flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+12px)]">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="Open the menu"
+            className="pointer-events-auto flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full border border-[#2d2d2d] bg-[#161616] text-white transition active:opacity-80"
+          >
+            <svg
+              aria-hidden
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              className="h-[18px] w-[18px]"
+            >
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          </button>
+          <Link
+            href="/account"
+            aria-label="Your account"
+            className="pointer-events-auto flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full border border-[#2d2d2d] bg-[#161616] text-[15px] font-semibold text-white transition active:opacity-80"
+          >
+            {accountInitial}
+          </Link>
+        </div>
+
         <Link
           href="/landing"
-          className="text-2xl font-bold tracking-[-0.03em] text-white"
+          className="pointer-events-auto absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[1.8rem] font-bold tracking-tight text-white transition active:opacity-70"
         >
           Bluminoo
         </Link>
-        <div className="flex w-24 justify-end">
-          {credits !== null && (
-            <span className="flex items-center gap-1.5 rounded-full bg-white/[0.08] px-4 py-2 text-[15px] font-semibold text-white">
-              <svg
-                aria-hidden
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="h-4 w-4 text-primary"
-              >
-                <path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5z" />
-              </svg>
-              {credits.toLocaleString("en-US")}
-            </span>
-          )}
-        </div>
+
+        {credits !== null && (
+          <Link
+            href="/pricing"
+            aria-label={`${credits} credits left`}
+            className="pointer-events-auto flex h-[42px] w-[92px] shrink-0 items-center justify-center gap-1 rounded-full border border-[#2d2d2d] bg-[#161616] text-[15px] font-semibold text-white transition active:opacity-80"
+          >
+            <svg
+              aria-hidden
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="h-4 w-4 text-primary"
+            >
+              <path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5z" />
+            </svg>
+            {credits.toLocaleString("en-US")}
+          </Link>
+        )}
       </header>
 
       {/* Zone centrale : import, chargement, aperçu verrouillé ou résultat. */}
@@ -470,12 +522,31 @@ export default function Home() {
             }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={onDrop}
-            className={`relative aspect-[3/4] w-full overflow-hidden rounded-[32px] border-2 border-dashed transition ${
-              isDragging
-                ? "border-primary/60 bg-primary/[0.06]"
-                : "border-white/15 bg-white/[0.03]"
-            }`}
+            className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl bg-[#111111]"
           >
+            {/* Liseré en pointillés tracé en SVG plutôt qu'en bordure CSS :
+                c'est ainsi qu'il est fait sur le modèle, et cela permet un
+                tiret régulier qui suit exactement l'arrondi. Masqué dès
+                qu'une image occupe la carte. */}
+            {!prepared && !result && !loading && !paywalled && (
+              <svg
+                aria-hidden
+                className="pointer-events-none absolute inset-0 h-full w-full"
+              >
+                <rect
+                  x="1"
+                  y="1"
+                  width="calc(100% - 2px)"
+                  height="calc(100% - 2px)"
+                  rx="23"
+                  fill="none"
+                  stroke={isDragging ? "#0285fe" : "#333333"}
+                  strokeWidth="2"
+                  strokeDasharray="8 5"
+                />
+              </svg>
+            )}
+
             <input
               ref={inputRef}
               type="file"
@@ -583,7 +654,7 @@ export default function Home() {
                   <circle cx="9" cy="9" r="2" />
                   <path d="M21 15l-5-5L5 21" />
                 </svg>
-                <span className="text-[17px] font-semibold">
+                <span className="px-4 text-center text-[18px] font-semibold">
                   Import a photo
                 </span>
               </button>
@@ -637,23 +708,41 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Barre du bas : description de la scène et lancement. */}
-      <div className="sticky bottom-0 mt-6 pb-2">
-        <div className="mx-auto flex w-full max-w-[532px] items-end gap-2 rounded-3xl bg-white/[0.07] px-4 py-3">
+      {/* Barre du bas : le champ de saisie porte lui-même son fond arrondi,
+          le bouton d'envoi étant posé par-dessus en absolu. Le rembourrage
+          droit du champ (pr-16) lui réserve la place — sans lui, le texte
+          passerait sous le bouton. */}
+      <div className="sticky bottom-0 mt-6 flex items-stretch gap-0 pb-2">
+        <button
+          type="button"
+          onClick={() =>
+            shelfRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            })
+          }
+          disabled={!hasTemplates}
+          title={hasTemplates ? undefined : "Templates are coming soon"}
+          className="mr-2 flex h-[64px] w-max shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-5 text-[15px] font-semibold text-white transition active:opacity-70 disabled:opacity-40"
+        >
+          Templates
+        </button>
+
+        <div className="relative w-full">
           <textarea
             rows={1}
             value={userNote}
             onChange={(e) => setUserNote(e.target.value)}
             placeholder={PROMPT_PLACEHOLDER}
             aria-label="Describe the scene you want"
-            className="max-h-32 flex-1 resize-none bg-transparent text-[16px] text-white outline-none placeholder:text-white/35"
+            className="relative z-10 block min-h-[64px] w-full resize-none overflow-hidden rounded-3xl bg-white/[0.07] px-5 pb-[19px] pr-16 pt-[18px] text-[17px] font-medium leading-6 text-white caret-white outline-none placeholder:text-white/35"
           />
           <button
             type="button"
             onClick={generate}
             disabled={!canSubmit}
             aria-label="Generate"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition active:opacity-70 disabled:opacity-40"
+            className="absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white transition active:opacity-70 disabled:opacity-40"
           >
             <svg
               aria-hidden
@@ -669,6 +758,10 @@ export default function Home() {
             </svg>
           </button>
         </div>
+      </div>
+
+      <div ref={shelfRef}>
+        <TemplateShelf onPick={pickTemplate} />
       </div>
     </div>
   );
