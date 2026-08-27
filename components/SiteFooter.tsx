@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Fragment } from "react";
 
 /**
  * Liens produit rapatriés ici le 26/08, quand l'en-tête a été réduit à la
@@ -17,36 +18,30 @@ const LEGAL_LINKS = [
   { href: "/privacy", label: "Privacy" },
 ] as const;
 
-/** Pied de page partagé : liens légaux, purement présentationnel. */
+/**
+ * Pied de page partagé, aligné sur le modèle : ni bordure ni bandeau, tout
+ * centré, très discret sur le noir. La marge basse intègre la zone de
+ * sécurité iOS, sinon les liens passent sous la barre d'accueil.
+ */
 export default function SiteFooter() {
+  const links = [...PRODUCT_LINKS, ...LEGAL_LINKS];
+
   return (
-    <footer className="border-t border-white/[0.06] py-6">
-      <div className="mx-auto flex max-w-7xl flex-col items-center gap-3 px-4 text-xs text-neutral-500 sm:flex-row sm:justify-between sm:px-6">
-        <p>© {new Date().getFullYear()} Bluminoo Studio</p>
-        <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-          {PRODUCT_LINKS.map((link) => (
+    <footer className="px-6 pb-[calc(env(safe-area-inset-bottom)+20px)] pt-2 text-center text-[13px] text-white/35">
+      <p>© {new Date().getFullYear()} Bluminoo Studio. All rights reserved.</p>
+      <nav className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+        {links.map((link, index) => (
+          <Fragment key={link.href}>
+            {index > 0 && <span aria-hidden>·</span>}
             <Link
-              key={link.href}
               href={link.href}
-              className="transition hover:text-neutral-300"
+              className="underline underline-offset-2 transition active:opacity-70"
             >
               {link.label}
             </Link>
-          ))}
-          <span aria-hidden className="text-faint">
-            ·
-          </span>
-          {LEGAL_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="transition hover:text-neutral-300"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-      </div>
+          </Fragment>
+        ))}
+      </nav>
     </footer>
   );
 }

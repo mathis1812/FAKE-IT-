@@ -3,12 +3,14 @@
 const TRACK_ENDPOINT = "/api/track";
 const SESSION_STORAGE_KEY = "bluminoo_landing_session_id";
 
+// Toute modification ici doit être répercutée dans ALLOWED_CTA_IDS
+// (app/api/track/route.ts) : le serveur rejette les identifiants absents de
+// sa propre liste, et le clic serait perdu sans erreur visible.
 export type LandingCtaId =
   | "hero_primary"
   | "panel_templates"
   | "panel_free_mode"
-  | "panel_snapchat"
-  | "final_cta";
+  | "panel_snapchat";
 
 /**
  * Identifiant de session éphémère (sessionStorage, pas de cookie tiers ni de

@@ -6,7 +6,15 @@ export const runtime = "nodejs";
 const ALLOWED_EVENT_TYPES = ["page_view", "cta_click"] as const;
 type EventType = (typeof ALLOWED_EVENT_TYPES)[number];
 
-const ALLOWED_CTA_IDS = ["hero_primary", "final_cta"] as const;
+// Doit rester synchronisée avec LandingCtaId (lib/analytics.ts) : un
+// identifiant présent côté client mais absent ici voit son clic rejeté
+// sans que rien ne le signale.
+const ALLOWED_CTA_IDS = [
+  "hero_primary",
+  "panel_templates",
+  "panel_free_mode",
+  "panel_snapchat",
+] as const;
 type CtaId = (typeof ALLOWED_CTA_IDS)[number];
 
 type TrackBody = {

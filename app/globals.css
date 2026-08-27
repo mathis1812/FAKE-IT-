@@ -61,6 +61,22 @@ body {
   z-index: 1;
 }
 
+/* Marque géante du bas de page : la taille se cale sur la largeur de son
+   conteneur (unité cqw) pour que le mot le remplisse exactement, quelle que
+   soit la largeur d'écran. Écrit en CSS plutôt qu'en classes Tailwind : les
+   requêtes de conteneur demandent un greffon en Tailwind 3, pas justifié
+   pour un seul usage.
+   Le 23.21 est mesuré, pas choisi : « Bluminoo » fait 4,40 em de large en
+   Geist Bold à -0.025em d'interlettrage, contre 3,28 em pour le mot du
+   modèle. Changer le mot impose de recalculer cette valeur. */
+.marque-geante {
+  container-type: inline-size;
+}
+
+.marque-geante-mot {
+  font-size: 23.21cqw;
+}
+
 /* Effet "magique" — étincelles violettes autour du cadre pendant la
    génération, puis burst à la révélation du résultat. */
 .magic-frame {

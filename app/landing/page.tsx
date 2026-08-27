@@ -362,22 +362,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA FINAL */}
-      <section className="relative overflow-hidden rounded-[2rem] border border-primary/20 bg-primary/10 px-6 py-16 text-center sm:px-12 sm:py-24">
-        <h2 className="font-display text-4xl font-semibold text-white sm:text-6xl">
-          Ready to impress?
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-neutral-300">
-          Create your first scene in seconds.
+      {/* MARQUE GÉANTE — dernier bloc avant le pied de page. Le mot est
+          dimensionné en unité de conteneur pour remplir toute la largeur.
+          overflow-x-clip contient les débordements de jambages sans créer
+          de conteneur de défilement. La marge négative compense l'approche
+          gauche de la lettre, sinon le mot paraît décalé vers la droite. */}
+      <div className="marque-geante mx-[calc(50%-50vw)] mt-14 w-screen overflow-x-clip px-4">
+        <p className="marque-geante-mot -ml-[0.074em] font-bold leading-none tracking-tight text-white">
+          Bluminoo
         </p>
-        <Link
-          href={ctaHref}
-          onClick={() => trackLandingCtaClick("final_cta")}
-          className="mt-10 inline-flex items-center justify-center rounded-2xl bg-primary px-8 py-4 text-sm font-semibold text-ink transition hover:bg-primary-soft"
-        >
-          {ctaLabel}
-        </Link>
-      </section>
+      </div>
     </div>
   );
 }
