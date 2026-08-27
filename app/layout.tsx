@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import "./globals.css";
-import StudioBackdrop from "@/components/StudioBackdrop";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 
@@ -41,7 +40,6 @@ export default function RootLayout({
     <html lang="en" className={GeistSans.variable}>
       <body className="bg-ink font-body text-neutral-100 antialiased">
         <div className="studio-shell min-h-screen">
-          <StudioBackdrop />
           <div className="studio-content min-h-screen">
             <SiteHeader />
             <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import FaqAccordion from "@/components/FaqAccordion";
 import HeroSlider from "@/components/HeroSlider";
 import TemplatesCarousel from "@/components/TemplatesCarousel";
 import TestimonialMarquee from "@/components/TestimonialMarquee";
@@ -340,37 +341,24 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="pb-20 sm:pb-28">
-        <div className="text-center">
-          <h2 className="font-display text-4xl font-semibold text-white sm:text-5xl">
+      {/* FAQ — même gabarit de bloc que le panneau clair, mais sur fond noir :
+          libellé entre crochets, titre en 2rem, colonne de 440px. Les
+          séparateurs sont en pointillés, et un seul panneau reste ouvert. */}
+      <section className="px-6 pb-20">
+        <div className="mx-auto w-full max-w-[440px]">
+          <p className="flex items-center gap-2 text-[15px] font-medium tracking-[0.06em] text-white/60">
+            <span aria-hidden className="text-[17px] font-normal text-primary">
+              [
+            </span>
+            F.A.Q
+            <span aria-hidden className="text-[17px] font-normal text-primary">
+              ]
+            </span>
+          </p>
+          <h2 className="mt-6 text-[2rem] font-[550] leading-[1.12] tracking-tight text-white">
             Frequently asked questions
           </h2>
-          <p className="mt-3 text-sm text-neutral-400">
-            Everything you need to know about Bluminoo Studio.
-          </p>
-        </div>
-
-        <div className="mx-auto mt-10 max-w-3xl space-y-3">
-          {FAQ_ITEMS.map((item) => (
-            <details
-              key={item.question}
-              className="group rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4"
-            >
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-white marker:content-none">
-                {item.question}
-                <span
-                  aria-hidden
-                  className="shrink-0 text-lg font-normal text-primary-soft transition-transform duration-200 group-open:rotate-45"
-                >
-                  +
-                </span>
-              </summary>
-              <p className="mt-3 text-sm leading-relaxed text-neutral-400">
-                {item.answer}
-              </p>
-            </details>
-          ))}
+          <FaqAccordion items={FAQ_ITEMS} />
         </div>
       </section>
 

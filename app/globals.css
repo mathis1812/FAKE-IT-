@@ -51,15 +51,10 @@ body {
   z-index: 0;
 }
 
-.studio-vignette {
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background:
-    radial-gradient(ellipse 70% 45% at 50% -10%, rgba(2, 133, 254, 0.14), transparent 55%),
-    linear-gradient(180deg, rgba(10, 8, 16, 0.2), rgba(10, 8, 16, 0.75));
-}
+/* Le fond est un noir plein, sans dégradé ni halo : c'est lui qui fait
+   ressortir le panneau clair et l'accent bleu. Le fond animé (champ de
+   points + ondes de couleur) et la vignette dégradée qui l'accompagnait ont
+   été retirés du layout le 27/08. */
 
 .studio-content {
   position: relative;
