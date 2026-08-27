@@ -1,6 +1,10 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { IMAGE_GENERATION_COST } from "@/lib/generation-cost";
 
-export const IMAGE_GENERATION_COST = 150;
+// Réexporté pour ne pas casser les appelants existants. La valeur elle-même
+// vit dans un module sans dépendance serveur, afin que l'interface puisse
+// l'afficher avant de lancer une génération.
+export { IMAGE_GENERATION_COST };
 export const VIDEO_GENERATION_COST = 400;
 
 export async function spendCredits(

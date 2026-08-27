@@ -7,7 +7,7 @@ import { playRevealChime, unlockAudioContext } from "@/lib/reveal-chime";
 import TemplateShelf from "@/components/TemplateShelf";
 import { createClient } from "@/lib/supabase/client";
 import { sendAsRedSnap as sendAsRedSnapFn } from "@/lib/share-utils";
-import { TEMPLATE_CATEGORIES, type Template } from "@/lib/templates";
+import { TEMPLATE_CATEGORIES } from "@/lib/templates";
 
 /**
  * Studio — écran central du produit.
@@ -439,17 +439,6 @@ export default function Home() {
   const canSubmit = !!prepared && !!userNote.trim() && !loading;
   const hasTemplates = TEMPLATE_CATEGORIES.length > 0;
 
-  /**
-   * Choisir un gabarit ne génère rien : cela pré-remplit la description et
-   * ramène l'utilisateur en haut, pour qu'il relise et ajuste avant de
-   * lancer. Générer directement dépenserait ses crédits sans qu'il ait vu
-   * ce qui allait être demandé.
-   */
-  const pickTemplate = useCallback((template: Template) => {
-    setUserNote(template.prompt);
-    setError("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
 
   return (
     // pt-16 dégage la hauteur de l'en-tête devenu fixe : sans lui, la carte
@@ -771,7 +760,7 @@ export default function Home() {
       </div>
 
       <div ref={shelfRef}>
-        <TemplateShelf onPick={pickTemplate} />
+        <TemplateShelf />
       </div>
     </div>
   );
