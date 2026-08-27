@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import "./globals.css";
+import AuthSheet from "@/components/AuthSheet";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 
@@ -47,6 +48,7 @@ export default function RootLayout({
             </main>
             <SiteFooter />
           </div>
+          <AuthSheet />
         </div>
       </body>
     </html>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { openAuthSheet } from "@/components/AuthSheet";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -45,14 +46,26 @@ export default function SiteHeader() {
         Bluminoo
       </Link>
 
-      {isLoggedIn !== null && (
-        <Link
-          href={isLoggedIn ? "/account" : "/sign-in"}
-          className="rounded-full bg-white px-5 py-2.5 text-[15px] font-semibold text-black transition hover:bg-white/90"
-        >
-          {isLoggedIn ? "My account" : "Sign in"}
-        </Link>
-      )}
+      {isLoggedIn !== null &&
+        (isLoggedIn ? (
+          <Link
+            href="/account"
+            className="rounded-full bg-white px-5 py-2.5 text-[15px] font-semibold text-black transition hover:bg-white/90"
+          >
+            My account
+          </Link>
+        ) : (
+          // Ouvre la feuille de connexion plutôt que de naviguer : /sign-in
+          // reste atteignable en direct, mais le parcours courant ne quitte
+          // plus la page.
+          <button
+            type="button"
+            onClick={openAuthSheet}
+            className="rounded-full bg-white px-5 py-2.5 text-[15px] font-semibold text-black transition hover:bg-white/90"
+          >
+            Sign in
+          </button>
+        ))}
     </header>
   );
 }
