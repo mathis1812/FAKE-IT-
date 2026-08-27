@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { openAuthSheet } from "@/components/AuthSheet";
 import { createClient } from "@/lib/supabase/client";
@@ -13,6 +14,7 @@ import { createClient } from "@/lib/supabase/client";
  * Non collant et sans fond : il repose directement sur le noir de la page.
  */
 export default function SiteHeader() {
+  const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
   // `null` tant que la session n'est pas connue : évite d'afficher
@@ -36,6 +38,10 @@ export default function SiteHeader() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Le studio porte sa propre barre supérieure — identité centrée, crédits à
+  // droite. Sans ce retrait, la page afficherait deux en-têtes superposés.
+  if (pathname === "/") return null;
 
   return (
     <header className="flex items-center justify-between px-4 pt-3 sm:px-6">
