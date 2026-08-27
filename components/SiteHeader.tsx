@@ -40,8 +40,9 @@ export default function SiteHeader() {
   }, []);
 
   // Le studio porte sa propre barre supérieure — identité centrée, crédits à
-  // droite. Sans ce retrait, la page afficherait deux en-têtes superposés.
-  if (pathname === "/") return null;
+  // droite — et les écrans de gabarit la leur, avec retour et titre. Sans ce
+  // retrait, ces pages afficheraient deux en-têtes superposés.
+  if (pathname === "/" || pathname.startsWith("/templates")) return null;
 
   return (
     <header className="flex items-center justify-between px-4 pt-3 sm:px-6">

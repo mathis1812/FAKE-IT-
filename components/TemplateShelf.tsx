@@ -1,25 +1,51 @@
 import Image from "next/image";
 import Link from "next/link";
-import { TEMPLATE_CATEGORIES } from "@/lib/templates";
+import { featuredCategory, TEMPLATE_CATEGORIES } from "@/lib/templates";
 
 /**
- * Étagère de gabarits affichée sous le studio : une rangée par catégorie,
- * défilable horizontalement avec accrochage.
+ * Étagère de gabarits affichée sous le studio : une carte vedette pleine
+ * largeur, puis une rangée par catégorie, défilable horizontalement.
  *
- * Chaque vignette est un lien vers la page du gabarit, qui porte son propre
- * parcours de génération. Elle ne pré-remplit rien dans le studio : le
- * prompt d'un gabarit n'est pas destiné à être lu ni modifié.
- *
- * Nombre de vignettes montrées par rangée : toutes. Le lien « See all »
- * mène à la catégorie complète, utile dès qu'elle dépasse ce que la rangée
- * laisse voir.
+ * Les vignettes mènent à la grille de la catégorie, sur l'ancre du gabarit
+ * visé — c'est le chemin du modèle, et il garde le client dans le contexte
+ * de la catégorie plutôt que de l'y parachuter seul. Elles ne pré-remplissent
+ * rien dans le studio : le prompt d'un gabarit n'est pas destiné à être lu.
  */
 export default function TemplateShelf() {
   if (TEMPLATE_CATEGORIES.length === 0) return null;
 
+  const featured = featuredCategory();
+
   return (
     <section className="mt-10">
       <h2 className="sr-only">Templates</h2>
+
+      {featured && (
+        <Link
+          href={`/templates/category/${featured.slug}`}
+          aria-label={`${featured.title} — see all templates`}
+          className="relative mx-2.5 mb-8 block aspect-[4/3] overflow-hidden rounded-2xl bg-[#1c1c1c] transition active:opacity-90"
+        >
+          <Image
+            src={featured.featuredImage ?? featured.templates[0]?.cardImage}
+            alt=""
+            fill
+            priority
+            sizes="(max-width: 900px) 96vw, 880px"
+            className="object-cover"
+          />
+          <span
+            aria-hidden
+            className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/75 to-transparent"
+          />
+          <span className="absolute bottom-3 left-4 text-[17px] font-semibold text-white">
+            {featured.title}
+          </span>
+          <span className="absolute right-3 top-3 rounded-full bg-black/60 px-3.5 py-1.5 text-[13px] font-semibold text-white backdrop-blur-sm">
+            Try it
+          </span>
+        </Link>
+      )}
 
       {TEMPLATE_CATEGORIES.map((category) => (
         <div key={category.slug} className="mb-8">
@@ -51,7 +77,7 @@ export default function TemplateShelf() {
             {category.templates.map((template) => (
               <Link
                 key={template.slug}
-                href={`/templates/${template.slug}`}
+                href={`/templates/category/${category.slug}#${template.slug}`}
                 className="shrink-0 snap-start transition focus:outline-none focus-visible:outline-none active:opacity-80"
               >
                 <div className="relative aspect-[9/11] w-[min(347px,62vw)] overflow-hidden rounded-2xl bg-[#1c1c1c]">

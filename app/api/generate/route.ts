@@ -9,6 +9,7 @@ import { persistImageBytes } from "@/lib/gallery-server";
 import { generateGeminiImage } from "@/lib/gemini-jobs";
 import { buildPlacePrompt, buildScenePrompt } from "@/lib/place-prompt";
 import { PLANS, type PlanId } from "@/lib/stripe";
+import { resolveTemplatePrompt } from "@/lib/templates";
 import {
   DISALLOWED_ASSET_URL_MESSAGE,
   isAllowedAssetUrl,
@@ -31,6 +32,14 @@ type GenerateBody = {
   objectImageUrl?: string;
   prompt?: string;
   label?: string;
+  /**
+   * Flux gabarit : le client n'envoie que des identifiants, le prompt est
+   * résolu ici. Une prop passée à un composant client finit sérialisée dans
+   * le HTML servi ; envoyer le prompt depuis le navigateur reviendrait à le
+   * publier, alors que le produit le garde caché.
+   */
+  templateSlug?: string;
+  variantSlug?: string;
 };
 
 export async function POST(req: NextRequest) {
@@ -59,8 +68,37 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { sourceImageUrl, placeImageUrls, userNote, objectImageUrl, prompt, label } =
-    body;
+  const {
+    sourceImageUrl,
+    placeImageUrls,
+    userNote,
+    objectImageUrl,
+    label,
+    templateSlug,
+    variantSlug,
+  } = body;
+
+  // Un gabarit impose son prompt : celui que le client aurait pu joindre est
+  // ignoré, jamais fusionné. Un gabarit inconnu, ou une variante manquante,
+  // est refusé plutôt que rabattu sur le prompt libre — sinon un mauvais
+  // identifiant produirait silencieusement autre chose que ce qui est
+  // montré à l'écran.
+  let prompt = body.prompt;
+  if (typeof templateSlug === "string" && templateSlug.trim()) {
+    const resolved = resolveTemplatePrompt(
+      templateSlug,
+      typeof variantSlug === "string" && variantSlug.trim()
+        ? variantSlug
+        : undefined,
+    );
+    if (!resolved) {
+      return NextResponse.json(
+        { error: "Unknown template. Pick one from the templates list." },
+        { status: 400 },
+      );
+    }
+    prompt = resolved;
+  }
 
   if (!sourceImageUrl || typeof sourceImageUrl !== "string") {
     return NextResponse.json(
