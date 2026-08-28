@@ -57,6 +57,7 @@ export default function TemplatePage({ params }: Props) {
           template={toTemplateView(template)}
           variants={toVariantViews(template.variants)}
           question={template.variantQuestion}
+          defaultVariantSlug={template.defaultVariantSlug}
         />
       ) : (
         <TemplateGenerator template={toTemplateView(template)} />

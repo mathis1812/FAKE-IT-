@@ -74,6 +74,26 @@ export function buildVehicleSwapPrompt(targetVehicle: string): string {
   );
 }
 
+/**
+ * Prompt utilisé par les gabarits d'édition sur place (dégâts, animal rasé,
+ * invasion de rats) : la photo montre une scène réelle que le rendu doit
+ * modifier par un seul changement décrit, en gardant tout le reste — sujet,
+ * pose, lieu, angle, lumière — inchangé.
+ *
+ * À l'opposé de `buildVehicleSwapPrompt` : ici l'identité du sujet doit
+ * justement être préservée, pas remplacée. Les deux prompts ne partagent
+ * aucune ligne pour cette raison.
+ */
+export function buildInPlaceEditPrompt(change: string): string {
+  return (
+    `The photograph shows a real scene. Produce a single photograph of that exact same scene, but ` +
+    `apply this change: ${change}. ` +
+    REALISM_CORE +
+    " Keep everything else exactly as photographed: the subject's identity, pose and position, the " +
+    "location, camera angle, framing, lighting and every object not explicitly part of the change."
+  );
+}
+
 export function buildScenePrompt(description: string): string {
   return (
     "The image shows the subject. Produce a single photograph of that same subject in the scene " +

@@ -102,7 +102,8 @@ export default function TemplateGenerator({
   const hasRedSnap = planId === "essentiel" || planId === "ultimate";
 
   const exampleImage = variant?.exampleImage ?? template.exampleImage;
-  const beforeImage = variant?.exampleImage ? undefined : template.beforeImage;
+  const beforeImage = variant?.beforeImage ?? template.beforeImage;
+  const tips = variant?.tips ?? template.tips;
   const showIdle = !result && !loading && !paywalled;
   const beforeOpacity = useBeforeAfterLoop(showIdle && !!beforeImage);
 
@@ -405,9 +406,9 @@ export default function TemplateGenerator({
               Import a photo
             </p>
 
-            {template.tips.length > 0 && (
+            {tips.length > 0 && (
               <p className="mb-4 mt-2 text-[14px] font-medium leading-snug text-[#cccccc]">
-                {template.tips.map((tip, index) => (
+                {tips.map((tip, index) => (
                   <span key={tip}>
                     {index > 0 && (
                       <span

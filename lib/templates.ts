@@ -25,7 +25,7 @@
  * peut fournir son propre exemple si son rendu diffère nettement.
  */
 
-import { buildVehicleSwapPrompt } from "@/lib/place-prompt";
+import { buildInPlaceEditPrompt, buildVehicleSwapPrompt } from "@/lib/place-prompt";
 
 export type TemplateVariant = {
   /** Identifiant d'URL : la page vit sur /templates/<gabarit>/<variante>. */
@@ -38,8 +38,23 @@ export type TemplateVariant = {
   label: string;
   /** Prompt complet de cette variante. Jamais montré à l'utilisateur. */
   prompt: string;
-  /** Exemple propre à la variante, si son rendu diffère nettement. */
+  /**
+   * Aperçu affiché sur l'écran de choix quand cette variante est
+   * sélectionnée. Distinct de `exampleImage` : le modèle utilise deux
+   * fichiers différents pour la même variante — l'aperçu du choix et le
+   * résultat montré à l'écran d'import ne sont pas le même rendu.
+   */
+  choiceImage?: string;
+  /** Résultat montré à l'écran d'import, si différent de celui du gabarit. */
   exampleImage?: string;
+  /** Photo d'origine du fondu avant/après, si différente de celle du gabarit. */
+  beforeImage?: string;
+  /**
+   * Consignes propres à cette variante, si différentes de celles du gabarit
+   * — ex. « Ceiling visible » pour un plafond effondré, « Floor visible »
+   * pour un sol effondré. Absentes, elles retombent sur `tips` du gabarit.
+   */
+  tips?: string[];
 };
 
 /**
@@ -57,7 +72,10 @@ export type TemplateView = TemplateBase;
 export type VariantView = {
   slug: string;
   label: string;
+  choiceImage?: string;
   exampleImage?: string;
+  beforeImage?: string;
+  tips?: string[];
 };
 
 type TemplateBase = {
@@ -92,12 +110,19 @@ export type Template =
       prompt: string;
       variantQuestion?: never;
       variants?: never;
+      defaultVariantSlug?: never;
     })
   | (TemplateBase & {
       prompt?: never;
       /** Question posée au-dessus de la liste, ex. « How much damage? ». */
       variantQuestion: string;
       variants: TemplateVariant[];
+      /**
+       * Variante cochée à l'ouverture de l'écran de choix. Relevé sur le
+       * modèle : ce n'est ni toujours la première ni toujours la dernière de
+       * la liste — chaque gabarit a la sienne, à décider au cas par cas.
+       */
+      defaultVariantSlug: string;
     });
 
 export type TemplateCategory = {
@@ -163,6 +188,126 @@ export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
       prompt: buildVehicleSwapPrompt(target),
     })),
   },
+  {
+    slug: "pranks",
+    title: "Popular pranks",
+    templates: [
+      {
+        slug: "voiture-accidentee",
+        label: "Accident",
+        cardImage: "/templates/voiture-accidentee-card.jpg",
+        exampleImage: "/templates/voiture-accidentee-extreme.jpg",
+        beforeImage: "/templates/voiture-accidentee-before.jpg",
+        tips: ["Whole car", "Clear space"],
+        variantQuestion: "How much damage?",
+        defaultVariantSlug: "extreme",
+        variants: [
+          {
+            slug: "modere",
+            label: "It buffs out",
+            choiceImage: "/templates/voiture-accidentee-modere-choice.jpg",
+            exampleImage: "/templates/voiture-accidentee-modere.jpg",
+            prompt: buildInPlaceEditPrompt(
+              "light collision damage on the car — a dented door and a scraped bumper, paint scratches, no fire, no emergency vehicles",
+            ),
+          },
+          {
+            slug: "fort",
+            label: "Insurance is sweating",
+            choiceImage: "/templates/voiture-accidentee-fort-choice.jpg",
+            exampleImage: "/templates/voiture-accidentee-fort.jpg",
+            prompt: buildInPlaceEditPrompt(
+              "heavy crash damage on the car — a crumpled front end, a shattered windshield, a broken headlight and a deployed airbag visible through the window, no fire",
+            ),
+          },
+          {
+            slug: "extreme",
+            label: "Straight to the scrapyard",
+            choiceImage: "/templates/voiture-accidentee-extreme-choice.jpg",
+            exampleImage: "/templates/voiture-accidentee-extreme.jpg",
+            prompt: buildInPlaceEditPrompt(
+              "the car burned out and totalled — charred blackened bodywork, melted panels, shattered windows, tires burned down to the rims",
+            ),
+          },
+        ],
+      },
+      {
+        slug: "animal-rase",
+        label: "Shaved Pet",
+        cardImage: "/templates/animal-rase-card.jpg",
+        exampleImage: "/templates/animal-rase.jpg",
+        beforeImage: "/templates/animal-rase-before.jpg",
+        tips: ["Whole animal", "Body visible"],
+        prompt: buildInPlaceEditPrompt(
+          "the animal completely shaved, bare smooth skin visible with no fur anywhere, keeping its exact pose and expression",
+        ),
+      },
+      {
+        slug: "degats-maison",
+        label: "House Damage",
+        cardImage: "/templates/degats-maison-card.jpg",
+        exampleImage: "/templates/degats-maison-plafond.jpg",
+        beforeImage: "/templates/degats-maison-plafond-before.jpg",
+        tips: ["Whole room", "Ceiling visible"],
+        variantQuestion: "What kind of damage?",
+        defaultVariantSlug: "plafond",
+        variants: [
+          {
+            slug: "plafond",
+            label: "Ceiling collapsed",
+            choiceImage: "/templates/degats-maison-plafond-choice.jpg",
+            exampleImage: "/templates/degats-maison-plafond.jpg",
+            beforeImage: "/templates/degats-maison-plafond-before.jpg",
+            tips: ["Whole room", "Ceiling visible"],
+            prompt: buildInPlaceEditPrompt(
+              "the ceiling collapsed and caved in — exposed broken beams, insulation and plaster debris scattered on the floor below",
+            ),
+          },
+          {
+            slug: "sol",
+            label: "Floor collapsed",
+            choiceImage: "/templates/degats-maison-sol-choice.jpg",
+            exampleImage: "/templates/degats-maison-sol.jpg",
+            beforeImage: "/templates/degats-maison-sol-before.jpg",
+            tips: ["Whole room", "Floor visible"],
+            prompt: buildInPlaceEditPrompt(
+              "the floor collapsed and caved in — a jagged broken opening exposing the structure below, debris scattered around the edges",
+            ),
+          },
+        ],
+      },
+      {
+        slug: "rat",
+        label: "Rat",
+        cardImage: "/templates/rat-card.jpg",
+        exampleImage: "/templates/rat-invasion.jpg",
+        beforeImage: "/templates/rat-before.jpg",
+        tips: ["Floor visible", "Good angle"],
+        variantQuestion: "How many rats?",
+        defaultVariantSlug: "invasion",
+        variants: [
+          {
+            slug: "seul",
+            label: "Rat",
+            choiceImage: "/templates/rat-seul-choice.jpg",
+            exampleImage: "/templates/rat-seul.jpg",
+            prompt: buildInPlaceEditPrompt(
+              "a single realistic rat standing on the floor in the foreground",
+            ),
+          },
+          {
+            slug: "invasion",
+            label: "RATPOCALYPSE!",
+            choiceImage: "/templates/rat-invasion-choice.jpg",
+            exampleImage: "/templates/rat-invasion.jpg",
+            prompt: buildInPlaceEditPrompt(
+              "dozens of realistic rats covering the floor, an overwhelming infestation",
+            ),
+          },
+        ],
+      },
+    ],
+  },
 ];
 
 /** Vrai si le gabarit passe par un écran de choix avant l'import. */
@@ -220,9 +365,12 @@ export function toTemplateView(template: Template): TemplateView {
 
 /** Idem pour une liste de variantes. */
 export function toVariantViews(variants: TemplateVariant[]): VariantView[] {
-  return variants.map(({ slug, label, exampleImage }) => ({
+  return variants.map(({ slug, label, choiceImage, exampleImage, beforeImage, tips }) => ({
     slug,
     label,
+    choiceImage,
+    beforeImage,
+    tips,
     exampleImage,
   }));
 }
