@@ -25,7 +25,11 @@
  * peut fournir son propre exemple si son rendu diffère nettement.
  */
 
-import { buildInPlaceEditPrompt, buildVehicleSwapPrompt } from "@/lib/place-prompt";
+import {
+  buildInPlaceEditPrompt,
+  buildVehicleSwapPrompt,
+  buildWorldStylePrompt,
+} from "@/lib/place-prompt";
 
 export type TemplateVariant = {
   /** Identifiant d'URL : la page vit sur /templates/<gabarit>/<variante>. */
@@ -305,6 +309,45 @@ export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
             ),
           },
         ],
+      },
+    ],
+  },
+  {
+    slug: "worlds",
+    title: "Worlds",
+    templates: [
+      {
+        slug: "minecraft",
+        label: "Minecraft",
+        cardImage: "/templates/minecraft-card.jpg",
+        exampleImage: "/templates/minecraft.jpg",
+        beforeImage: "/templates/minecraft-before.jpg",
+        tips: ["Sharp subject", "Visible background"],
+        prompt: buildWorldStylePrompt(
+          "the blocky voxel art style of Minecraft — cubic geometry, low-resolution pixelated textures, flat blocky shading",
+        ),
+      },
+      {
+        slug: "gta-5",
+        label: "GTA 5",
+        cardImage: "/templates/gta-5-card.jpg",
+        exampleImage: "/templates/gta-5.jpg",
+        beforeImage: "/templates/gta-5-before.jpg",
+        tips: ["Sharp subject", "Face visible"],
+        prompt: buildWorldStylePrompt(
+          "the stylized cel-shaded video game art of Grand Theft Auto V — a painterly game-cover illustration look, slightly exaggerated proportions, saturated cinematic lighting",
+        ),
+      },
+      {
+        slug: "lego",
+        label: "LEGO",
+        cardImage: "/templates/lego-card.jpg",
+        exampleImage: "/templates/lego.jpg",
+        beforeImage: "/templates/lego-before.jpg",
+        tips: ["Whole subject", "Visible background"],
+        prompt: buildWorldStylePrompt(
+          "LEGO minifigure and brick-built style — glossy plastic material, blocky LEGO brick geometry for the subject and surroundings, visible LEGO stud textures",
+        ),
       },
     ],
   },
