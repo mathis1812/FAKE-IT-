@@ -575,25 +575,33 @@ export default function Home() {
             aria-label="Describe the scene you want"
             className="relative z-10 block min-h-[64px] w-full resize-none overflow-hidden rounded-3xl bg-white/[0.07] px-5 pb-[19px] pr-16 pt-[18px] text-[17px] font-medium leading-6 text-white caret-white outline-none placeholder:text-white/35"
           />
+          {/* Deux cercles imbriqués, relevés sur le modèle : le cercle
+              extérieur (#333333, padding 6px) n'est pas décoratif, c'est
+              lui qui donne au bouton sa taille réelle — le cercle intérieur
+              (white/15) ne porte que l'icône. Un seul cercle, comme avant,
+              rendait le bouton visiblement plus petit et plus transparent. */}
           <button
             type="button"
             onClick={generate}
             disabled={!canSubmit}
             aria-label="Generate"
-            className="absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white transition active:opacity-70 disabled:opacity-40"
+            className="absolute right-1.5 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-[#333333] p-1.5 transition active:opacity-70 disabled:opacity-60"
           >
-            <svg
-              aria-hidden
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-4 w-4"
-            >
-              <path d="M12 19V5M5 12l7-7 7 7" />
-            </svg>
+            <span className="flex h-full w-full items-center justify-center rounded-full bg-white/15 text-white">
+              <svg
+                aria-hidden
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 19V5m-7 7 7-7 7 7" />
+              </svg>
+            </span>
           </button>
         </div>
       </div>
