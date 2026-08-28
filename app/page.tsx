@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { SparkleFrame, RevealBurst } from "@/components/MagicSparkles";
 import { playRevealChime, unlockAudioContext } from "@/lib/reveal-chime";
 import ResultActions from "@/components/ResultActions";
+import MenuSheet from "@/components/MenuSheet";
 import TemplateShelf from "@/components/TemplateShelf";
 import { IMAGE_GENERATION_COST } from "@/lib/generation-cost";
 import { createClient } from "@/lib/supabase/client";
@@ -97,6 +98,9 @@ export default function Home() {
    * générable ne transite vers le navigateur.
    */
   const [paywalled, setPaywalled] = useState(false);
+
+  /** Menu principal, en feuille remontant du bas. */
+  const [menuOpen, setMenuOpen] = useState(false);
 
   /** Seul un compte connecté ET porteur d'un palier peut générer. */
   const isSubscribed = isLoggedIn && !!planId;
@@ -309,7 +313,10 @@ export default function Home() {
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={() => setMenuOpen(true)}
             aria-label="Open the menu"
+            aria-haspopup="dialog"
+            aria-expanded={menuOpen}
             className="pointer-events-auto flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full border border-[#2d2d2d] bg-[#161616] text-white transition active:opacity-80"
           >
             <svg
@@ -602,6 +609,13 @@ export default function Home() {
       <div ref={shelfRef}>
         <TemplateShelf />
       </div>
+
+      <MenuSheet
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        credits={credits}
+        planId={planId}
+      />
     </div>
   );
 }
