@@ -154,34 +154,41 @@ export default function PricingCatalogue() {
                   type="button"
                   aria-pressed={isSelected}
                   onClick={() => setSelectedPlan(id)}
-                  className={`relative flex w-full flex-col overflow-hidden rounded-[18px] border-[2.5px] bg-black/30 text-left transition active:opacity-80 ${
+                  className={`relative flex w-full flex-col rounded-[18px] border-[2.5px] bg-black/30 text-left transition active:opacity-80 ${
                     isSelected ? "border-primary" : "border-white/15"
                   }`}
                 >
+                  {/* Le badge de remise vit HORS de ce span : c'est lui qui
+                      clippe le contenu (icône, barre de prix), pas le
+                      bouton entier. Mettre `overflow-hidden` sur le bouton
+                      coupait le badge, qui déborde volontairement au-dessus
+                      de la carte. */}
                   {badge && (
                     <span className="absolute -top-3 right-2 z-10 whitespace-nowrap rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold leading-4 text-white">
                       {badge}
                     </span>
                   )}
-                  <span className="absolute left-2.5 top-2 z-10 text-[11px] font-semibold uppercase leading-4 tracking-wide text-white/50">
-                    {plan.name}
-                  </span>
-                  <div className="flex aspect-square w-full flex-col items-center justify-center gap-2">
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <path d={LIGHTNING_PATH} />
-                    </svg>
-                    <span className="text-[20px] font-bold leading-none tabular-nums text-white">
-                      {plan.creditsPerWeek}
+                  <span className="flex w-full flex-col overflow-hidden rounded-[15.5px]">
+                    <span className="absolute left-2.5 top-2 z-10 text-[11px] font-semibold uppercase leading-4 tracking-wide text-white/50">
+                      {plan.name}
                     </span>
-                  </div>
-                  <div
-                    className="relative flex h-8 w-full items-center justify-center text-[14px] font-semibold text-white"
-                    style={{ background: tint }}
-                  >
-                    <PriceCardNotches tint={tint} />
-                    {formatPrice(plan.priceUsd)}
-                    <span className="ml-1 text-[12px] font-medium">/ wk</span>
-                  </div>
+                    <span className="flex aspect-square w-full flex-col items-center justify-center gap-2">
+                      <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d={LIGHTNING_PATH} />
+                      </svg>
+                      <span className="text-[20px] font-bold leading-none tabular-nums text-white">
+                        {plan.creditsPerWeek}
+                      </span>
+                    </span>
+                    <span
+                      className="relative flex h-8 w-full items-center justify-center text-[14px] font-semibold text-white"
+                      style={{ background: tint }}
+                    >
+                      <PriceCardNotches tint={tint} />
+                      {formatPrice(plan.priceUsd)}
+                      <span className="ml-1 text-[12px] font-medium">/ wk</span>
+                    </span>
+                  </span>
                 </button>
               );
             })
@@ -195,7 +202,7 @@ export default function PricingCatalogue() {
                   type="button"
                   aria-pressed={isSelected}
                   onClick={() => setSelectedTopup(id)}
-                  className={`relative flex w-full flex-col overflow-hidden rounded-[18px] border-[2.5px] bg-black/30 text-left transition active:opacity-80 ${
+                  className={`relative flex w-full flex-col rounded-[18px] border-[2.5px] bg-black/30 text-left transition active:opacity-80 ${
                     isSelected ? "border-primary" : "border-white/15"
                   }`}
                 >
@@ -204,21 +211,23 @@ export default function PricingCatalogue() {
                       {badge}
                     </span>
                   )}
-                  <div className="flex aspect-square w-full flex-col items-center justify-center gap-2">
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <path d={LIGHTNING_PATH} />
-                    </svg>
-                    <span className="text-[20px] font-bold leading-none tabular-nums text-white">
-                      {pack.credits}
+                  <span className="flex w-full flex-col overflow-hidden rounded-[15.5px]">
+                    <span className="flex aspect-square w-full flex-col items-center justify-center gap-2">
+                      <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d={LIGHTNING_PATH} />
+                      </svg>
+                      <span className="text-[20px] font-bold leading-none tabular-nums text-white">
+                        {pack.credits}
+                      </span>
                     </span>
-                  </div>
-                  <div
-                    className="relative flex h-8 w-full items-center justify-center text-[14px] font-semibold text-white"
-                    style={{ background: tint }}
-                  >
-                    <PriceCardNotches tint={tint} />
-                    {formatPrice(pack.priceUsd)}
-                  </div>
+                    <span
+                      className="relative flex h-8 w-full items-center justify-center text-[14px] font-semibold text-white"
+                      style={{ background: tint }}
+                    >
+                      <PriceCardNotches tint={tint} />
+                      {formatPrice(pack.priceUsd)}
+                    </span>
+                  </span>
                 </button>
               );
             })}
