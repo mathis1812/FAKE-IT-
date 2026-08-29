@@ -28,10 +28,14 @@ export function isStripeConfigured(): boolean {
  * l'unité, sans rapport avec l'ancienne grille mensuelle/annuelle
  * Starter/Essential/Ultimate qu'ils remplacent.
  *
- * Les trois paliers d'abonnement débloquent les mêmes fonctions (Red Snap,
- * résolution 4K) — vérifié en comparant les listes de fonctionnalités de
- * Lite et Max sur le modèle, strictement identiques. Seuls les crédits et
- * le prix diffèrent d'un palier à l'autre.
+ * Chaque palier débloque des fonctions différentes : Lite s'arrête au 1K
+ * sans vidéo ni Red Snap, Pro monte au 2K avec vidéo et Red Snap, Max
+ * ajoute le 4K. Voir `lib/generation-tiers.ts`, qui porte ces règles.
+ *
+ * Une version antérieure de ce commentaire affirmait l'inverse (« les trois
+ * paliers débloquent les mêmes fonctions ») sur la foi d'une comparaison
+ * faussée : les boutons Lite et Pro étaient `disabled` sur le compte
+ * observé, donc les clics ne changeaient jamais la sélection.
  *
  * Pas de repli vers l'ancienne grille EUR mensuelle/annuelle : contrairement
  * à la bascule EUR→USD (même produit, autre devise), c'est ici toute la
@@ -57,14 +61,14 @@ export const PLANS: Record<
     priceId: envValue("STRIPE_PRICE_LITE"),
     priceUsd: 4.99,
     creditsPerWeek: 1000,
-    imageResolution: "4K",
+    imageResolution: "1K",
   },
   pro: {
     name: "Pro",
     priceId: envValue("STRIPE_PRICE_PRO"),
     priceUsd: 9.99,
     creditsPerWeek: 2250,
-    imageResolution: "4K",
+    imageResolution: "2K",
   },
   max: {
     name: "Max",

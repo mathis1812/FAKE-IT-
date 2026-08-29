@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RevealBurst, SparkleFrame } from "@/components/MagicSparkles";
 import ResultActions from "@/components/ResultActions";
+import {
+  asPlanId,
+  hasRedSnap as planHasRedSnap,
+} from "@/lib/generation-tiers";
 import { IMAGE_GENERATION_COST } from "@/lib/generation-cost";
 import { playRevealChime, unlockAudioContext } from "@/lib/reveal-chime";
 import { createClient } from "@/lib/supabase/client";
@@ -99,8 +103,8 @@ export default function TemplateGenerator({
 
   /** Seul un compte connecté ET porteur d'un palier peut générer. */
   const isSubscribed = isLoggedIn && !!planId;
-  /** Tous les paliers d'abonnement débloquent le Red Snap sur le modèle. */
-  const hasRedSnap = !!planId;
+  /** Red Snap réservé aux paliers Pro et Max — voir lib/generation-tiers.ts. */
+  const hasRedSnap = planHasRedSnap(asPlanId(planId));
 
   const exampleImage = variant?.exampleImage ?? template.exampleImage;
   const beforeImage = variant?.beforeImage ?? template.beforeImage;

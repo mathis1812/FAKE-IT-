@@ -4,6 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { openAuthSheet } from "@/components/AuthSheet";
+import {
+  asPlanId,
+  hasRedSnap as planHasRedSnap,
+} from "@/lib/generation-tiers";
 
 /**
  * Menu principal, en feuille remontant du bas de l'écran.
@@ -100,13 +104,12 @@ export default function MenuSheet({
 
   const isLoggedIn = credits !== null;
   /**
-   * Le Red Snap est un avantage de tous les paliers d'abonnement (Lite, Pro,
-   * Max débloquent les mêmes fonctions sur le modèle). La carte n'est
-   * montrée qu'à ceux qui n'ont aucun abonnement : vanter à un abonné une
-   * fonction qu'il paie déjà, en l'envoyant vers la grille tarifaire,
+   * Le Red Snap est réservé aux paliers Pro et Max — Lite ne l'a pas.
+   * La carte n'est montrée qu'à ceux qui n'y ont pas droit : la vanter à
+   * un abonné qui la paie déjà, en l'envoyant vers la grille tarifaire,
    * serait une impasse.
    */
-  const hasRedSnap = !!planId;
+  const hasRedSnap = planHasRedSnap(asPlanId(planId));
 
   // Échap ferme, et le défilement de la page est verrouillé tant que la
   // feuille est ouverte — sinon l'arrière-plan défile sous les doigts.

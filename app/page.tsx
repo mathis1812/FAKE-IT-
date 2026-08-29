@@ -7,6 +7,10 @@ import { playRevealChime, unlockAudioContext } from "@/lib/reveal-chime";
 import ResultActions from "@/components/ResultActions";
 import AccountSheet from "@/components/AccountSheet";
 import MenuSheet from "@/components/MenuSheet";
+import {
+  asPlanId,
+  hasRedSnap as planHasRedSnap,
+} from "@/lib/generation-tiers";
 import RechargeSheet from "@/components/RechargeSheet";
 import TemplateShelf from "@/components/TemplateShelf";
 import { IMAGE_GENERATION_COST } from "@/lib/generation-cost";
@@ -115,7 +119,7 @@ export default function Home() {
    * le prix diffèrent). Un pack de crédits à l'unité n'y donne pas accès :
    * ce n'est pas un palier.
    */
-  const hasRedSnap = !!planId;
+  const hasRedSnap = planHasRedSnap(asPlanId(planId));
 
   const { elapsedSeconds, progressPercent } = useElapsedProgress(
     loading,

@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PLANS, TOPUPS, formatPrice, type PlanId, type TopupId } from "@/lib/stripe";
+import {
+  hasRedSnap as planHasRedSnap,
+  isVideoOpen,
+} from "@/lib/generation-tiers";
 
 /**
  * Catalogue d'abonnements et de packs de crédits, partagé par `/pricing`
@@ -55,17 +59,28 @@ const TOPUP_TIERS: { id: TopupId; badge?: string }[] = [
   { id: "large", badge: "−20%" },
 ];
 
-const SUBSCRIPTION_FEATURES = [
-  "Red Snap access",
-  "All effects unlocked",
-  "Images up to 4K",
-  "Credits renewed weekly",
-];
+type Feature = { label: string; included: boolean };
 
-const TOPUP_FEATURES = [
-  "Added to your balance instantly",
-  "Credits never expire",
-  "One-time payment, no subscription",
+/**
+ * La liste dépend du palier sélectionné : Lite n'a ni Red Snap ni vidéo, et
+ * chaque palier plafonne à une résolution différente. Les lignes non
+ * incluses restent visibles mais barrées, comme sur le modèle — les cacher
+ * ferait disparaître la raison de monter d'un palier.
+ */
+function subscriptionFeatures(planId: PlanId): Feature[] {
+  return [
+    { label: "Red Snap access", included: planHasRedSnap(planId) },
+    { label: "All effects unlocked", included: true },
+    { label: `Images up to ${PLANS[planId].imageResolution}`, included: true },
+    { label: "Videos with sound, 4 to 8s", included: isVideoOpen(planId) },
+    { label: "Credits renewed weekly", included: true },
+  ];
+}
+
+const TOPUP_FEATURES: Feature[] = [
+  { label: "Added to your balance instantly", included: true },
+  { label: "Credits never expire", included: true },
+  { label: "One-time payment, no subscription", included: true },
 ];
 
 export default function PricingCatalogue() {
@@ -234,30 +249,37 @@ export default function PricingCatalogue() {
       </div>
 
       <ul className="mt-5 flex flex-col gap-2.5">
-        {(tab === "subscription" ? SUBSCRIPTION_FEATURES : TOPUP_FEATURES).map(
-          (feature) => (
-            <li
-              key={feature}
-              className="flex items-start gap-2.5 text-[14px] font-medium leading-5 text-white"
+        {(tab === "subscription"
+          ? subscriptionFeatures(selectedPlan)
+          : TOPUP_FEATURES
+        ).map((feature) => (
+          <li
+            key={feature.label}
+            className={`flex items-start gap-2.5 text-[14px] font-medium leading-5 ${
+              feature.included ? "text-white" : "text-white/35"
+            }`}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={feature.included ? "currentColor" : "#ffffff40"}
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+              className="mt-[3px] shrink-0"
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-                className="mt-[3px] shrink-0"
-              >
+              {feature.included ? (
                 <path d="M20 6 9 17l-5-5" />
-              </svg>
-              <span>{feature}</span>
-            </li>
-          ),
-        )}
+              ) : (
+                <path d="M18 6 6 18M6 6l12 12" />
+              )}
+            </svg>
+            <span>{feature.label}</span>
+          </li>
+        ))}
       </ul>
 
       {error && (
