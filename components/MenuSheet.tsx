@@ -100,13 +100,13 @@ export default function MenuSheet({
 
   const isLoggedIn = credits !== null;
   /**
-   * Le Red Snap est un avantage des paliers Essentiel et Ultimate, annoncé
-   * comme tel sur /pricing — même condition que `ResultActions`. La carte
-   * n'est montrée qu'à ceux qui ne l'ont pas : vanter à un abonné Ultimate
-   * une fonction qu'il paie déjà, en l'envoyant vers la grille tarifaire,
+   * Le Red Snap est un avantage de tous les paliers d'abonnement (Lite, Pro,
+   * Max débloquent les mêmes fonctions sur le modèle). La carte n'est
+   * montrée qu'à ceux qui n'ont aucun abonnement : vanter à un abonné une
+   * fonction qu'il paie déjà, en l'envoyant vers la grille tarifaire,
    * serait une impasse.
    */
-  const hasRedSnap = planId === "essentiel" || planId === "ultimate";
+  const hasRedSnap = !!planId;
 
   // Échap ferme, et le défilement de la page est verrouillé tant que la
   // feuille est ouverte — sinon l'arrière-plan défile sous les doigts.

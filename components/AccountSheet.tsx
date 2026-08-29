@@ -11,13 +11,8 @@ import { createClient } from "@/lib/supabase/client";
  * statut, deux boutons, et la déconnexion en simple lien texte rouge — pas
  * un bouton plein, contrairement aux deux au-dessus.
  *
- * « Abonnement & packs » ouvre sur le modèle une feuille de recharge avec
- * des packs de crédits à l'unité (paiement unique, sans abonnement), une
- * ligne de monétisation que Bluminoo n'a pas : aucun produit Stripe pour ça
- * n'existe, et en créer un est une décision à prendre avec l'auteur, pas à
- * deviner ici. Le bouton mène donc à /account, qui porte déjà la vraie
- * gestion d'abonnement (portail Stripe, historique, crédits) — la
- * destination fonctionnelle la plus proche, pas une invention.
+ * « Subscription & packs » ouvre RechargeSheet, la même feuille que la
+ * pastille de crédits du studio — deux points d'entrée, une seule feuille.
  *
  * « Réglages » mène en fait vers une vraie page (/reglages sur le modèle,
  * /settings ici) — ma première vérification l'avait ratée en cliquant trop
@@ -26,11 +21,13 @@ import { createClient } from "@/lib/supabase/client";
 export default function AccountSheet({
   isOpen,
   onClose,
+  onOpenRecharge,
   email,
   planId,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  onOpenRecharge: () => void;
   email: string;
   planId: string | null;
 }) {
@@ -121,13 +118,16 @@ export default function AccountSheet({
             </span>
           </div>
 
-          <Link
-            href="/account"
-            onClick={onClose}
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onOpenRecharge();
+            }}
             className="flex h-14 w-full items-center justify-center rounded-3xl bg-white text-[17px] font-medium text-black transition active:opacity-70"
           >
             Subscription & packs
-          </Link>
+          </button>
 
           <Link
             href="/settings"

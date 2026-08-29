@@ -8,14 +8,15 @@ import { createClient } from "@/lib/supabase/server";
 import { PLANS, type PlanId } from "@/lib/stripe";
 
 const SUPPORT_EMAIL = "mathisvergne27@gmail.com";
-const PRIORITY_PLANS: readonly PlanId[] = ["essentiel", "ultimate"];
 
 /**
  * "Priority support" only really exists through what this link carries: on
- * Essential/Ultimate, the email subject and body flag the plan and the
- * account up front, for instant triage with no back-and-forth — that's the
- * one tangible difference from a free account, which keeps support access
- * but without this prioritization.
+ * any paid plan, the email subject and body flag the plan and the account
+ * up front, for instant triage with no back-and-forth — that's the one
+ * tangible difference from a free account, which keeps support access but
+ * without this prioritization. Lite/Pro/Max unlock the same features on the
+ * model (only credits and price differ), so all three qualify equally —
+ * there's no longer a mid/high tier to single out.
  */
 function buildSupportMailto(
   isPriority: boolean,
@@ -53,7 +54,7 @@ export default async function AccountPage() {
 
   const planId = profile?.plan as PlanId | null | undefined;
   const planName = planId ? PLANS[planId]?.name : null;
-  const isPriority = !!planId && PRIORITY_PLANS.includes(planId);
+  const isPriority = !!planId;
   const supportMailto = buildSupportMailto(
     isPriority,
     planName,

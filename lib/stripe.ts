@@ -21,51 +21,86 @@ export function isStripeConfigured(): boolean {
   return envValue("STRIPE_SECRET_KEY").length > 0;
 }
 
-export type PlanId = "decouverte" | "essentiel" | "ultimate";
-export type BillingPeriod = "monthly" | "annual";
+/**
+ * Structure relevée le 29/08 sur `GET /api/billing/catalogue` du produit de
+ * référence (prix Stripe réels, pas une estimation) : trois paliers
+ * d'abonnement hebdomadaire — Lite/Pro/Max — plus trois packs de crédits à
+ * l'unité, sans rapport avec l'ancienne grille mensuelle/annuelle
+ * Starter/Essential/Ultimate qu'ils remplacent.
+ *
+ * Les trois paliers d'abonnement débloquent les mêmes fonctions (Red Snap,
+ * résolution 4K) — vérifié en comparant les listes de fonctionnalités de
+ * Lite et Max sur le modèle, strictement identiques. Seuls les crédits et
+ * le prix diffèrent d'un palier à l'autre.
+ *
+ * Pas de repli vers l'ancienne grille EUR mensuelle/annuelle : contrairement
+ * à la bascule EUR→USD (même produit, autre devise), c'est ici toute la
+ * structure qui change. Le seul abonné existant est un compte de test de
+ * l'auteur.
+ */
+export type PlanId = "lite" | "pro" | "max";
 export type ImageResolution = "1K" | "2K" | "4K";
-
-type PriceInfo = { priceId: string; priceUsd: number };
 
 export const PLANS: Record<
   PlanId,
   {
     name: string;
-    monthly: PriceInfo;
-    annual: PriceInfo;
-    creditsPerMonth: number;
+    priceId: string;
+    /** Par semaine — ces abonnements se renouvellent chaque semaine, pas chaque mois. */
+    priceUsd: number;
+    creditsPerWeek: number;
     imageResolution: ImageResolution;
   }
 > = {
-  decouverte: {
-    name: "Starter",
-    monthly: { priceId: envValue("STRIPE_PRICE_DECOUVERTE"), priceUsd: 9.99 },
-    annual: {
-      priceId: envValue("STRIPE_PRICE_DECOUVERTE_ANNUEL"),
-      priceUsd: 95.9,
-    },
-    creditsPerMonth: 2000,
-    imageResolution: "1K",
-  },
-  essentiel: {
-    name: "Essential",
-    monthly: { priceId: envValue("STRIPE_PRICE_ESSENTIEL"), priceUsd: 19.99 },
-    annual: {
-      priceId: envValue("STRIPE_PRICE_ESSENTIEL_ANNUEL"),
-      priceUsd: 191.9,
-    },
-    creditsPerMonth: 5000,
-    imageResolution: "2K",
-  },
-  ultimate: {
-    name: "Ultimate",
-    monthly: { priceId: envValue("STRIPE_PRICE_ULTIMATE"), priceUsd: 39.99 },
-    annual: {
-      priceId: envValue("STRIPE_PRICE_ULTIMATE_ANNUEL"),
-      priceUsd: 383.9,
-    },
-    creditsPerMonth: 12000,
+  lite: {
+    name: "Lite",
+    priceId: envValue("STRIPE_PRICE_LITE"),
+    priceUsd: 4.99,
+    creditsPerWeek: 1000,
     imageResolution: "4K",
+  },
+  pro: {
+    name: "Pro",
+    priceId: envValue("STRIPE_PRICE_PRO"),
+    priceUsd: 9.99,
+    creditsPerWeek: 2250,
+    imageResolution: "4K",
+  },
+  max: {
+    name: "Max",
+    priceId: envValue("STRIPE_PRICE_MAX"),
+    priceUsd: 19.99,
+    creditsPerWeek: 5000,
+    imageResolution: "4K",
+  },
+};
+
+/**
+ * Packs de crédits à l'unité — paiement unique, sans abonnement, sans
+ * expiration. N'accordent aucune fonction (Red Snap, résolution) : ce sont
+ * des crédits, pas un palier. Un client sans abonnement qui en achète un
+ * reste sur la résolution et les droits de son statut d'origine.
+ */
+export type TopupId = "small" | "medium" | "large";
+
+export const TOPUPS: Record<
+  TopupId,
+  { priceId: string; priceUsd: number; credits: number }
+> = {
+  small: {
+    priceId: envValue("STRIPE_PRICE_TOPUP_SMALL"),
+    priceUsd: 7.99,
+    credits: 1000,
+  },
+  medium: {
+    priceId: envValue("STRIPE_PRICE_TOPUP_MEDIUM"),
+    priceUsd: 14.99,
+    credits: 2000,
+  },
+  large: {
+    priceId: envValue("STRIPE_PRICE_TOPUP_LARGE"),
+    priceUsd: 29.99,
+    credits: 4500,
   },
 };
 
@@ -73,80 +108,33 @@ export function formatPrice(amount: number): string {
   return `$${amount.toFixed(2)}`;
 }
 
-export function priceIdFor(planId: PlanId, period: BillingPeriod): string {
-  return PLANS[planId][period].priceId;
+export function priceIdFor(planId: PlanId): string {
+  return PLANS[planId].priceId;
 }
 
-// Facturation annuelle = un seul crédit d'un an d'un coup (le webhook ne
-// reçoit qu'un événement de renouvellement par an pour ces abonnements-là,
-// contre un par mois pour les abonnements mensuels).
-export function creditsFor(planId: PlanId, period: BillingPeriod): number {
-  const perMonth = PLANS[planId].creditsPerMonth;
-  return period === "annual" ? perMonth * 12 : perMonth;
+export function creditsFor(planId: PlanId): number {
+  return PLANS[planId].creditsPerWeek;
 }
 
-// Les abonnés souscrits en euros avant la bascule vers le marché anglophone
-// conservent leurs anciens price IDs. Sans ce repli, leur événement de
-// renouvellement ne serait plus associé à un palier et ils paieraient sans
-// recevoir de crédits.
-const LEGACY_PRICE_IDS: {
-  priceId: string;
-  planId: PlanId;
-  period: BillingPeriod;
-}[] = [
-  {
-    priceId: envValue("STRIPE_PRICE_LEGACY_DECOUVERTE"),
-    planId: "decouverte",
-    period: "monthly",
-  },
-  {
-    priceId: envValue("STRIPE_PRICE_LEGACY_DECOUVERTE_ANNUEL"),
-    planId: "decouverte",
-    period: "annual",
-  },
-  {
-    priceId: envValue("STRIPE_PRICE_LEGACY_ESSENTIEL"),
-    planId: "essentiel",
-    period: "monthly",
-  },
-  {
-    priceId: envValue("STRIPE_PRICE_LEGACY_ESSENTIEL_ANNUEL"),
-    planId: "essentiel",
-    period: "annual",
-  },
-  {
-    priceId: envValue("STRIPE_PRICE_LEGACY_ULTIMATE"),
-    planId: "ultimate",
-    period: "monthly",
-  },
-  {
-    priceId: envValue("STRIPE_PRICE_LEGACY_ULTIMATE_ANNUEL"),
-    planId: "ultimate",
-    period: "annual",
-  },
-].filter((entry) => entry.priceId.length > 0) as Array<{
-  priceId: string;
-  planId: PlanId;
-  period: BillingPeriod;
-}>;
-
-export function resolvePriceId(
+export function resolveSubscriptionPriceId(
   priceId: string | undefined,
-): { planId: PlanId; period: BillingPeriod; legacy?: boolean } | null {
+): PlanId | null {
   if (!priceId) return null;
-  for (const [id, plan] of Object.entries(PLANS) as [
-    PlanId,
-    (typeof PLANS)[PlanId],
-  ][]) {
-    if (plan.monthly.priceId === priceId) return { planId: id, period: "monthly" };
-    if (plan.annual.priceId === priceId) return { planId: id, period: "annual" };
+  for (const [id, plan] of Object.entries(PLANS) as [PlanId, (typeof PLANS)[PlanId]][]) {
+    if (plan.priceId === priceId) return id;
   }
-  // `legacy: true` signale une résolution via LEGACY_PRICE_IDS (abonnement en
-  // euros souscrit avant la bascule anglophone). Les appelants qui n'ont pas
-  // besoin de cette distinction (ex. le webhook, qui traite planId/period de
-  // la même façon dans les deux cas) peuvent l'ignorer sans risque.
-  const legacy = LEGACY_PRICE_IDS.find((entry) => entry.priceId === priceId);
-  if (legacy) return { planId: legacy.planId, period: legacy.period, legacy: true };
+  return null;
+}
 
+export function resolveTopupPriceId(
+  priceId: string | undefined,
+): TopupId | null {
+  if (!priceId) return null;
+  for (const [id, pack] of Object.entries(TOPUPS) as [
+    TopupId,
+    (typeof TOPUPS)[TopupId],
+  ][]) {
+    if (pack.priceId === priceId) return id;
+  }
   return null;
 }

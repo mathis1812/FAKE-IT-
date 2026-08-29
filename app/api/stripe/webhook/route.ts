@@ -3,12 +3,13 @@ import Stripe from "stripe";
 import {
   stripe,
   PLANS,
-  resolvePriceId,
+  TOPUPS,
+  resolveSubscriptionPriceId,
   creditsFor,
   envValue,
   isStripeConfigured,
-  type BillingPeriod,
 } from "@/lib/stripe";
+import { addCredits } from "@/lib/credits";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
@@ -64,9 +65,19 @@ export async function POST(req: NextRequest) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const userId = session.metadata?.supabase_user_id;
+
+    // Pack de crédits à l'unité : un ajout, jamais un remplacement — ne
+    // touche ni plan ni current_period_end, indépendants d'un achat ponctuel.
+    const topupId = session.metadata?.topup as keyof typeof TOPUPS | undefined;
+    if (topupId && TOPUPS[topupId] && userId) {
+      await addCredits(userId, TOPUPS[topupId].credits);
+    } else if (topupId) {
+      console.error(
+        `[stripe-webhook] checkout.session.completed missing/invalid topup metadata for event ${event.id}: userId=${userId}, topupId=${topupId}`,
+      );
+    }
+
     const planId = session.metadata?.plan as keyof typeof PLANS | undefined;
-    const period: BillingPeriod =
-      session.metadata?.period === "annual" ? "annual" : "monthly";
 
     if (userId && planId && PLANS[planId]) {
       const subscriptionId =
@@ -93,7 +104,7 @@ export async function POST(req: NextRequest) {
           stripe_customer_id: customerId ?? null,
           stripe_subscription_id: subscriptionId ?? null,
           plan: planId,
-          credits: creditsFor(planId, period),
+          credits: creditsFor(planId),
           current_period_end: currentPeriodEnd,
         })
         .eq("id", userId)
@@ -110,7 +121,7 @@ export async function POST(req: NextRequest) {
           `[stripe-webhook] ${event.type} update matched no rows for event ${event.id} (userId=${userId} may be stale)`,
         );
       }
-    } else {
+    } else if (!topupId) {
       console.error(
         `[stripe-webhook] checkout.session.completed missing/invalid metadata for event ${event.id}: userId=${userId}, planId=${planId}`,
       );
@@ -137,16 +148,15 @@ export async function POST(req: NextRequest) {
       if (subscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         const priceId = subscription.items.data[0]?.price.id;
-        const resolved = resolvePriceId(priceId);
+        const planId = resolveSubscriptionPriceId(priceId);
         const periodEnd = currentPeriodEndOf(subscription);
 
-        if (resolved) {
-          const { planId, period } = resolved;
+        if (planId) {
           const { data: updateData, error: updateError } = await supabase
             .from("profiles")
             .update({
               plan: planId,
-              credits: creditsFor(planId, period),
+              credits: creditsFor(planId),
               current_period_end: periodEnd
                 ? new Date(periodEnd * 1000).toISOString()
                 : null,
@@ -167,7 +177,7 @@ export async function POST(req: NextRequest) {
           }
         } else {
           console.error(
-            `[stripe-webhook] resolvePriceId not found for priceId=${priceId} (subscriptionId=${subscriptionId}, event ${event.id})`,
+            `[stripe-webhook] resolveSubscriptionPriceId not found for priceId=${priceId} (subscriptionId=${subscriptionId}, event ${event.id})`,
           );
         }
       }
@@ -182,17 +192,15 @@ export async function POST(req: NextRequest) {
 
     if (previousAttributes && "items" in previousAttributes) {
       const priceId = subscription.items.data[0]?.price.id;
-      const resolved = resolvePriceId(priceId);
+      const planId = resolveSubscriptionPriceId(priceId);
       const periodEnd = currentPeriodEndOf(subscription);
 
-      if (resolved) {
-        const { planId } = resolved;
-
+      if (planId) {
         // Un changement de palier ne touche JAMAIS la colonne `credits`.
         // Stripe ne facture qu'un prorata sur un changement d'items : si on
         // recréditait le forfait du palier cible ici, un aller-retour
-        // Ultimate → Découverte → Ultimate rechargerait 12 000 crédits pour
-        // quelques centimes, autant de fois que voulu. L'utilisateur obtient
+        // Max → Lite → Max rechargerait 5000 crédits pour quelques
+        // centimes, autant de fois que voulu. L'utilisateur obtient
         // immédiatement la résolution d'image de son nouveau palier (lue
         // depuis `plan`), et le forfait du nouveau palier lui arrive au
         // renouvellement suivant via `invoice.paid`.
@@ -220,7 +228,7 @@ export async function POST(req: NextRequest) {
         }
       } else {
         console.error(
-          `[stripe-webhook] resolvePriceId not found for priceId=${priceId} (subscriptionId=${subscription.id}, event ${event.id})`,
+          `[stripe-webhook] resolveSubscriptionPriceId not found for priceId=${priceId} (subscriptionId=${subscription.id}, event ${event.id})`,
         );
       }
     }

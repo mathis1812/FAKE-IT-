@@ -7,6 +7,7 @@ import { playRevealChime, unlockAudioContext } from "@/lib/reveal-chime";
 import ResultActions from "@/components/ResultActions";
 import AccountSheet from "@/components/AccountSheet";
 import MenuSheet from "@/components/MenuSheet";
+import RechargeSheet from "@/components/RechargeSheet";
 import TemplateShelf from "@/components/TemplateShelf";
 import { IMAGE_GENERATION_COST } from "@/lib/generation-cost";
 import { createClient } from "@/lib/supabase/client";
@@ -104,15 +105,17 @@ export default function Home() {
 
   /** Menu principal, en feuille remontant du bas. */
   const [menuOpen, setMenuOpen] = useState(false);
+  const [rechargeOpen, setRechargeOpen] = useState(false);
 
   /** Seul un compte connecté ET porteur d'un palier peut générer. */
   const isSubscribed = isLoggedIn && !!planId;
   /**
-   * Le Red Snap est un avantage des paliers Essentiel et Ultimate, annoncé
-   * comme tel sur /pricing. Un abonné Starter génère normalement mais n'y a
-   * pas accès : si cette condition saute, la grille tarifaire ment.
+   * Le Red Snap est un avantage de tous les paliers d'abonnement (Lite, Pro,
+   * Max débloquent les mêmes fonctions sur le modèle — seuls les crédits et
+   * le prix diffèrent). Un pack de crédits à l'unité n'y donne pas accès :
+   * ce n'est pas un palier.
    */
-  const hasRedSnap = planId === "essentiel" || planId === "ultimate";
+  const hasRedSnap = !!planId;
 
   const { elapsedSeconds, progressPercent } = useElapsedProgress(
     loading,
@@ -356,9 +359,11 @@ export default function Home() {
         </Link>
 
         {credits !== null && (
-          <Link
-            href="/pricing"
+          <button
+            type="button"
+            onClick={() => setRechargeOpen(true)}
             aria-label={`${credits} credits — see the plans`}
+            aria-haspopup="dialog"
             className="pointer-events-auto flex h-[42px] w-[92px] shrink-0 items-center justify-center gap-1 rounded-full border border-[#2d2d2d] bg-[#161616] text-white transition active:opacity-80"
           >
             <svg
@@ -380,7 +385,7 @@ export default function Home() {
             <span className="text-[15px] font-semibold tabular-nums">
               {credits.toLocaleString("en-US")}
             </span>
-          </Link>
+          </button>
         )}
       </header>
 
@@ -636,8 +641,14 @@ export default function Home() {
       <AccountSheet
         isOpen={accountOpen}
         onClose={() => setAccountOpen(false)}
+        onOpenRecharge={() => setRechargeOpen(true)}
         email={userEmail}
         planId={planId}
+      />
+
+      <RechargeSheet
+        isOpen={rechargeOpen}
+        onClose={() => setRechargeOpen(false)}
       />
     </div>
   );

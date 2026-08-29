@@ -38,3 +38,10 @@ export async function refundCredits(
     );
   }
 }
+
+/**
+ * Crédite un pack de crédits acheté à l'unité. Repose sur `refund_credits` :
+ * l'opération SQL est la même incrémentation atomique qu'un remboursement,
+ * inutile de dupliquer la fonction pour une différence de nom seulement.
+ */
+export const addCredits = refundCredits;

@@ -5,7 +5,7 @@ import {
   isStripeConfigured,
   PLANS,
   priceIdFor,
-  resolvePriceId,
+  resolveSubscriptionPriceId,
   type PlanId,
 } from "@/lib/stripe";
 
@@ -98,46 +98,21 @@ export async function POST(req: NextRequest) {
   try {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
     const currentItem = subscription.items.data[0];
-    const resolved = resolvePriceId(currentItem?.price.id);
-    if (!resolved) {
+    const currentPlanId = resolveSubscriptionPriceId(currentItem?.price.id);
+    if (!currentPlanId) {
       console.error(
         `Unrecognized Stripe price (${currentItem?.price.id}) for subscription ${subscriptionId} of user ${user.id}.`,
       );
       return NextResponse.json(
         {
           error:
-            "Unable to determine your current billing period. Contact support to change plans.",
+            "Unable to determine your current plan. Contact support to change plans.",
         },
         { status: 500 },
       );
     }
-    if (resolved.legacy) {
-      // Abonnement souscrit en euros avant la bascule anglophone : Stripe
-      // refuse de changer la devise d'un abonnement existant, donc on ne
-      // tente pas la mise à jour d'item. On ouvre le portail de facturation
-      // classique et on explique la marche à suivre (résilier puis se
-      // réabonner à la nouvelle grille) via le champ `message`.
-      try {
-        const session = await stripe.billingPortal.sessions.create({
-          customer: customerId,
-          return_url: `${origin}/account`,
-        });
 
-        return NextResponse.json({
-          url: session.url,
-          message:
-            "Your subscription is on our legacy euro pricing, so it can't be switched to a new plan directly. Cancel it from the billing portal, then subscribe again on the new pricing to change plans.",
-        });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Stripe error.";
-        return NextResponse.json(
-          { error: `Unable to open the billing portal. ${message}` },
-          { status: 502 },
-        );
-      }
-    }
-
-    const targetPriceId = priceIdFor(targetPlan, resolved.period);
+    const targetPriceId = priceIdFor(targetPlan);
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,

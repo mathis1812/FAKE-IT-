@@ -99,7 +99,8 @@ export default function TemplateGenerator({
 
   /** Seul un compte connecté ET porteur d'un palier peut générer. */
   const isSubscribed = isLoggedIn && !!planId;
-  const hasRedSnap = planId === "essentiel" || planId === "ultimate";
+  /** Tous les paliers d'abonnement débloquent le Red Snap sur le modèle. */
+  const hasRedSnap = !!planId;
 
   const exampleImage = variant?.exampleImage ?? template.exampleImage;
   const beforeImage = variant?.beforeImage ?? template.beforeImage;
