@@ -48,7 +48,7 @@ export default function RechargeSheet({
         role="dialog"
         aria-modal="true"
         aria-label="Recharge"
-        className="absolute inset-x-0 bottom-0 top-0 flex flex-col overflow-hidden rounded-t-[47px] bg-black pb-[max(8px,calc(env(safe-area-inset-bottom)-14px))] pt-[calc(env(safe-area-inset-top)+20px)]"
+        className="animate-sheet-up absolute inset-x-0 bottom-0 top-0 flex flex-col overflow-hidden rounded-t-[47px] bg-black pb-[max(8px,calc(env(safe-area-inset-bottom)-14px))] pt-[calc(env(safe-area-inset-top)+20px)]"
       >
         <span
           aria-hidden

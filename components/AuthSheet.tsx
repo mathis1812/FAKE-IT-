@@ -168,7 +168,7 @@ export default function AuthSheet() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="auth-sheet-title"
-        className="absolute inset-x-0 bottom-0 flex max-h-[calc(100dvh-env(safe-area-inset-top)-24px)] flex-col overflow-y-auto rounded-t-[47px] bg-black px-6 pb-[calc(env(safe-area-inset-bottom)+28px)] pt-3"
+        className="animate-sheet-up absolute inset-x-0 bottom-0 flex max-h-[calc(100dvh-env(safe-area-inset-top)-24px)] flex-col overflow-y-auto rounded-t-[47px] bg-black px-6 pb-[calc(env(safe-area-inset-bottom)+28px)] pt-3"
       >
         <span
           aria-hidden

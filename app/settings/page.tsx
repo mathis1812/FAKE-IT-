@@ -56,7 +56,7 @@ export default function SettingsPage() {
     <>
       <TemplateHeader backHref="/" title="Settings" />
 
-      <div className="flex min-h-dvh flex-col gap-3 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+76px)]">
+      <div className="animate-fade-up flex min-h-dvh flex-col gap-3 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+76px)]">
         <section className="flex flex-col gap-1 rounded-3xl border-[1.5px] border-white/15 bg-black/30 p-4">
           <span className="text-[13px] font-semibold uppercase tracking-wide text-white/40">
             Account

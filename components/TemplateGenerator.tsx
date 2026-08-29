@@ -280,7 +280,7 @@ export default function TemplateGenerator({
     // min-h plutôt que h-fixe avec overflow masqué : sur un petit écran ou un
     // gabarit aux consignes longues, un contenu qui dépasse doit rester
     // atteignable en défilant, jamais coupé sous le bouton Generate.
-    <div className="flex min-h-dvh flex-col px-4 pt-[calc(env(safe-area-inset-top)+76px)]">
+    <div className="animate-fade-up flex min-h-dvh flex-col px-4 pt-[calc(env(safe-area-inset-top)+76px)]">
       {/* Image au ratio 9/11, arrondie en haut seulement — c'est ainsi que le
           modèle la cadre, sans rien écrit dessus. `-mx-4` neutralise le
           `px-4` du conteneur pour qu'elle borde l'écran de part en part. */}

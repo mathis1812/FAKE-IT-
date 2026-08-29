@@ -129,12 +129,6 @@ export default function Home() {
    * ce qui évite de faire déborder la rangée sur un écran étroit.
    */
   const [barFocused, setBarFocused] = useState(false);
-  /**
-   * Sélecteur de résolution replié en une seule pastille, déplié au tap :
-   * c'est ce que fait le modèle, et c'est ce qui fait tenir la rangée
-   * d'outils sur un écran étroit — les trois crans côte à côte débordaient.
-   */
-  const [resOpen, setResOpen] = useState(false);
 
   /** Seul un compte connecté ET porteur d'un palier peut générer. */
   const isSubscribed = isLoggedIn && !!planId;
@@ -670,8 +664,14 @@ export default function Home() {
           {showTools && (
             <div
               onMouseDown={(e) => e.preventDefault()}
-              className="pointer-events-none absolute inset-x-[6.5px] bottom-[6.5px] z-20 flex items-center gap-1.5 [&>*]:pointer-events-auto"
+              className="animate-tools-in pointer-events-none absolute inset-x-[6.5px] bottom-[6.5px] z-20 flex items-center gap-1.5 [&>*]:pointer-events-auto"
             >
+              {/* Mode + résolution dans un conteneur défilable : sur un écran
+                  large tout tient, sur mobile ils glissent horizontalement
+                  (sans ascenseur visible) plutôt que de pousser le bouton
+                  d'envoi hors champ. min-w-0 autorise ce conteneur à passer
+                  sous la largeur de son contenu, condition du défilement. */}
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {/* Mode : Photo actif, Vidéo présent mais verrouillé — le
                   moteur image→vidéo n'est pas encore branché. */}
               <div className="flex h-12 shrink-0 items-center rounded-full bg-[#333333] p-1">
@@ -693,73 +693,52 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* Résolution : pastille repliée sur le cran choisi, menu au
-                  tap ouvert AU-DESSUS (absolu) — crans au-dessus du palier
-                  verrouillés (cadenas), 1K ouvert à tous. */}
-              <div className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setResOpen((v) => !v)}
-                  aria-haspopup="menu"
-                  aria-expanded={resOpen}
-                  aria-label={`Resolution: ${QUALITY_LABEL[quality]}`}
-                  className="flex h-12 items-center gap-1 rounded-full bg-[#333333] px-3.5 text-[14px] font-semibold tabular-nums text-white transition active:opacity-70"
-                >
-                  {QUALITY_LABEL[quality]}
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={resOpen ? "rotate-180 transition-transform" : "transition-transform"}>
-                    <path d="m6 9 6 6 6-6" />
-                  </svg>
-                </button>
-
-                {resOpen && (
-                  <div
-                    role="menu"
-                    className="absolute bottom-full left-0 mb-2 flex flex-col gap-1 rounded-2xl border border-white/10 bg-[#1a1a1a] p-1.5"
-                  >
-                    {IMAGE_QUALITIES.map((q) => {
-                      const open = isQualityOpen(q, plan);
-                      const active = quality === q;
-                      return (
-                        <button
-                          key={q}
-                          type="button"
-                          role="menuitemradio"
-                          aria-checked={active}
-                          disabled={!open}
-                          onClick={() => {
-                            setQuality(q);
-                            setResOpen(false);
-                          }}
-                          className={`flex h-10 items-center justify-between gap-3 rounded-full px-4 text-[14px] font-semibold tabular-nums transition-colors ${
-                            active
-                              ? "bg-primary text-white"
-                              : open
-                                ? "text-white active:opacity-70"
-                                : "text-white/30"
-                          }`}
-                        >
-                          {QUALITY_LABEL[q]}
-                          {!open && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                              <rect width="18" height="11" x="3" y="11" rx="2" />
-                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                            </svg>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+              {/* Résolution : segmenté inline 1K/2K/4K, comme le modèle. Le
+                  cran choisi est plein bleu ; ceux au-dessus du palier sont
+                  grisés avec un cadenas et désactivés ; 1K reste ouvert à
+                  tous. */}
+              <div className="flex h-12 shrink-0 items-center rounded-full bg-[#333333] p-1">
+                {IMAGE_QUALITIES.map((q) => {
+                  const open = isQualityOpen(q, plan);
+                  const active = quality === q;
+                  return (
+                    <button
+                      key={q}
+                      type="button"
+                      disabled={!open}
+                      onClick={() => setQuality(q)}
+                      aria-pressed={active}
+                      aria-label={`Resolution ${QUALITY_LABEL[q]}${open ? "" : " (locked)"}`}
+                      className={`flex h-10 items-center justify-center gap-0.5 rounded-full px-2.5 text-[14px] font-semibold tabular-nums transition-colors ${
+                        active
+                          ? "bg-primary text-white"
+                          : open
+                            ? "text-white active:opacity-70"
+                            : "text-white/30"
+                      }`}
+                    >
+                      {QUALITY_LABEL[q]}
+                      {!open && (
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <rect width="18" height="11" x="3" y="11" rx="2" />
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
               </div>
 
-              {/* Bouton d'envoi : coût (⚡ + nombre) puis le rond de la
-                  flèche. Deux cercles imbriqués comme sur le modèle. */}
+              {/* Bouton d'envoi, hors du conteneur défilable : toujours
+                  visible, épinglé à droite. Coût (⚡ + nombre) puis le rond de
+                  la flèche — deux cercles imbriqués comme sur le modèle. */}
               <button
                 type="button"
                 onClick={generate}
                 disabled={!canSubmit}
                 aria-label={`Generate for ${photoCost(quality)} credits`}
-                className="ml-auto flex h-12 shrink-0 items-center gap-1.5 rounded-full bg-[#333333] pl-3.5 pr-1.5 transition active:opacity-70 disabled:opacity-60"
+                className="flex h-12 shrink-0 items-center gap-1.5 rounded-full bg-[#333333] pl-3.5 pr-1.5 transition active:opacity-70 disabled:opacity-60"
               >
                 <span className="flex items-center gap-1 text-[15px] font-bold tabular-nums text-white">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

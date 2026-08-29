@@ -44,8 +44,21 @@ const config: Config = {
         "magic-reveal": "magic-reveal 0.9s cubic-bezier(0.16, 1, 0.3, 1) both",
         "marquee-left": "marquee-left 80s linear infinite",
         "marquee-right": "marquee-right 80s linear infinite",
+        // Easing relevé sur le modèle (cubic-bezier(0.22, 1, 0.36, 1),
+        // ~ easeOutQuint) : sa signature de mouvement, réutilisée pour le
+        // dépliage des outils de la barre et la montée des feuilles.
+        "tools-in": "tools-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "sheet-up": "sheet-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both",
       },
       keyframes: {
+        "tools-in": {
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "sheet-up": {
+          from: { transform: "translateY(100%)" },
+          to: { transform: "translateY(0)" },
+        },
         "fade-up": {
           from: { opacity: "0", transform: "translateY(14px)" },
           to: { opacity: "1", transform: "translateY(0)" },

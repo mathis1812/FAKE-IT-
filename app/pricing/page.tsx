@@ -11,7 +11,7 @@ export default function PricingPage() {
     <>
       <TemplateHeader backHref="/" title="Pricing" />
 
-      <div className="flex min-h-dvh flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+76px)]">
+      <div className="animate-fade-up flex min-h-dvh flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+76px)]">
         <PricingCatalogue />
       </div>
     </>
