@@ -10,10 +10,16 @@ import MenuSheet from "@/components/MenuSheet";
 import {
   asPlanId,
   hasRedSnap as planHasRedSnap,
+  IMAGE_QUALITIES,
+  isQualityOpen,
+  isVideoOpen,
+  maxQualityFor,
+  photoCost,
+  QUALITY_LABEL,
+  type ImageQuality,
 } from "@/lib/generation-tiers";
 import RechargeSheet from "@/components/RechargeSheet";
 import TemplateShelf from "@/components/TemplateShelf";
-import { IMAGE_GENERATION_COST } from "@/lib/generation-cost";
 import { createClient } from "@/lib/supabase/client";
 import {
   prepareAndUpload,
@@ -111,15 +117,34 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [rechargeOpen, setRechargeOpen] = useState(false);
 
+  /**
+   * Qualité d'image choisie. Elle démarre à la meilleure ouverte au palier
+   * (Pro par défaut en 2K sur le modèle) et se recale dès que le palier est
+   * connu — un visiteur non abonné reste sur 1K, seul cran non verrouillé.
+   */
+  const [quality, setQuality] = useState<ImageQuality>("normal");
+  /**
+   * La barre active fait apparaître les outils (mode + résolution) à la
+   * place du bouton Templates : sur le modèle les deux ne coexistent jamais,
+   * ce qui évite de faire déborder la rangée sur un écran étroit.
+   */
+  const [barFocused, setBarFocused] = useState(false);
+  /**
+   * Sélecteur de résolution replié en une seule pastille, déplié au tap :
+   * c'est ce que fait le modèle, et c'est ce qui fait tenir la rangée
+   * d'outils sur un écran étroit — les trois crans côte à côte débordaient.
+   */
+  const [resOpen, setResOpen] = useState(false);
+
   /** Seul un compte connecté ET porteur d'un palier peut générer. */
   const isSubscribed = isLoggedIn && !!planId;
+  const plan = asPlanId(planId);
   /**
-   * Le Red Snap est un avantage de tous les paliers d'abonnement (Lite, Pro,
-   * Max débloquent les mêmes fonctions sur le modèle — seuls les crédits et
-   * le prix diffèrent). Un pack de crédits à l'unité n'y donne pas accès :
-   * ce n'est pas un palier.
+   * Red Snap réservé aux paliers Pro et Max — voir lib/generation-tiers.ts.
+   * Un pack de crédits à l'unité n'y donne pas accès : ce n'est pas un palier.
    */
-  const hasRedSnap = planHasRedSnap(asPlanId(planId));
+  const hasRedSnap = planHasRedSnap(plan);
+  const videoOpen = isVideoOpen(plan);
 
   const { elapsedSeconds, progressPercent } = useElapsedProgress(
     loading,
@@ -152,6 +177,14 @@ export default function Home() {
   useEffect(() => {
     void refreshCredits();
   }, [refreshCredits]);
+
+  // Au chargement du palier, cale la qualité sur son maximum — le client
+  // veut le meilleur qu'il paie (Pro démarre en 2K sur le modèle). L'effet
+  // ne se redéclenche qu'au vrai changement de palier (chaîne stable), donc
+  // un choix manuel plus bas n'est pas écrasé à chaque rendu.
+  useEffect(() => {
+    setQuality(maxQualityFor(plan));
+  }, [plan]);
 
   useEffect(() => {
     const isMobileUserAgent = /Android|iPhone|iPad|iPod/i.test(
@@ -274,6 +307,7 @@ export default function Home() {
         body: JSON.stringify({
           sourceImageUrl,
           prompt: userNote.trim(),
+          quality,
           label: "Image generation",
         }),
       });
@@ -298,7 +332,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [prepared, userNote, isSubscribed, ensureUploaded, refreshCredits]);
+  }, [prepared, userNote, quality, isSubscribed, ensureUploaded, refreshCredits]);
 
 
   const reset = useCallback(() => {
@@ -312,6 +346,8 @@ export default function Home() {
 
   const canSubmit = !!prepared && !!userNote.trim() && !loading;
   const hasTemplates = TEMPLATE_CATEGORIES.length > 0;
+  /** Outils visibles dès que le champ est actif ou porte du texte. */
+  const showTools = barFocused || userNote.trim().length > 0;
 
 
   return (
@@ -563,73 +599,168 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Barre du bas : le champ de saisie porte lui-même son fond arrondi,
-          le bouton d'envoi étant posé par-dessus en absolu. Le rembourrage
-          droit du champ (pr-16) lui réserve la place — sans lui, le texte
-          passerait sous le bouton. */}
-      <div className="sticky bottom-0 mt-6 flex items-stretch gap-0 pb-2">
-        <button
-          type="button"
-          onClick={() =>
-            shelfRef.current?.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            })
-          }
-          disabled={!hasTemplates}
-          title={hasTemplates ? undefined : "Templates are coming soon"}
-          className="mr-2 flex h-[64px] w-max shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-5 text-[15px] font-semibold text-white transition active:opacity-70 disabled:opacity-40"
-        >
-          Templates
-        </button>
-
+      {/* Barre du bas : le champ porte son fond arrondi et une rangée
+          d'outils épinglée en bas. Le rembourrage bas du textarea (pb-16)
+          réserve la place de cette rangée — sans lui, le texte passerait
+          dessous. */}
+      <div className="sticky bottom-0 mt-6 pb-2">
         <div className="relative w-full">
           <textarea
             rows={1}
             value={userNote}
             onChange={(e) => setUserNote(e.target.value)}
+            onFocus={() => setBarFocused(true)}
+            onBlur={() => setBarFocused(false)}
             placeholder={PROMPT_PLACEHOLDER}
             aria-label="Describe the scene you want"
-            className="relative z-10 block min-h-[64px] w-full resize-none overflow-hidden rounded-3xl bg-white/[0.07] px-5 pb-[19px] pr-16 pt-[18px] text-[17px] font-medium leading-6 text-white caret-white outline-none placeholder:text-white/35"
+            className="relative z-10 block min-h-[112px] w-full resize-none overflow-hidden rounded-3xl bg-white/[0.07] px-5 pb-16 pt-[18px] text-[17px] font-medium leading-6 text-white caret-white outline-none placeholder:text-white/35"
           />
-          {/* Deux cercles imbriqués, relevés sur le modèle : le cercle
-              extérieur (#333333, padding 6px) n'est pas décoratif, c'est
-              lui qui donne au bouton sa taille réelle — le cercle intérieur
-              (white/15) ne porte que l'icône. Un seul cercle, comme avant,
-              rendait le bouton visiblement plus petit et plus transparent. */}
-          <button
-            type="button"
-            onClick={generate}
-            disabled={!canSubmit}
-            aria-label="Generate"
-            className="absolute right-1.5 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-[#333333] p-1.5 transition active:opacity-70 disabled:opacity-60"
+
+          {/* Rangée d'outils épinglée au bas du champ. pointer-events-none
+              sur le conteneur pour ne pas voler le focus au textarea ; chaque
+              enfant le réactive. */}
+          <div
+            onMouseDown={(e) => e.preventDefault()}
+            className="pointer-events-none absolute inset-x-[6.5px] bottom-[6.5px] z-20 flex items-center gap-1.5 [&>*]:pointer-events-auto"
           >
-            <span className="flex h-full w-full items-center justify-center rounded-full bg-white/15 text-white">
-              <svg
-                aria-hidden
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            {showTools ? (
+              <>
+                {/* Mode : Photo actif, Vidéo présent mais verrouillé — le
+                    moteur image→vidéo n'est pas encore branché. */}
+                <div className="flex h-12 shrink-0 items-center rounded-full bg-[#333333] p-1">
+                  <span className="flex h-10 items-center justify-center rounded-full bg-primary px-4 text-[14px] font-semibold text-white">
+                    Photo
+                  </span>
+                  <button
+                    type="button"
+                    disabled
+                    title="Video is coming soon"
+                    aria-label="Video (coming soon)"
+                    className="flex h-10 items-center justify-center gap-1 rounded-full px-3 text-[14px] font-semibold text-white/40"
+                  >
+                    Video
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <rect width="14" height="10" x="5" y="11" rx="2" />
+                      <path d="M8 11V7a4 4 0 0 1 8 0" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Résolution : pastille repliée sur le cran choisi. Au tap,
+                    un menu s'ouvre AU-DESSUS (absolu) — les crans au-dessus du
+                    palier y sont verrouillés (cadenas), 1K reste ouvert à
+                    tous. L'ouvrir au-dessus évite de faire déborder la
+                    rangée. */}
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setResOpen((v) => !v)}
+                    aria-haspopup="menu"
+                    aria-expanded={resOpen}
+                    aria-label={`Resolution: ${QUALITY_LABEL[quality]}`}
+                    className="flex h-12 items-center gap-1 rounded-full bg-[#333333] px-3.5 text-[14px] font-semibold tabular-nums text-white transition active:opacity-70"
+                  >
+                    {QUALITY_LABEL[quality]}
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={resOpen ? "rotate-180 transition-transform" : "transition-transform"}>
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </button>
+
+                  {resOpen && (
+                    <div
+                      role="menu"
+                      className="absolute bottom-full left-0 mb-2 flex flex-col gap-1 rounded-2xl border border-white/10 bg-[#1a1a1a] p-1.5"
+                    >
+                      {IMAGE_QUALITIES.map((q) => {
+                        const open = isQualityOpen(q, plan);
+                        const active = quality === q;
+                        return (
+                          <button
+                            key={q}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={active}
+                            disabled={!open}
+                            onClick={() => {
+                              setQuality(q);
+                              setResOpen(false);
+                            }}
+                            className={`flex h-10 items-center justify-between gap-3 rounded-full px-4 text-[14px] font-semibold tabular-nums transition-colors ${
+                              active
+                                ? "bg-primary text-white"
+                                : open
+                                  ? "text-white active:opacity-70"
+                                  : "text-white/30"
+                            }`}
+                          >
+                            {QUALITY_LABEL[q]}
+                            {!open && (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                                <rect width="18" height="11" x="3" y="11" rx="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                              </svg>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() =>
+                  shelfRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  })
+                }
+                disabled={!hasTemplates}
+                title={hasTemplates ? undefined : "Templates are coming soon"}
+                className="flex h-12 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-5 text-[15px] font-semibold text-white transition active:opacity-70 disabled:opacity-40"
               >
-                <path d="M12 19V5m-7 7 7-7 7 7" />
-              </svg>
-            </span>
-          </button>
+                Templates
+              </button>
+            )}
+
+            {/* Bouton d'envoi, coût annoncé dessus (⚡ + nombre) puis le rond
+                de la flèche — le client sait ce qu'il dépense au moment où il
+                le dépense. Deux cercles imbriqués pour la flèche, comme sur
+                le modèle : le rond extérieur donne la taille, l'intérieur ne
+                porte que l'icône. */}
+            <button
+              type="button"
+              onClick={generate}
+              disabled={!canSubmit}
+              aria-label={`Generate for ${photoCost(quality)} credits`}
+              className="ml-auto flex h-12 shrink-0 items-center gap-1.5 rounded-full bg-[#333333] pl-3.5 pr-1.5 transition active:opacity-70 disabled:opacity-60"
+            >
+              <span className="flex items-center gap-1 text-[15px] font-bold tabular-nums text-white">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+                </svg>
+                {photoCost(quality)}
+              </span>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white">
+                <svg
+                  aria-hidden
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 19V5m-7 7 7-7 7 7" />
+                </svg>
+              </span>
+            </button>
+          </div>
         </div>
       </div>
-
-      {/* Le coût est annoncé avant l'envoi, ici comme sur les pages de
-          gabarit : le client sait ce qu'il dépense au moment où il le
-          dépense. */}
-      <p className="pb-2 text-center text-[12px] text-white/30">
-        <span className="tabular-nums">{IMAGE_GENERATION_COST}</span> credits
-        per generation
-      </p>
 
       <div ref={shelfRef}>
         <TemplateShelf />

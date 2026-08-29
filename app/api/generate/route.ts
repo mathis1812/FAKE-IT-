@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import {
-  IMAGE_GENERATION_COST,
-  refundCredits,
-  spendCredits,
-} from "@/lib/credits";
+import { refundCredits, spendCredits } from "@/lib/credits";
 import { persistImageBytes } from "@/lib/gallery-server";
 import { generateGeminiImage } from "@/lib/gemini-jobs";
 import { buildPlacePrompt, buildScenePrompt } from "@/lib/place-prompt";
-import { PLANS, type PlanId } from "@/lib/stripe";
+import {
+  asPlanId,
+  isQualityOpen,
+  photoCost,
+  QUALITY_LABEL,
+  TEMPLATE_QUALITY,
+  type ImageQuality,
+} from "@/lib/generation-tiers";
 import { resolveTemplatePrompt } from "@/lib/templates";
 import {
   DISALLOWED_ASSET_URL_MESSAGE,
@@ -40,6 +43,8 @@ type GenerateBody = {
    */
   templateSlug?: string;
   variantSlug?: string;
+  /** Qualité demandée par le studio libre : "normal" | "high" | "max". */
+  quality?: string;
 };
 
 export async function POST(req: NextRequest) {
@@ -170,12 +175,36 @@ export async function POST(req: NextRequest) {
       profileError.message,
     );
   }
-  const planId = profile?.plan as PlanId | null | undefined;
-  const resolution = planId ? PLANS[planId]?.imageResolution ?? "1K" : "1K";
+  const planId = asPlanId(profile?.plan as string | null | undefined);
+
+  // Qualité et coût. Un gabarit force le 2K quel que soit le palier (comme le
+  // modèle, CRAN_TEMPLATE = "high") : son rendu de référence doit sortir au
+  // même niveau pour tous. Le studio libre suit la qualité demandée — mais
+  // elle est VALIDÉE ici contre le palier. L'UI verrouille déjà les crans
+  // interdits ; ce contrôle rattrape une requête falsifiée, sinon un client
+  // obtiendrait le 4K sans le payer en palier.
+  const isTemplateRequest =
+    typeof templateSlug === "string" && templateSlug.trim().length > 0;
+  let quality: ImageQuality;
+  if (isTemplateRequest) {
+    quality = TEMPLATE_QUALITY;
+  } else {
+    const requested = body.quality;
+    quality =
+      requested === "high" || requested === "max" ? requested : "normal";
+    if (!isQualityOpen(quality, planId)) {
+      return NextResponse.json(
+        { error: "This resolution isn't included in your plan." },
+        { status: 403 },
+      );
+    }
+  }
+  const resolution = QUALITY_LABEL[quality];
+  const cost = photoCost(quality);
 
   let hasCredits: boolean;
   try {
-    hasCredits = await spendCredits(user.id, IMAGE_GENERATION_COST);
+    hasCredits = await spendCredits(user.id, cost);
   } catch (err) {
     console.error("Failed to check credits:", err);
     return NextResponse.json(
@@ -199,11 +228,9 @@ export async function POST(req: NextRequest) {
   // reconnaissable », qui contredirait un remplacement d'identité — cette
   // ligne n'a de sens que pour la description libre du studio, écrite sans
   // ce socle.
-  const isTemplatePrompt = typeof templateSlug === "string" && templateSlug.trim();
-
   const imageInput = [sourceImageUrl];
   let finalPrompt: string;
-  if (isTemplatePrompt) {
+  if (isTemplateRequest) {
     finalPrompt = (prompt as string).trim();
   } else if (placeUrls.length > 0) {
     imageInput.push(...placeUrls);
@@ -243,7 +270,7 @@ export async function POST(req: NextRequest) {
     bytes = generated.bytes;
     mimeType = generated.mimeType;
   } catch (err) {
-    await refundCredits(user.id, IMAGE_GENERATION_COST);
+    await refundCredits(user.id, cost);
     const message =
       err instanceof Error
         ? err.message
@@ -268,7 +295,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ imageUrl });
   } catch (err) {
     console.error("Failed to save the generated image:", err);
-    await refundCredits(user.id, IMAGE_GENERATION_COST);
+    await refundCredits(user.id, cost);
     return NextResponse.json(
       {
         error:

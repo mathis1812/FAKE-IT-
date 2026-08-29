@@ -22,7 +22,7 @@ const PLAN_ORDER: PlanId[] = ["lite", "pro", "max"];
 
 export const IMAGE_QUALITIES: ImageQuality[] = ["normal", "high", "max"];
 
-export const QUALITY_LABEL: Record<ImageQuality, string> = {
+export const QUALITY_LABEL: Record<ImageQuality, "1K" | "2K" | "4K"> = {
   normal: "1K",
   high: "2K",
   max: "4K",
