@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { openAuthSheet } from "@/components/AuthSheet";
+import { hasOwnHeader } from "@/lib/app-shell-routes";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -39,10 +40,11 @@ export default function SiteHeader() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Le studio porte sa propre barre supérieure — identité centrée, crédits à
-  // droite — et les écrans de gabarit la leur, avec retour et titre. Sans ce
-  // retrait, ces pages afficheraient deux en-têtes superposés.
-  if (pathname === "/" || pathname.startsWith("/templates")) return null;
+  // Le studio porte sa propre barre supérieure, et TemplateHeader la sienne
+  // sur les gabarits, la galerie et les réglages. Sans ce retrait, ces pages
+  // afficheraient deux en-têtes superposés — bug réel trouvé en testant
+  // /settings, où lui seul manquait à la liste.
+  if (hasOwnHeader(pathname)) return null;
 
   return (
     <header className="flex items-center justify-between px-4 pt-3 sm:px-6">

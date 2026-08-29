@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Fragment } from "react";
+import { hasOwnHeader } from "@/lib/app-shell-routes";
 
 /**
  * Liens produit rapatriés ici le 26/08, quand l'en-tête a été réduit à la
@@ -28,9 +29,9 @@ const LEGAL_LINKS = [
  */
 export default function SiteFooter() {
   const pathname = usePathname();
-  // Le studio et les écrans de gabarit sont un shell plein écran, sans pied
-  // de page — même retrait que SiteHeader, pour la même raison.
-  if (pathname === "/" || pathname.startsWith("/templates")) return null;
+  // Le studio et les écrans à en-tête fixe sont un shell plein écran, sans
+  // pied de page — même retrait que SiteHeader, pour la même raison.
+  if (hasOwnHeader(pathname)) return null;
 
   const links = [...PRODUCT_LINKS, ...LEGAL_LINKS];
 

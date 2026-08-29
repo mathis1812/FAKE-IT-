@@ -19,11 +19,9 @@ import { createClient } from "@/lib/supabase/client";
  * gestion d'abonnement (portail Stripe, historique, crédits) — la
  * destination fonctionnelle la plus proche, pas une invention.
  *
- * « Réglages » ne mène nulle part non plus sur le modèle lui-même : cliqué
- * en direct sur usenoway.com, il ne se passe rien — aucun écran de réglages
- * n'existe encore côté source. Il reste donc désactivé ici, même traitement
- * que le bouton Templates du studio quand le catalogue est vide : pas de
- * contenu inventé pour remplir une case.
+ * « Réglages » mène en fait vers une vraie page (/reglages sur le modèle,
+ * /settings ici) — ma première vérification l'avait ratée en cliquant trop
+ * vite sans attendre la navigation. Voir app/settings/page.tsx.
  */
 export default function AccountSheet({
   isOpen,
@@ -131,14 +129,13 @@ export default function AccountSheet({
             Subscription & packs
           </Link>
 
-          <button
-            type="button"
-            disabled
-            title="Not available yet"
-            className="flex h-14 w-full items-center justify-center rounded-3xl border-[1.5px] border-white/15 bg-black/30 text-[17px] font-medium text-white transition active:opacity-70 disabled:opacity-40"
+          <Link
+            href="/settings"
+            onClick={onClose}
+            className="flex h-14 w-full items-center justify-center rounded-3xl border-[1.5px] border-white/15 bg-black/30 text-[17px] font-medium text-white transition active:opacity-70"
           >
             Settings
-          </button>
+          </Link>
 
           <button
             type="button"
