@@ -599,12 +599,37 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Barre du bas : le champ porte son fond arrondi et une rangée
-          d'outils épinglée en bas. Le rembourrage bas du textarea (pb-16)
-          réserve la place de cette rangée — sans lui, le texte passerait
-          dessous. */}
-      <div className="sticky bottom-0 mt-6 pb-2">
-        <div className="relative w-full">
+      {/* Barre du bas, deux états comme le modèle :
+          - replié (champ vide et sans focus) : le bouton Templates est un
+            pavé séparé à gauche, le champ est court, sa flèche seule au
+            centre-droit ;
+          - déplié (focus ou texte) : Templates s'efface, le champ occupe
+            toute la largeur et grandit, la rangée d'outils (mode +
+            résolution) apparaît en bas à gauche, le coût rejoint la flèche.
+          Le textarea est le MÊME élément dans les deux états (seules ses
+          classes changent) : le remonter ferait perdre le focus au moment
+          où le clic déclenche justement la bascule. */}
+      <div className="sticky bottom-0 mt-6 flex items-end gap-2 pb-2">
+        {/* Templates : masqué (pas démonté) quand les outils sont là — un
+            sibling caché ne remonte pas le textarea. */}
+        <button
+          type="button"
+          onClick={() =>
+            shelfRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            })
+          }
+          disabled={!hasTemplates}
+          title={hasTemplates ? undefined : "Templates are coming soon"}
+          className={`h-16 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-5 text-[15px] font-semibold text-white transition active:opacity-70 disabled:opacity-40 ${
+            showTools ? "hidden" : "flex"
+          }`}
+        >
+          Templates
+        </button>
+
+        <div className="relative flex-1">
           <textarea
             rows={1}
             value={userNote}
@@ -613,152 +638,143 @@ export default function Home() {
             onBlur={() => setBarFocused(false)}
             placeholder={PROMPT_PLACEHOLDER}
             aria-label="Describe the scene you want"
-            className="relative z-10 block min-h-[112px] w-full resize-none overflow-hidden rounded-3xl bg-white/[0.07] px-5 pb-16 pt-[18px] text-[17px] font-medium leading-6 text-white caret-white outline-none placeholder:text-white/35"
+            className={`relative z-10 block w-full resize-none overflow-hidden rounded-3xl bg-white/[0.07] px-5 text-[17px] font-medium leading-6 text-white caret-white outline-none placeholder:text-white/35 ${
+              showTools
+                ? "min-h-[112px] pb-16 pt-[18px]"
+                : "min-h-16 pb-[19px] pr-16 pt-[18px]"
+            }`}
           />
 
-          {/* Rangée d'outils épinglée au bas du champ. pointer-events-none
-              sur le conteneur pour ne pas voler le focus au textarea ; chaque
-              enfant le réactive. */}
-          <div
-            onMouseDown={(e) => e.preventDefault()}
-            className="pointer-events-none absolute inset-x-[6.5px] bottom-[6.5px] z-20 flex items-center gap-1.5 [&>*]:pointer-events-auto"
-          >
-            {showTools ? (
-              <>
-                {/* Mode : Photo actif, Vidéo présent mais verrouillé — le
-                    moteur image→vidéo n'est pas encore branché. */}
-                <div className="flex h-12 shrink-0 items-center rounded-full bg-[#333333] p-1">
-                  <span className="flex h-10 items-center justify-center rounded-full bg-primary px-4 text-[14px] font-semibold text-white">
-                    Photo
-                  </span>
-                  <button
-                    type="button"
-                    disabled
-                    title="Video is coming soon"
-                    aria-label="Video (coming soon)"
-                    className="flex h-10 items-center justify-center gap-1 rounded-full px-3 text-[14px] font-semibold text-white/40"
-                  >
-                    Video
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <rect width="14" height="10" x="5" y="11" rx="2" />
-                      <path d="M8 11V7a4 4 0 0 1 8 0" />
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Résolution : pastille repliée sur le cran choisi. Au tap,
-                    un menu s'ouvre AU-DESSUS (absolu) — les crans au-dessus du
-                    palier y sont verrouillés (cadenas), 1K reste ouvert à
-                    tous. L'ouvrir au-dessus évite de faire déborder la
-                    rangée. */}
-                <div className="relative shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setResOpen((v) => !v)}
-                    aria-haspopup="menu"
-                    aria-expanded={resOpen}
-                    aria-label={`Resolution: ${QUALITY_LABEL[quality]}`}
-                    className="flex h-12 items-center gap-1 rounded-full bg-[#333333] px-3.5 text-[14px] font-semibold tabular-nums text-white transition active:opacity-70"
-                  >
-                    {QUALITY_LABEL[quality]}
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={resOpen ? "rotate-180 transition-transform" : "transition-transform"}>
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </button>
-
-                  {resOpen && (
-                    <div
-                      role="menu"
-                      className="absolute bottom-full left-0 mb-2 flex flex-col gap-1 rounded-2xl border border-white/10 bg-[#1a1a1a] p-1.5"
-                    >
-                      {IMAGE_QUALITIES.map((q) => {
-                        const open = isQualityOpen(q, plan);
-                        const active = quality === q;
-                        return (
-                          <button
-                            key={q}
-                            type="button"
-                            role="menuitemradio"
-                            aria-checked={active}
-                            disabled={!open}
-                            onClick={() => {
-                              setQuality(q);
-                              setResOpen(false);
-                            }}
-                            className={`flex h-10 items-center justify-between gap-3 rounded-full px-4 text-[14px] font-semibold tabular-nums transition-colors ${
-                              active
-                                ? "bg-primary text-white"
-                                : open
-                                  ? "text-white active:opacity-70"
-                                  : "text-white/30"
-                            }`}
-                          >
-                            {QUALITY_LABEL[q]}
-                            {!open && (
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                                <rect width="18" height="11" x="3" y="11" rx="2" />
-                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                              </svg>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={() =>
-                  shelfRef.current?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                  })
-                }
-                disabled={!hasTemplates}
-                title={hasTemplates ? undefined : "Templates are coming soon"}
-                className="flex h-12 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-5 text-[15px] font-semibold text-white transition active:opacity-70 disabled:opacity-40"
-              >
-                Templates
-              </button>
-            )}
-
-            {/* Bouton d'envoi, coût annoncé dessus (⚡ + nombre) puis le rond
-                de la flèche — le client sait ce qu'il dépense au moment où il
-                le dépense. Deux cercles imbriqués pour la flèche, comme sur
-                le modèle : le rond extérieur donne la taille, l'intérieur ne
-                porte que l'icône. */}
+          {/* État replié : la flèche seule, centrée à droite, sans coût. */}
+          {!showTools && (
             <button
               type="button"
               onClick={generate}
               disabled={!canSubmit}
               aria-label={`Generate for ${photoCost(quality)} credits`}
-              className="ml-auto flex h-12 shrink-0 items-center gap-1.5 rounded-full bg-[#333333] pl-3.5 pr-1.5 transition active:opacity-70 disabled:opacity-60"
+              className="absolute right-1.5 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-[#333333] p-1.5 transition active:opacity-70 disabled:opacity-60"
             >
-              <span className="flex items-center gap-1 text-[15px] font-bold tabular-nums text-white">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
-                </svg>
-                {photoCost(quality)}
-              </span>
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white">
-                <svg
-                  aria-hidden
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+              <span className="flex h-full w-full items-center justify-center rounded-full bg-white/15 text-white">
+                <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 19V5m-7 7 7-7 7 7" />
                 </svg>
               </span>
             </button>
-          </div>
+          )}
+
+          {/* État déplié : rangée d'outils épinglée en bas. pointer-events-none
+              sur le conteneur pour ne pas voler le focus au textarea ;
+              onMouseDown preventDefault pour qu'un clic sur un outil ne le
+              fasse pas perdre le focus (sinon la rangée se replierait avant
+              le clic). Chaque enfant réactive le pointeur. */}
+          {showTools && (
+            <div
+              onMouseDown={(e) => e.preventDefault()}
+              className="pointer-events-none absolute inset-x-[6.5px] bottom-[6.5px] z-20 flex items-center gap-1.5 [&>*]:pointer-events-auto"
+            >
+              {/* Mode : Photo actif, Vidéo présent mais verrouillé — le
+                  moteur image→vidéo n'est pas encore branché. */}
+              <div className="flex h-12 shrink-0 items-center rounded-full bg-[#333333] p-1">
+                <span className="flex h-10 items-center justify-center rounded-full bg-primary px-4 text-[14px] font-semibold text-white">
+                  Photo
+                </span>
+                <button
+                  type="button"
+                  disabled
+                  title="Video is coming soon"
+                  aria-label="Video (coming soon)"
+                  className="flex h-10 items-center justify-center gap-1 rounded-full px-3 text-[14px] font-semibold text-white/40"
+                >
+                  Video
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <rect width="14" height="10" x="5" y="11" rx="2" />
+                    <path d="M8 11V7a4 4 0 0 1 8 0" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Résolution : pastille repliée sur le cran choisi, menu au
+                  tap ouvert AU-DESSUS (absolu) — crans au-dessus du palier
+                  verrouillés (cadenas), 1K ouvert à tous. */}
+              <div className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setResOpen((v) => !v)}
+                  aria-haspopup="menu"
+                  aria-expanded={resOpen}
+                  aria-label={`Resolution: ${QUALITY_LABEL[quality]}`}
+                  className="flex h-12 items-center gap-1 rounded-full bg-[#333333] px-3.5 text-[14px] font-semibold tabular-nums text-white transition active:opacity-70"
+                >
+                  {QUALITY_LABEL[quality]}
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={resOpen ? "rotate-180 transition-transform" : "transition-transform"}>
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+
+                {resOpen && (
+                  <div
+                    role="menu"
+                    className="absolute bottom-full left-0 mb-2 flex flex-col gap-1 rounded-2xl border border-white/10 bg-[#1a1a1a] p-1.5"
+                  >
+                    {IMAGE_QUALITIES.map((q) => {
+                      const open = isQualityOpen(q, plan);
+                      const active = quality === q;
+                      return (
+                        <button
+                          key={q}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={active}
+                          disabled={!open}
+                          onClick={() => {
+                            setQuality(q);
+                            setResOpen(false);
+                          }}
+                          className={`flex h-10 items-center justify-between gap-3 rounded-full px-4 text-[14px] font-semibold tabular-nums transition-colors ${
+                            active
+                              ? "bg-primary text-white"
+                              : open
+                                ? "text-white active:opacity-70"
+                                : "text-white/30"
+                          }`}
+                        >
+                          {QUALITY_LABEL[q]}
+                          {!open && (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                              <rect width="18" height="11" x="3" y="11" rx="2" />
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Bouton d'envoi : coût (⚡ + nombre) puis le rond de la
+                  flèche. Deux cercles imbriqués comme sur le modèle. */}
+              <button
+                type="button"
+                onClick={generate}
+                disabled={!canSubmit}
+                aria-label={`Generate for ${photoCost(quality)} credits`}
+                className="ml-auto flex h-12 shrink-0 items-center gap-1.5 rounded-full bg-[#333333] pl-3.5 pr-1.5 transition active:opacity-70 disabled:opacity-60"
+              >
+                <span className="flex items-center gap-1 text-[15px] font-bold tabular-nums text-white">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+                  </svg>
+                  {photoCost(quality)}
+                </span>
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white">
+                  <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 19V5m-7 7 7-7 7 7" />
+                  </svg>
+                </span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
