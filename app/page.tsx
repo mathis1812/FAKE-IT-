@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { SparkleFrame, RevealBurst } from "@/components/MagicSparkles";
 import { playRevealChime, unlockAudioContext } from "@/lib/reveal-chime";
 import ResultActions from "@/components/ResultActions";
+import AccountSheet from "@/components/AccountSheet";
 import MenuSheet from "@/components/MenuSheet";
 import TemplateShelf from "@/components/TemplateShelf";
 import { IMAGE_GENERATION_COST } from "@/lib/generation-cost";
@@ -88,6 +89,8 @@ export default function Home() {
   const [planId, setPlanId] = useState<string | null>(null);
   /** Initiale affichée dans la pastille de compte, tirée de l'e-mail. */
   const [accountInitial, setAccountInitial] = useState("?");
+  const [userEmail, setUserEmail] = useState("");
+  const [accountOpen, setAccountOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const shelfRef = useRef<HTMLDivElement>(null);
 
@@ -125,9 +128,11 @@ export default function Home() {
     if (!user) {
       setCredits(null);
       setAccountInitial("?");
+      setUserEmail("");
       return;
     }
     setAccountInitial((user.email?.trim().charAt(0) || "?").toUpperCase());
+    setUserEmail(user.email ?? "");
     const { data } = await supabase
       .from("profiles")
       .select("credits, plan")
@@ -331,13 +336,16 @@ export default function Home() {
               <path d="M4 7h16M4 12h16M4 17h16" />
             </svg>
           </button>
-          <Link
-            href="/account"
+          <button
+            type="button"
+            onClick={() => setAccountOpen(true)}
             aria-label="Your account"
+            aria-haspopup="dialog"
+            aria-expanded={accountOpen}
             className="pointer-events-auto flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full border border-[#2d2d2d] bg-[#161616] text-[15px] font-semibold text-white transition active:opacity-80"
           >
             {accountInitial}
-          </Link>
+          </button>
         </div>
 
         <Link
@@ -622,6 +630,13 @@ export default function Home() {
         isOpen={menuOpen}
         onClose={() => setMenuOpen(false)}
         credits={credits}
+        planId={planId}
+      />
+
+      <AccountSheet
+        isOpen={accountOpen}
+        onClose={() => setAccountOpen(false)}
+        email={userEmail}
         planId={planId}
       />
     </div>
