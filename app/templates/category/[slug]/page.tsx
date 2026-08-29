@@ -34,7 +34,7 @@ export default function TemplateCategoryPage({ params }: Props) {
     <>
       <TemplateHeader backHref="/templates" title={category.title} />
 
-      <div className="mx-auto w-full max-w-[900px] px-4 pb-16">
+      <div className="mx-auto w-full max-w-[900px] px-4 pb-16 pt-[calc(env(safe-area-inset-top)+76px)]">
         <div className="grid grid-cols-2 gap-3">
           {category.templates.map((template) => (
             <Link

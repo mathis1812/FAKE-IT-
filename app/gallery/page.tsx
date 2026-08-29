@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import GalleryGrid from "@/components/GalleryGrid";
-import PlaceholderSection from "@/components/PlaceholderSection";
+import TemplateHeader from "@/components/TemplateHeader";
 import { createClient } from "@/lib/supabase/server";
 
 type GalleryEntry = {
@@ -11,6 +11,12 @@ type GalleryEntry = {
   created_at: string;
 };
 
+/**
+ * Reconstruite le 29/08 sur le même en-tête partagé que les écrans de
+ * gabarit : relevé en lisant le DOM de /galerie sur le produit de référence.
+ * `PlaceholderSection` (fond glassy violet, pré-refonte) n'y a plus sa
+ * place — laissé intact ailleurs, faute d'autre appelant à corriger.
+ */
 export default async function GalleryPage() {
   const supabase = createClient();
   const {
@@ -28,27 +34,24 @@ export default async function GalleryPage() {
     .order("created_at", { ascending: false })
     .returns<GalleryEntry[]>();
 
-  if (!entries || entries.length === 0) {
-    return (
-      <PlaceholderSection
-        eyebrow="Gallery"
-        title="Your next generations will show up here."
-        description="Every successful generation (photo or video) is automatically saved to your account — generate your first photo or video to see it appear."
-      />
-    );
-  }
-
   return (
-    <div className="animate-fade-up mx-auto max-w-6xl py-8">
-      <div className="mb-6">
-        <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">
-          Gallery
-        </p>
-        <h2 className="font-display mt-2 text-3xl font-semibold text-white">
-          Your latest generations
-        </h2>
+    <>
+      <TemplateHeader backHref="/" title="Gallery" />
+
+      <div className="flex min-h-dvh flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+76px)]">
+        {entries && entries.length > 0 ? (
+          <GalleryGrid entries={entries} />
+        ) : (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
+            <p className="text-[17px] font-semibold text-white">
+              Nothing here yet
+            </p>
+            <p className="max-w-[280px] text-[14px] leading-snug text-white/50">
+              Every successful generation is saved here automatically.
+            </p>
+          </div>
+        )}
       </div>
-      <GalleryGrid entries={entries} />
-    </div>
+    </>
   );
 }

@@ -1,9 +1,14 @@
 import Link from "next/link";
 
 /**
- * Barre supérieure des écrans de gabarit : un retour à gauche, le titre
- * centré. Le studio et la vitrine ont chacun la leur ; celle-ci suit le
- * modèle, où chaque niveau se referme d'un seul geste vers le précédent.
+ * Barre supérieure des écrans de gabarit, et de la galerie.
+ *
+ * Corrigé le 29/08 : ce n'était pas un bloc en flux normal de 68px comme
+ * construit d'abord, mais l'en-tête PARTAGÉ que le modèle pose en position
+ * fixe sur tous ses écrans secondaires — relevé en inspectant `/galerie` et
+ * `/templates/<slug>`, qui portent la même empreinte de classes. Ses
+ * consommateurs réservent l'espace avec `pt-[calc(env(safe-area-inset-top)
+ * +76px)]` plutôt que de compter sur sa hauteur en flux.
  */
 export default function TemplateHeader({
   backHref,
@@ -13,11 +18,11 @@ export default function TemplateHeader({
   title: string;
 }) {
   return (
-    <header className="relative flex h-[68px] items-center px-4">
+    <header className="pointer-events-none fixed inset-x-0 top-0 z-50 flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+12px)]">
       <Link
         href={backHref}
         aria-label="Back"
-        className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full border border-[#2d2d2d] bg-[#161616] text-white transition active:opacity-80"
+        className="pointer-events-auto flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full border border-[#2d2d2d] bg-[#161616] text-white transition active:opacity-80"
       >
         <svg
           aria-hidden
@@ -35,9 +40,9 @@ export default function TemplateHeader({
 
       {/* Centré sur la page et non sur l'espace restant : sinon le titre se
           décale selon la largeur du bouton de retour. */}
-      <h1 className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[17px] font-semibold text-white">
+      <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[1.3rem] font-bold tracking-tight text-white">
         {title}
-      </h1>
+      </span>
     </header>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Panel from "@/components/Panel";
 
 type GalleryEntry = {
   id: string;
@@ -69,10 +68,22 @@ function formatDate(iso: string): string {
   });
 }
 
+type Filter = "all" | "image" | "video";
+
+const TABS: { value: Filter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "image", label: "Photos" },
+  { value: "video", label: "Videos" },
+];
+
 export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
+  const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<GalleryEntry | null>(null);
   const [sharingId, setSharingId] = useState<string | null>(null);
   const [shareError, setShareError] = useState("");
+
+  const visible =
+    filter === "all" ? entries : entries.filter((e) => e.mode === filter);
 
   async function handleShare(entry: GalleryEntry) {
     setSharingId(entry.id);
@@ -106,59 +117,60 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {entries.map((entry) => (
-          <Panel key={entry.id} className="overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setSelected(entry)}
-              className="block w-full cursor-zoom-in"
-              aria-label={`View full size: ${entry.label}`}
-            >
-              {entry.mode === "video" ? (
-                <video
-                  src={entry.result_url}
-                  muted
-                  loop
-                  playsInline
-                  className="aspect-square w-full object-cover"
-                />
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={entry.result_url}
-                  alt={entry.label}
-                  className="aspect-square w-full object-cover"
-                />
-              )}
-            </button>
-            <div className="flex items-center justify-between gap-2 p-3">
-              <div className="min-w-0">
-                <p className="truncate text-xs font-medium text-neutral-200">
-                  {entry.label}
-                </p>
-                <p className="text-[11px] text-neutral-600">
-                  {formatDate(entry.created_at)}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => void downloadEntry(entry)}
-                aria-label={`Download: ${entry.label}`}
-                className="shrink-0 rounded-full border border-white/10 p-2 text-neutral-400 transition hover:border-white/20 hover:text-white"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path
-                    d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            </div>
-          </Panel>
+      {/* Trois onglets, classes reprises du modèle : le filtrage reste utile
+          même si Bluminoo ne génère plus de vidéo — d'anciennes entrées
+          peuvent en porter, et les masquer romprait l'historique du client. */}
+      <div
+        role="tablist"
+        className="mb-4 flex shrink-0 gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {TABS.map((tab) => (
+          <button
+            key={tab.value}
+            type="button"
+            role="tab"
+            aria-selected={filter === tab.value}
+            onClick={() => setFilter(tab.value)}
+            className={`h-9 shrink-0 rounded-full px-4 text-[14px] font-semibold leading-none transition-colors duration-200 active:opacity-70 ${
+              filter === tab.value
+                ? "bg-white text-black"
+                : "border border-[#2d2d2d] bg-[#161616] text-[#cccccc]"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Vignette nue, sans libellé ni date en surimpression : elles vivent
+          dans la modale de détail au clic, comme sur le modèle. */}
+      <div className="grid grid-cols-3 gap-2">
+        {visible.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            onClick={() => setSelected(entry)}
+            aria-label={`View full size: ${entry.label}`}
+            className="relative aspect-square overflow-hidden rounded-2xl bg-[#161616] active:opacity-80"
+          >
+            {entry.mode === "video" ? (
+              <video
+                src={entry.result_url}
+                muted
+                loop
+                playsInline
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={entry.result_url}
+                alt={entry.label}
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
+            )}
+          </button>
         ))}
       </div>
 
