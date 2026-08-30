@@ -309,6 +309,31 @@ export default function Home() {
    * ce qui évite de faire déborder la rangée sur un écran étroit.
    */
   const [barFocused, setBarFocused] = useState(false);
+  /**
+   * Largeur mesurée du bouton Templates : sur le modèle, ce n'est pas un
+   * simple `hidden`/`flex` (qui saute instantanément) mais un conteneur
+   * `overflow-hidden` dont la largeur glisse jusqu'à 0px en 550ms au focus,
+   * repoussant le textarea dans l'espace libéré. Une largeur figée en dur
+   * casserait sur une traduction plus longue que "Templates" ; on la mesure
+   * donc, comme cardSize plus haut pour la carte.
+   */
+  const templatesBtnRef = useRef<HTMLButtonElement>(null);
+  const [templatesBtnWidth, setTemplatesBtnWidth] = useState<number | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const btn = templatesBtnRef.current;
+    if (!btn) return;
+    const observer = new ResizeObserver(([entry]) => {
+      // border-box : largeur réellement occupée dans la mise en page,
+      // padding inclus — celle qu'il faut reproduire sur le conteneur.
+      const width = entry.borderBoxSize?.[0]?.inlineSize ?? entry.contentRect.width;
+      setTemplatesBtnWidth(width);
+    });
+    observer.observe(btn, { box: "border-box" });
+    return () => observer.disconnect();
+  }, []);
 
   /** Seul un compte connecté ET porteur d'un palier peut générer. */
   const isSubscribed = isLoggedIn && !!planId;
@@ -773,21 +798,34 @@ export default function Home() {
           Le textarea est le MÊME élément dans les deux états (seules ses
           classes changent) : le remonter ferait perdre le focus au moment
           où le clic déclenche justement la bascule. */}
-      <div className="mt-3 flex items-end gap-2 pb-[calc(env(safe-area-inset-bottom)+8px)]">
-        {/* Templates : masqué (pas démonté) quand les outils sont là — un
-            sibling caché ne remonte pas le textarea. Fait glisser le rail
-            vers le second panneau, pas une navigation Next.js — l'URL ne
-            change jamais sur le modèle. */}
-        <button
-          type="button"
-          onClick={() => setScreen("templates")}
-          disabled={!hasTemplates}
-          className={`h-16 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-5 text-[15px] font-semibold text-white transition active:opacity-70 disabled:pointer-events-none disabled:opacity-40 ${
-            showTools ? "hidden" : "flex"
-          }`}
+      {/* Pas de gap ici : l'écart avec le textarea vient du mr-2 du bouton
+          Templates lui-même (comme sur le modèle), pour qu'il disparaisse
+          avec lui quand le conteneur se réduit à 0 plutôt que de laisser un
+          espace vide fixe. */}
+      <div className="mt-3 flex items-end pb-[calc(env(safe-area-inset-bottom)+8px)]">
+        {/* Templates : sur le modèle, ce conteneur voit sa largeur glisser
+            jusqu'à 0 (550ms) au focus plutôt que de disparaître d'un coup
+            (hidden/flex sautait instantanément) — le textarea gagne alors
+            l'espace libéré au même rythme. Le bouton reste monté (jamais
+            display:none) pour que le ResizeObserver continue de le mesurer
+            et pour que le focus du textarea ne soit jamais interrompu par un
+            démontage de sibling. */}
+        <div
+          aria-hidden={showTools}
+          className="h-16 shrink-0 overflow-hidden transition-[width] duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+          style={{ width: showTools ? 0 : (templatesBtnWidth ?? undefined) }}
         >
-          Templates
-        </button>
+          <button
+            ref={templatesBtnRef}
+            type="button"
+            tabIndex={showTools ? -1 : undefined}
+            onClick={() => setScreen("templates")}
+            disabled={!hasTemplates || showTools}
+            className="mr-2 flex h-16 w-max shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-5 text-[15px] font-semibold text-white transition active:opacity-70 disabled:pointer-events-none disabled:opacity-40"
+          >
+            Templates
+          </button>
+        </div>
 
         <div className="relative flex-1">
           <textarea
