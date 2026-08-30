@@ -50,8 +50,10 @@ const config: Config = {
         "tools-in": "tools-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both",
         "sheet-up": "sheet-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both",
         // Transition entre le studio et la page des gabarits : la nouvelle
-        // page arrive du haut et descend en place (de haut en bas).
-        "page-in": "page-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both",
+        // page glisse depuis le haut de l'écran jusqu'en place — un vrai
+        // glissement plein écran (-100vh), pas un petit décalage de
+        // quelques pixels qui se lisait comme un simple fondu.
+        "page-in": "page-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both",
       },
       keyframes: {
         "tools-in": {
@@ -63,7 +65,7 @@ const config: Config = {
           to: { transform: "translateY(0)" },
         },
         "page-in": {
-          from: { opacity: "0", transform: "translateY(-28px)" },
+          from: { opacity: "0", transform: "translateY(-100vh)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
         "fade-up": {
