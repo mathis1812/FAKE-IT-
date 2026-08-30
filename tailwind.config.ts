@@ -49,6 +49,9 @@ const config: Config = {
         // dépliage des outils de la barre et la montée des feuilles.
         "tools-in": "tools-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both",
         "sheet-up": "sheet-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both",
+        // Transition entre le studio et la page des gabarits : la nouvelle
+        // page glisse depuis la droite, comme une navigation d'app native.
+        "page-in": "page-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both",
       },
       keyframes: {
         "tools-in": {
@@ -58,6 +61,10 @@ const config: Config = {
         "sheet-up": {
           from: { transform: "translateY(100%)" },
           to: { transform: "translateY(0)" },
+        },
+        "page-in": {
+          from: { opacity: "0", transform: "translateX(24px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
         },
         "fade-up": {
           from: { opacity: "0", transform: "translateY(14px)" },

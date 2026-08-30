@@ -3,10 +3,9 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SparkleFrame, RevealBurst } from "@/components/MagicSparkles";
+import StudioTopBar from "@/components/StudioTopBar";
 import { playRevealChime, unlockAudioContext } from "@/lib/reveal-chime";
 import ResultActions from "@/components/ResultActions";
-import AccountSheet from "@/components/AccountSheet";
-import MenuSheet from "@/components/MenuSheet";
 import {
   asPlanId,
   hasRedSnap as planHasRedSnap,
@@ -18,8 +17,6 @@ import {
   QUALITY_LABEL,
   type ImageQuality,
 } from "@/lib/generation-tiers";
-import RechargeSheet from "@/components/RechargeSheet";
-import TemplateShelf from "@/components/TemplateShelf";
 import { createClient } from "@/lib/supabase/client";
 import {
   prepareAndUpload,
@@ -108,9 +105,7 @@ export default function Home() {
   /** Initiale affichée dans la pastille de compte, tirée de l'e-mail. */
   const [accountInitial, setAccountInitial] = useState("?");
   const [userEmail, setUserEmail] = useState("");
-  const [accountOpen, setAccountOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const shelfRef = useRef<HTMLDivElement>(null);
 
   /**
    * Paywall : un visiteur non connecté, ou connecté sans abonnement,
@@ -121,8 +116,6 @@ export default function Home() {
   const [paywalled, setPaywalled] = useState(false);
 
   /** Menu principal, en feuille remontant du bas. */
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [rechargeOpen, setRechargeOpen] = useState(false);
 
   /**
    * Qualité d'image choisie. Elle démarre à la meilleure ouverte au palier
@@ -355,80 +348,12 @@ export default function Home() {
     // pt-16 dégage la hauteur de l'en-tête devenu fixe : sans lui, la carte
     // d'import passerait dessous.
     <div className="flex flex-col pt-16">
-      {/* Barre supérieure fixe, posée au-dessus du contenu. Le conteneur ne
-          capte pas le pointeur pour ne pas bloquer le défilement sous lui :
-          seuls les boutons le réactivent. */}
-      <header className="pointer-events-none fixed inset-x-0 top-0 z-50 flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+12px)]">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Open the menu"
-            aria-haspopup="dialog"
-            aria-expanded={menuOpen}
-            className="pointer-events-auto flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full border border-[#2d2d2d] bg-[#161616] text-white transition active:opacity-80"
-          >
-            <svg
-              aria-hidden
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              className="h-[18px] w-[18px]"
-            >
-              <path d="M4 7h16M4 12h16M4 17h16" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            onClick={() => setAccountOpen(true)}
-            aria-label="Your account"
-            aria-haspopup="dialog"
-            aria-expanded={accountOpen}
-            className="pointer-events-auto flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full border border-[#2d2d2d] bg-[#161616] text-[15px] font-semibold text-white transition active:opacity-80"
-          >
-            {accountInitial}
-          </button>
-        </div>
-
-        <Link
-          href="/landing"
-          className="pointer-events-auto absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[1.8rem] font-bold tracking-tight text-white transition active:opacity-70"
-        >
-          Bluminoo
-        </Link>
-
-        {credits !== null && (
-          <button
-            type="button"
-            onClick={() => setRechargeOpen(true)}
-            aria-label={`${credits} credits — see the plans`}
-            aria-haspopup="dialog"
-            className="pointer-events-auto flex h-[42px] w-[92px] shrink-0 items-center justify-center gap-1 rounded-full border border-[#2d2d2d] bg-[#161616] text-white transition active:opacity-80"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
-            </svg>
-            {/* tabular-nums : sans lui, la pastille se décale à chaque
-                changement de crédits, les chiffres n'ayant pas la même
-                largeur dans Geist. */}
-            <span className="text-[15px] font-semibold tabular-nums">
-              {credits.toLocaleString("en-US")}
-            </span>
-          </button>
-        )}
-      </header>
+      <StudioTopBar
+        credits={credits}
+        planId={planId}
+        email={userEmail}
+        accountInitial={accountInitial}
+      />
 
       {/* Bloc studio isolé : il remplit exactement la hauteur visible (moins
           l'en-tête fixe), donc la carte occupe l'écran et la barre se pose en
@@ -616,25 +541,19 @@ export default function Home() {
           Le textarea est le MÊME élément dans les deux états (seules ses
           classes changent) : le remonter ferait perdre le focus au moment
           où le clic déclenche justement la bascule. */}
-      <div className="sticky bottom-0 mt-6 flex items-end gap-2 pb-2">
+      <div className="mt-3 flex items-end gap-2 pb-[calc(env(safe-area-inset-bottom)+8px)]">
         {/* Templates : masqué (pas démonté) quand les outils sont là — un
-            sibling caché ne remonte pas le textarea. */}
-        <button
-          type="button"
-          onClick={() =>
-            shelfRef.current?.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            })
-          }
-          disabled={!hasTemplates}
-          title={hasTemplates ? undefined : "Templates are coming soon"}
-          className={`h-16 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-5 text-[15px] font-semibold text-white transition active:opacity-70 disabled:opacity-40 ${
+            sibling caché ne remonte pas le textarea. Navigue vers la page
+            des gabarits, écran distinct du studio comme sur le modèle. */}
+        <Link
+          href="/templates"
+          aria-disabled={!hasTemplates}
+          className={`h-16 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-5 text-[15px] font-semibold text-white transition active:opacity-70 ${
             showTools ? "hidden" : "flex"
-          }`}
+          } ${hasTemplates ? "" : "pointer-events-none opacity-40"}`}
         >
           Templates
-        </button>
+        </Link>
 
         <div className="relative flex-1">
           <textarea
@@ -771,30 +690,6 @@ export default function Home() {
       </div>
 
       </div>
-
-      <div ref={shelfRef}>
-        <TemplateShelf />
-      </div>
-
-      <MenuSheet
-        isOpen={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        credits={credits}
-        planId={planId}
-      />
-
-      <AccountSheet
-        isOpen={accountOpen}
-        onClose={() => setAccountOpen(false)}
-        onOpenRecharge={() => setRechargeOpen(true)}
-        email={userEmail}
-        planId={planId}
-      />
-
-      <RechargeSheet
-        isOpen={rechargeOpen}
-        onClose={() => setRechargeOpen(false)}
-      />
     </div>
   );
 }
