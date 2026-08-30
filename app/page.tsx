@@ -798,7 +798,12 @@ export default function Home() {
             onBlur={() => setBarFocused(false)}
             placeholder={showTools ? PROMPT_PLACEHOLDER : PROMPT_PLACEHOLDER_SHORT}
             aria-label="Describe the scene you want"
-            className={`relative z-10 block w-full resize-none overflow-hidden rounded-3xl bg-white/[0.07] px-5 text-[17px] font-medium leading-6 text-white caret-white outline-none placeholder:text-white/35 ${
+            // transition-[min-height] : sur le modèle, c'est la barre qui
+            // grandit en douceur (550ms) qui donne l'impression que les
+            // outils "montent" en apparaissant — eux ne font qu'un fondu
+            // d'opacité (voir animate-tools-in). Sans cette transition ici,
+            // la barre sautait instantanément à sa hauteur dépliée.
+            className={`relative z-10 block w-full resize-none overflow-hidden rounded-3xl bg-white/[0.07] px-5 text-[17px] font-medium leading-6 text-white caret-white outline-none transition-[min-height] duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)] placeholder:text-white/35 ${
               showTools
                 ? "min-h-[112px] pb-16 pt-[18px]"
                 : "min-h-16 pb-[19px] pr-16 pt-[18px]"

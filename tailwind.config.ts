@@ -47,7 +47,13 @@ const config: Config = {
         // Easing relevé sur le modèle (cubic-bezier(0.22, 1, 0.36, 1),
         // ~ easeOutQuint) : sa signature de mouvement, réutilisée pour le
         // dépliage des outils de la barre et la montée des feuilles.
-        "tools-in": "tools-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both",
+        // Durée, délai et absence de transform copiés du modèle : sa classe
+        // `apparition-outils` (relevée dans son CSS compilé, keyframes
+        // `noway-apparition`) est un pur fondu d'opacité, jamais un
+        // glissement — l'impression de "fade up" vient de la barre qui
+        // grandit sous ces outils (transition sur min-height, ajoutée sur le
+        // textarea juste en dessous), pas d'un déplacement des outils eux-mêmes.
+        "tools-in": "tools-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both",
         "sheet-up": "sheet-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both",
         // Transition entre le studio et la page des gabarits : la nouvelle
         // page glisse depuis le haut de l'écran jusqu'en place — un vrai
@@ -57,8 +63,8 @@ const config: Config = {
       },
       keyframes: {
         "tools-in": {
-          from: { opacity: "0", transform: "translateY(8px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
+          from: { opacity: "0" },
+          to: { opacity: "1" },
         },
         "sheet-up": {
           from: { transform: "translateY(100%)" },
