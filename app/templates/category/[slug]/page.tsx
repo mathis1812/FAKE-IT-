@@ -32,7 +32,7 @@ export default function TemplateCategoryPage({ params }: Props) {
 
   return (
     <>
-      <TemplateHeader backHref="/templates" title={category.title} />
+      <TemplateHeader backHref="/?screen=templates" title={category.title} />
 
       <div className="animate-fade-up mx-auto w-full max-w-[900px] px-4 pb-16 pt-[calc(env(safe-area-inset-top)+76px)]">
         <div className="grid grid-cols-2 gap-3">

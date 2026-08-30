@@ -45,7 +45,7 @@ export default function TemplatePage({ params }: Props) {
   // retrouve sa place au lieu de repartir du haut.
   const backHref = category
     ? `/templates/category/${category.slug}#${template.slug}`
-    : "/templates";
+    : "/?screen=templates";
 
   return (
     <>

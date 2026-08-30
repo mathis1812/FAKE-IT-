@@ -23,6 +23,9 @@ export default function StudioTopBar({
   email,
   accountInitial,
   title,
+  currentScreen,
+  onNavigateStudio,
+  onNavigateTemplates,
 }: {
   credits: number | null;
   planId: string | null;
@@ -30,6 +33,15 @@ export default function StudioTopBar({
   accountInitial: string;
   /** Titre central. Absent : le mot-symbole (studio). Présent : titre souligné. */
   title?: string;
+  /**
+   * Studio et gabarits vivent dans le même DOM (rail glissable), pas deux
+   * routes : le menu doit pouvoir faire glisser le rail plutôt que
+   * naviguer. Ces trois props ne sont fournies que par app/page.tsx, seul
+   * appelant qui possède le rail.
+   */
+  currentScreen?: "studio" | "templates";
+  onNavigateStudio?: () => void;
+  onNavigateTemplates?: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -131,6 +143,9 @@ export default function StudioTopBar({
         onClose={() => setMenuOpen(false)}
         credits={credits}
         planId={planId}
+        currentScreen={currentScreen}
+        onNavigateStudio={onNavigateStudio}
+        onNavigateTemplates={onNavigateTemplates}
       />
 
       <AccountSheet

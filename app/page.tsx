@@ -24,6 +24,7 @@ import {
   validateImageFile,
   type PreparedImage,
 } from "@/lib/studio-image";
+import TemplateShelf from "@/components/TemplateShelf";
 import { TEMPLATE_CATEGORIES } from "@/lib/templates";
 
 /**
@@ -116,6 +117,69 @@ export default function Home() {
    * (--accueil-carte-boite), pas en CSS déclaratif pur.
    */
   const cardWrapRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Studio et gabarits ne sont PAS deux pages Next.js : relevé en direct sur
+   * le modèle, l'URL ne change jamais en cliquant « Templates ». Ce sont
+   * deux panneaux qui coexistent dans le même DOM (`<main>` + `<section>`,
+   * chacun `h-dvh`), empilés dans un rail qu'on fait glisser via
+   * `transform: translateY()` — clippé par un conteneur `overflow-hidden`.
+   * La classe du rail sur le modèle s'appelle littéralement
+   * `rail-panneaux` : le nom lui-même dit que le geste de glissement est
+   * l'interaction principale, pas un simple clic.
+   */
+  const [screen, setScreen] = useState<"studio" | "templates">("studio");
+  const railRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ startY: number; startTranslate: number } | null>(
+    null,
+  );
+  const [dragTranslate, setDragTranslate] = useState<number | null>(null);
+
+  const screenTranslate = useCallback(
+    (s: "studio" | "templates") =>
+      s === "templates" ? -window.innerHeight : 0,
+    [],
+  );
+
+  const onRailPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      // Ignore un geste commencé sur un contrôle interactif (bouton,
+      // champ...) : sans ce filtre, glisser pour taper du texte ferait
+      // aussi basculer l'écran.
+      const target = e.target as HTMLElement;
+      if (target.closest("button, a, input, textarea, [role='menu']")) return;
+      dragRef.current = {
+        startY: e.clientY,
+        startTranslate: screenTranslate(screen),
+      };
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    },
+    [screen, screenTranslate],
+  );
+
+  const onRailPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current) return;
+    const delta = e.clientY - dragRef.current.startY;
+    const vh = window.innerHeight;
+    const next = Math.min(
+      0,
+      Math.max(-vh, dragRef.current.startTranslate + delta),
+    );
+    setDragTranslate(next);
+  }, []);
+
+  const onRailPointerUp = useCallback(() => {
+    if (!dragRef.current) return;
+    const vh = window.innerHeight;
+    const traveled = dragTranslate ?? screenTranslate(screen);
+    // Bascule dès qu'on a franchi le quart de l'écran, comme un tiroir
+    // qu'on relâche à mi-course : au-delà, il continue vers sa position la
+    // plus proche plutôt que de revenir en arrière.
+    const next = traveled < -vh / 4 ? "templates" : "studio";
+    dragRef.current = null;
+    setDragTranslate(null);
+    setScreen(next);
+  }, [dragTranslate, screen, screenTranslate]);
   const [cardSize, setCardSize] = useState<{ w: number; h: number } | null>(
     null,
   );
@@ -206,6 +270,19 @@ export default function Home() {
   useEffect(() => {
     void refreshCredits();
   }, [refreshCredits]);
+
+  // Ouvre directement sur le panneau gabarits quand on arrive via
+  // /?screen=templates — le lien « retour » d'une page de gabarit profond
+  // (ex. /templates/category/<c>) doit ramener sur l'étagère, pas sur le
+  // studio. Volontairement APRÈS l'hydratation (pas dans l'état initial) :
+  // le serveur ne connaît pas `window.location.search`, y répondre dans
+  // l'initialiseur du state aurait désynchronisé le premier rendu client
+  // du rendu serveur.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("screen") === "templates") {
+      setScreen("templates");
+    }
+  }, []);
 
   // Au chargement du palier, cale la qualité sur son maximum — le client
   // veut le meilleur qu'il paie (Pro démarre en 2K sur le modèle). L'effet
@@ -380,27 +457,46 @@ export default function Home() {
 
 
   return (
-    // pt-16 dégage la hauteur de l'en-tête devenu fixe : sans lui, la carte
-    // d'import passerait dessous.
-    // pt-[calc(...+90px)] : espace exact mesuré sur le modèle entre l'en-tête
-    // fixe et le contenu (pas juste la hauteur de l'en-tête — une vraie
-    // respiration en plus). h-dvh (pas min-h) : le bloc tient EXACTEMENT la
-    // hauteur de l'écran, condition pour que la carte se centre dans
-    // l'espace qui reste au lieu de pousser la barre hors champ.
-    <div className="flex h-dvh flex-col pt-[calc(env(safe-area-inset-top)+90px)]">
+    // overflow-hidden : clippe le rail pour qu'un seul panneau (h-dvh
+    // chacun) soit visible à la fois — le second est physiquement présent
+    // juste hors champ, pas démonté.
+    <div className="h-dvh overflow-hidden">
       <StudioTopBar
         credits={credits}
         planId={planId}
         email={userEmail}
         accountInitial={accountInitial}
+        title={screen === "templates" ? "Templates" : undefined}
+        onNavigateStudio={() => setScreen("studio")}
+        onNavigateTemplates={() => setScreen("templates")}
+        currentScreen={screen}
       />
 
-      {/* Bloc studio isolé : il remplit exactement la hauteur visible (moins
-          l'en-tête fixe), donc la carte occupe l'écran et la barre se pose en
-          bas. L'étagère de gabarits vient APRÈS ce bloc, donc sous la ligne
-          de flottaison — le studio et les gabarits sont séparés, comme sur le
-          modèle, au lieu de voir les vignettes déborder sous la barre. */}
-      <div className="flex min-h-0 flex-1 flex-col">
+      {/* Le rail : deux panneaux empilés en flux normal (studio puis
+          gabarits), qu'on fait glisser via translateY — 0 pour montrer le
+          premier, -100vh pour montrer le second. Glissable au pointeur en
+          plus du bouton Templates, transition seulement hors glissement (un
+          drag en cours doit suivre le doigt sans retard). */}
+      <div
+        ref={railRef}
+        onPointerDown={onRailPointerDown}
+        onPointerMove={onRailPointerMove}
+        onPointerUp={onRailPointerUp}
+        onPointerCancel={onRailPointerUp}
+        style={{
+          transform: `translateY(${dragTranslate ?? screenTranslate(screen)}px)`,
+          transition:
+            dragTranslate === null
+              ? "transform 0.64s cubic-bezier(0.22,1,0.36,1)"
+              : "none",
+        }}
+      >
+        {/* pt-[calc(...+90px)] : espace exact mesuré sur le modèle entre
+            l'en-tête fixe et le contenu de CE panneau — chaque panneau porte
+            son propre padding, l'en-tête étant un sibling hors du rail. */}
+        {/* div, pas <main> : MainShell fournit déjà le landmark <main> de la
+            page (imbriquer deux <main> serait invalide en HTML). */}
+        <div className="flex h-dvh flex-col pt-[calc(env(safe-area-inset-top)+90px)]">
       {/* Zone centrale : import, chargement, aperçu verrouillé ou résultat. */}
       {/* Centre la carte à la fois horizontalement ET verticalement dans
           l'espace restant — pas d'étirement. min-h-0 est nécessaire pour
@@ -591,17 +687,19 @@ export default function Home() {
           où le clic déclenche justement la bascule. */}
       <div className="mt-3 flex items-end gap-2 pb-[calc(env(safe-area-inset-bottom)+8px)]">
         {/* Templates : masqué (pas démonté) quand les outils sont là — un
-            sibling caché ne remonte pas le textarea. Navigue vers la page
-            des gabarits, écran distinct du studio comme sur le modèle. */}
-        <Link
-          href="/templates"
-          aria-disabled={!hasTemplates}
-          className={`h-16 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-5 text-[15px] font-semibold text-white transition active:opacity-70 ${
+            sibling caché ne remonte pas le textarea. Fait glisser le rail
+            vers le second panneau, pas une navigation Next.js — l'URL ne
+            change jamais sur le modèle. */}
+        <button
+          type="button"
+          onClick={() => setScreen("templates")}
+          disabled={!hasTemplates}
+          className={`h-16 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-5 text-[15px] font-semibold text-white transition active:opacity-70 disabled:pointer-events-none disabled:opacity-40 ${
             showTools ? "hidden" : "flex"
-          } ${hasTemplates ? "" : "pointer-events-none opacity-40"}`}
+          }`}
         >
           Templates
-        </Link>
+        </button>
 
         <div className="relative flex-1">
           <textarea
@@ -737,6 +835,14 @@ export default function Home() {
         </div>
       </div>
 
+        </div>
+
+        {/* Panneau des gabarits : sa propre section h-dvh, défilable en
+            interne (overflow-y-auto) — le rail ne défile pas, chaque
+            panneau porte son propre défilement. */}
+        <section className="no-scrollbar flex h-dvh flex-col overflow-y-auto overscroll-contain pt-[calc(env(safe-area-inset-top)+90px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <TemplateShelf />
+        </section>
       </div>
     </div>
   );

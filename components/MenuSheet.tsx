@@ -33,7 +33,18 @@ type NavItem = {
   label: string;
   icon: React.ReactNode;
   /** Vrai quand cette entrée correspond à l'écran affiché. */
-  isActive: (pathname: string) => boolean;
+  isActive: (
+    pathname: string,
+    currentScreen: "studio" | "templates" | undefined,
+  ) => boolean;
+  /**
+   * Studio et gabarits vivent dans le même DOM (rail glissable sur /),
+   * pas deux routes distinctes — relevé en direct, l'URL ne change jamais.
+   * Ces deux entrées font donc glisser le rail au lieu de naviguer, sur
+   * app/page.tsx qui seul le possède. `undefined` sur les autres écrans
+   * (ex. /gallery), où on ne fait que naviguer normalement.
+   */
+  screen?: "studio" | "templates";
 };
 
 const ICON_PROPS = {
@@ -52,7 +63,8 @@ const NAV_ITEMS: NavItem[] = [
   {
     href: "/",
     label: "Create",
-    isActive: (p) => p === "/",
+    screen: "studio",
+    isActive: (p, s) => p === "/" && (s ?? "studio") === "studio",
     icon: (
       <svg {...ICON_PROPS}>
         <path d="M5 12h14" />
@@ -61,9 +73,10 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    href: "/templates",
+    href: "/",
     label: "Templates",
-    isActive: (p) => p.startsWith("/templates"),
+    screen: "templates",
+    isActive: (p, s) => p === "/" && s === "templates",
     icon: (
       <svg {...ICON_PROPS}>
         <rect width="7" height="7" x="3" y="3" rx="1" />
@@ -93,12 +106,18 @@ export default function MenuSheet({
   onClose,
   credits,
   planId,
+  currentScreen,
+  onNavigateStudio,
+  onNavigateTemplates,
 }: {
   isOpen: boolean;
   onClose: () => void;
   /** `null` quand personne n'est connecté. */
   credits: number | null;
   planId: string | null;
+  currentScreen?: "studio" | "templates";
+  onNavigateStudio?: () => void;
+  onNavigateTemplates?: () => void;
 }) {
   const pathname = usePathname();
 
@@ -225,32 +244,61 @@ export default function MenuSheet({
             )}
           </div>
 
-          {NAV_ITEMS.map((item, index) => (
-            <div key={item.href} className="contents">
-              {/* Séparateur au-dessus de chaque entrée sauf la première :
-                  c'est ainsi qu'ils tombent sur le modèle. */}
-              {index > 0 && (
-                <div
-                  role="separator"
-                  aria-orientation="horizontal"
-                  className="mx-6 my-1 h-[1.5px] shrink-0 bg-white/15"
-                />
-              )}
-              <Link
-                href={item.href}
-                onClick={onClose}
-                aria-current={item.isActive(pathname) ? "page" : undefined}
-                className={`relative flex h-14 w-full items-center justify-center gap-3 rounded-3xl px-[17px] text-[17px] font-medium transition active:opacity-70 ${
-                  item.isActive(pathname)
-                    ? "bg-white text-black"
-                    : "border-[1.5px] border-white/15 bg-black/30 text-white"
-                }`}
-              >
-                {item.icon}
-                {item.label}
-              </Link>
-            </div>
-          ))}
+          {NAV_ITEMS.map((item, index) => {
+            const active = item.isActive(pathname, currentScreen);
+            const itemClassName = `relative flex h-14 w-full items-center justify-center gap-3 rounded-3xl px-[17px] text-[17px] font-medium transition active:opacity-70 ${
+              active
+                ? "bg-white text-black"
+                : "border-[1.5px] border-white/15 bg-black/30 text-white"
+            }`;
+            // Fait glisser le rail plutôt que naviguer, quand le handler
+            // correspondant existe (uniquement fourni depuis app/page.tsx,
+            // seul possesseur du rail).
+            const navigateRail =
+              item.screen === "studio"
+                ? onNavigateStudio
+                : item.screen === "templates"
+                  ? onNavigateTemplates
+                  : undefined;
+
+            return (
+              <div key={item.label} className="contents">
+                {/* Séparateur au-dessus de chaque entrée sauf la première :
+                    c'est ainsi qu'ils tombent sur le modèle. */}
+                {index > 0 && (
+                  <div
+                    role="separator"
+                    aria-orientation="horizontal"
+                    className="mx-6 my-1 h-[1.5px] shrink-0 bg-white/15"
+                  />
+                )}
+                {navigateRail ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigateRail();
+                      onClose();
+                    }}
+                    aria-current={active ? "page" : undefined}
+                    className={itemClassName}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </button>
+                ) : (
+                  <Link
+                    href={item.href}
+                    onClick={onClose}
+                    aria-current={active ? "page" : undefined}
+                    className={itemClassName}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </Link>
+                )}
+              </div>
+            );
+          })}
 
           {!hasRedSnap && (
             <>
