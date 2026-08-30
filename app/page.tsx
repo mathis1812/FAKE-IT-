@@ -38,6 +38,13 @@ import { TEMPLATE_CATEGORIES } from "@/lib/templates";
  */
 
 const PROMPT_PLACEHOLDER = "Describe the scene you want…";
+/**
+ * Placeholder court pour l'état plié : le champ y est étroit (Templates
+ * occupe la gauche), et la phrase longue passait sur deux lignes en se
+ * coupant. Le modèle fait pareil — « Modifier… » plié, phrase entière
+ * déplié.
+ */
+const PROMPT_PLACEHOLDER_SHORT = "Edit…";
 
 /**
  * Durée du chargement simulé du paywall. Calée sur l'ordre de grandeur d'une
@@ -347,7 +354,7 @@ export default function Home() {
   return (
     // pt-16 dégage la hauteur de l'en-tête devenu fixe : sans lui, la carte
     // d'import passerait dessous.
-    <div className="flex min-h-[calc(100dvh-8rem)] flex-col pt-16">
+    <div className="flex flex-col pt-16">
       {/* Barre supérieure fixe, posée au-dessus du contenu. Le conteneur ne
           capte pas le pointeur pour ne pas bloquer le défilement sous lui :
           seuls les boutons le réactivent. */}
@@ -423,9 +430,15 @@ export default function Home() {
         )}
       </header>
 
+      {/* Bloc studio isolé : il remplit exactement la hauteur visible (moins
+          l'en-tête fixe), donc la carte occupe l'écran et la barre se pose en
+          bas. L'étagère de gabarits vient APRÈS ce bloc, donc sous la ligne
+          de flottaison — le studio et les gabarits sont séparés, comme sur le
+          modèle, au lieu de voir les vignettes déborder sous la barre. */}
+      <div className="flex min-h-[calc(100dvh-4rem)] flex-col">
       {/* Zone centrale : import, chargement, aperçu verrouillé ou résultat. */}
-      <div className="flex flex-1 items-start justify-center">
-        <div className="w-full max-w-[532px]">
+      <div className="flex flex-1 items-stretch justify-center">
+        <div className="flex w-full max-w-[532px] flex-col">
           <div
             onDragOver={(e) => {
               e.preventDefault();
@@ -433,7 +446,7 @@ export default function Home() {
             }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={onDrop}
-            className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl bg-[#111111]"
+            className="relative w-full flex-1 overflow-hidden rounded-3xl bg-[#111111]"
           >
             {/* Liseré en pointillés tracé en SVG plutôt qu'en bordure CSS :
                 c'est ainsi qu'il est fait sur le modèle, et cela permet un
@@ -630,7 +643,7 @@ export default function Home() {
             onChange={(e) => setUserNote(e.target.value)}
             onFocus={() => setBarFocused(true)}
             onBlur={() => setBarFocused(false)}
-            placeholder={PROMPT_PLACEHOLDER}
+            placeholder={showTools ? PROMPT_PLACEHOLDER : PROMPT_PLACEHOLDER_SHORT}
             aria-label="Describe the scene you want"
             className={`relative z-10 block w-full resize-none overflow-hidden rounded-3xl bg-white/[0.07] px-5 text-[17px] font-medium leading-6 text-white caret-white outline-none placeholder:text-white/35 ${
               showTools
@@ -755,6 +768,8 @@ export default function Home() {
             </div>
           )}
         </div>
+      </div>
+
       </div>
 
       <div ref={shelfRef}>
