@@ -130,9 +130,27 @@ export default function Home() {
    */
   const [screen, setScreen] = useState<"studio" | "templates">("studio");
   const railRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ startY: number; startTranslate: number } | null>(
-    null,
-  );
+  // Le panneau gabarits défile en interne (overflow-y-auto) : pour ne pas
+  // voler ce défilement, on ne considère un tiré vers le bas comme "retour
+  // au studio" que si la liste est déjà tout en haut au moment du toucher.
+  const templatesPanelRef = useRef<HTMLElement>(null);
+  const dragRef = useRef<{
+    startY: number;
+    startX: number;
+    startTranslate: number;
+    startScrollTop: number;
+    /**
+     * Faux tant qu'on n'a pas franchi le seuil : le geste peut encore
+     * devenir un tap sur une carte, un défilement de liste, ou notre
+     * glissement de rail. `null` (via dragRef.current = null) annule le
+     * candidat sans jamais le confirmer.
+     */
+    confirmed: boolean;
+  } | null>(null);
+  // Ref, pas état : doit être lu de façon synchrone par le handler de clic
+  // qui avale le tap terminant un glissement confirmé (voir plus bas), sans
+  // attendre un re-render.
+  const isRailDraggingRef = useRef(false);
   const [dragTranslate, setDragTranslate] = useState<number | null>(null);
 
   const screenTranslate = useCallback(
@@ -141,45 +159,108 @@ export default function Home() {
     [],
   );
 
+  // Distance avant de trancher entre tap et glissement — en dessous, le
+  // geste reste un candidat ; relevé empiriquement, assez petit pour rester
+  // réactif, assez grand pour ne pas gêner un tap au doigt légèrement
+  // tremblant.
+  const RAIL_DRAG_THRESHOLD = 10;
+
   const onRailPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      // Ignore un geste commencé sur un contrôle interactif (bouton,
-      // champ...) : sans ce filtre, glisser pour taper du texte ferait
-      // aussi basculer l'écran.
+      // Un champ de saisie garde la main entière sur le geste : y glisser
+      // doit placer le curseur ou sélectionner du texte, pas basculer
+      // l'écran. Les autres cibles (dont les cartes, désormais) démarrent
+      // un candidat — voir onRailPointerMove pour la suite du tri.
       const target = e.target as HTMLElement;
-      if (target.closest("button, a, input, textarea, [role='menu']")) return;
+      if (target.closest("input, textarea")) return;
       dragRef.current = {
         startY: e.clientY,
+        startX: e.clientX,
         startTranslate: screenTranslate(screen),
+        startScrollTop:
+          screen === "templates" ? (templatesPanelRef.current?.scrollTop ?? 0) : 0,
+        confirmed: false,
       };
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
     },
     [screen, screenTranslate],
   );
 
-  const onRailPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragRef.current) return;
-    const delta = e.clientY - dragRef.current.startY;
-    const vh = window.innerHeight;
-    const next = Math.min(
-      0,
-      Math.max(-vh, dragRef.current.startTranslate + delta),
-    );
-    setDragTranslate(next);
-  }, []);
+  const onRailPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      const deltaY = e.clientY - drag.startY;
+
+      if (!drag.confirmed) {
+        const deltaX = e.clientX - drag.startX;
+        if (
+          Math.abs(deltaY) < RAIL_DRAG_THRESHOLD ||
+          Math.abs(deltaX) > Math.abs(deltaY)
+        ) {
+          return;
+        }
+        if (screen === "templates" && (deltaY <= 0 || drag.startScrollTop > 0)) {
+          // Tiré vers le haut, ou liste pas tout en haut : c'est un
+          // défilement normal de la liste, pas un retour au studio. On
+          // abandonne le candidat sans avoir jamais appelé preventDefault,
+          // le défilement natif suit donc son cours.
+          dragRef.current = null;
+          return;
+        }
+        drag.confirmed = true;
+        isRailDraggingRef.current = true;
+      }
+
+      // Confirmé : on prend la main sur le geste, y compris s'il a commencé
+      // sur une carte (lien) — sinon le retour est bloqué partout où
+      // l'écran gabarits est couvert de cartes, ce qui le rend impraticable.
+      e.preventDefault();
+      const vh = window.innerHeight;
+      const next = Math.min(0, Math.max(-vh, drag.startTranslate + deltaY));
+      setDragTranslate(next);
+    },
+    [screen],
+  );
 
   const onRailPointerUp = useCallback(() => {
-    if (!dragRef.current) return;
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (!drag?.confirmed) {
+      isRailDraggingRef.current = false;
+      return;
+    }
     const vh = window.innerHeight;
     const traveled = dragTranslate ?? screenTranslate(screen);
-    // Bascule dès qu'on a franchi le quart de l'écran, comme un tiroir
-    // qu'on relâche à mi-course : au-delà, il continue vers sa position la
-    // plus proche plutôt que de revenir en arrière.
-    const next = traveled < -vh / 4 ? "templates" : "studio";
-    dragRef.current = null;
+    const destination = screen === "templates" ? "studio" : "templates";
+    // Bascule dès qu'on a franchi le quart de l'écran DANS LE SENS DU
+    // GLISSEMENT, comme un tiroir qu'on relâche à mi-course. Le seuil se
+    // mesure depuis le point de départ du geste, pas comme une valeur
+    // absolue de translateY : une valeur absolue rendait le retour
+    // templates → studio bien plus dur à déclencher que l'aller (il aurait
+    // fallu franchir les 3/4 de l'écran au lieu d'un quart) — c'est ce qui
+    // rendait le retour au studio quasi impossible à obtenir.
+    const progress = Math.abs(traveled - drag.startTranslate);
+    const next = progress > vh / 4 ? destination : screen;
     setDragTranslate(null);
     setScreen(next);
+    // Le tap qui clôt le geste (click, synthétisé juste après pointerup)
+    // doit encore trouver la garde levée pour être avalé par
+    // onRailClickCapture — on ne la relâche qu'au tour suivant.
+    setTimeout(() => {
+      isRailDraggingRef.current = false;
+    }, 0);
   }, [dragTranslate, screen, screenTranslate]);
+
+  // Un glissement confirmé qui s'est terminé sur une carte (lien) ou un
+  // bouton ne doit pas aussi déclencher son clic — sinon relâcher après
+  // avoir glissé jusqu'au studio ouvre en plus le gabarit sous le doigt.
+  const onRailClickCapture = useCallback((e: React.MouseEvent) => {
+    if (isRailDraggingRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, []);
   const [cardSize, setCardSize] = useState<{ w: number; h: number } | null>(
     null,
   );
@@ -483,6 +564,13 @@ export default function Home() {
         onPointerMove={onRailPointerMove}
         onPointerUp={onRailPointerUp}
         onPointerCancel={onRailPointerUp}
+        onClickCapture={onRailClickCapture}
+        // Glisser depuis une carte déclenche sinon le glissé-déposé natif
+        // du navigateur sur son image (dragstart), qui vole le geste : le
+        // doigt/la souris continue de bouger mais plus aucun événement
+        // pointermove/pointerup n'atteint nos handlers, et l'écran reste
+        // bloqué à mi-course. On le désamorce ici, à la racine du rail.
+        onDragStart={(e) => e.preventDefault()}
         style={{
           transform: `translateY(${dragTranslate ?? screenTranslate(screen)}px)`,
           transition:
@@ -840,7 +928,10 @@ export default function Home() {
         {/* Panneau des gabarits : sa propre section h-dvh, défilable en
             interne (overflow-y-auto) — le rail ne défile pas, chaque
             panneau porte son propre défilement. */}
-        <section className="no-scrollbar flex h-dvh flex-col overflow-y-auto overscroll-contain pt-[calc(env(safe-area-inset-top)+90px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <section
+          ref={templatesPanelRef}
+          className="no-scrollbar flex h-dvh flex-col overflow-y-auto overscroll-contain pt-[calc(env(safe-area-inset-top)+90px)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           <TemplateShelf />
         </section>
       </div>
