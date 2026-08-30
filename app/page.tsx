@@ -106,6 +106,41 @@ export default function Home() {
   const [accountInitial, setAccountInitial] = useState("?");
   const [userEmail, setUserEmail] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  /**
+   * Dimensions de la carte, calculées en JS plutôt qu'en CSS pur. En CSS,
+   * `aspect-[3/4]` combiné à une hauteur explicite (h-full) ET une largeur
+   * maximale (92%) ne se rééquilibre pas : le navigateur garde la hauteur
+   * telle quelle et casse juste le ratio quand la largeur est plafonnée,
+   * au lieu de recalculer la hauteur pour le préserver. Vérifié : même le
+   * modèle résout ça via une variable CSS calculée en JS
+   * (--accueil-carte-boite), pas en CSS déclaratif pur.
+   */
+  const cardWrapRef = useRef<HTMLDivElement>(null);
+  const [cardSize, setCardSize] = useState<{ w: number; h: number } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const wrap = cardWrapRef.current;
+    if (!wrap) return;
+    const compute = () => {
+      const availW = wrap.clientWidth;
+      const availH = wrap.clientHeight;
+      if (!availW || !availH) return;
+      // La plus grande boîte au ratio 3:4 qui tient dans l'espace
+      // disponible, plafonnée à 92% de la largeur — mêmes deux contraintes
+      // que le modèle, juste résolues côté client au lieu d'une variable
+      // CSS.
+      const capW = availW * 0.92;
+      let w = Math.min(capW, availH * (3 / 4));
+      let h = w * (4 / 3);
+      setCardSize({ w: Math.round(w), h: Math.round(h) });
+    };
+    compute();
+    const observer = new ResizeObserver(compute);
+    observer.observe(wrap);
+    return () => observer.disconnect();
+  }, []);
 
   /**
    * Paywall : un visiteur non connecté, ou connecté sans abonnement,
@@ -347,7 +382,12 @@ export default function Home() {
   return (
     // pt-16 dégage la hauteur de l'en-tête devenu fixe : sans lui, la carte
     // d'import passerait dessous.
-    <div className="flex flex-col pt-16">
+    // pt-[calc(...+90px)] : espace exact mesuré sur le modèle entre l'en-tête
+    // fixe et le contenu (pas juste la hauteur de l'en-tête — une vraie
+    // respiration en plus). h-dvh (pas min-h) : le bloc tient EXACTEMENT la
+    // hauteur de l'écran, condition pour que la carte se centre dans
+    // l'espace qui reste au lieu de pousser la barre hors champ.
+    <div className="flex h-dvh flex-col pt-[calc(env(safe-area-inset-top)+90px)]">
       <StudioTopBar
         credits={credits}
         planId={planId}
@@ -360,10 +400,17 @@ export default function Home() {
           bas. L'étagère de gabarits vient APRÈS ce bloc, donc sous la ligne
           de flottaison — le studio et les gabarits sont séparés, comme sur le
           modèle, au lieu de voir les vignettes déborder sous la barre. */}
-      <div className="flex min-h-[calc(100dvh-4rem)] flex-col">
+      <div className="flex min-h-0 flex-1 flex-col">
       {/* Zone centrale : import, chargement, aperçu verrouillé ou résultat. */}
-      <div className="flex flex-1 items-stretch justify-center">
-        <div className="flex w-full max-w-[532px] flex-col">
+      {/* Centre la carte à la fois horizontalement ET verticalement dans
+          l'espace restant — pas d'étirement. min-h-0 est nécessaire pour
+          qu'un enfant flex puisse être plus petit que son contenu naturel et
+          se centrer au lieu de déborder. */}
+      <div
+        ref={cardWrapRef}
+        className="flex min-h-0 flex-1 items-center justify-center"
+      >
+        <div className="flex h-full min-h-0 w-full max-w-[532px] flex-col items-center justify-center">
           <div
             onDragOver={(e) => {
               e.preventDefault();
@@ -371,7 +418,8 @@ export default function Home() {
             }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={onDrop}
-            className="relative w-full flex-1 overflow-hidden rounded-3xl bg-[#111111]"
+            style={cardSize ? { width: cardSize.w, height: cardSize.h } : undefined}
+            className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-[#111111]"
           >
             {/* Liseré en pointillés tracé en SVG plutôt qu'en bordure CSS :
                 c'est ainsi qu'il est fait sur le modèle, et cela permet un

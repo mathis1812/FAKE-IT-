@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import "./globals.css";
 import AuthSheet from "@/components/AuthSheet";
+import MainShell from "@/components/MainShell";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 
@@ -43,9 +44,7 @@ export default function RootLayout({
         <div className="studio-shell min-h-screen">
           <div className="studio-content min-h-screen">
             <SiteHeader />
-            <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
-              {children}
-            </main>
+            <MainShell>{children}</MainShell>
             <SiteFooter />
           </div>
           <AuthSheet />
