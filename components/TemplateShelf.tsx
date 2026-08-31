@@ -15,6 +15,13 @@ export default function TemplateShelf() {
   if (TEMPLATE_CATEGORIES.length === 0) return null;
 
   const featured = featuredCategory();
+  /**
+   * Relevé le 31/08 sur l'étagère du modèle : la catégorie vedette n'y a pas
+   * de rangée — son DOM ne contient aucun lien `swap-vehicule#<modèle>`.
+   * Elle était rendue deux fois ici, en carte pleine largeur puis aussitôt
+   * en rangée juste dessous avec les mêmes vignettes.
+   */
+  const rows = TEMPLATE_CATEGORIES.filter((c) => c.slug !== featured?.slug);
 
   return (
     <section className="mt-10">
@@ -24,7 +31,9 @@ export default function TemplateShelf() {
         <Link
           href={`/templates/category/${featured.slug}`}
           aria-label={`${featured.title} — see all templates`}
-          className="relative mx-2.5 mb-8 block aspect-[4/3] overflow-hidden rounded-2xl bg-[#1c1c1c] transition active:opacity-90"
+          // aspect-video et non 4/3 : la vedette du modèle est un bandeau
+          // 16/9, nettement moins haut que ce qui était posé ici.
+          className="relative mx-2.5 mb-5 block aspect-video overflow-hidden rounded-2xl bg-[#1c1c1c] transition active:opacity-90"
         >
           <Image
             src={featured.featuredImage ?? featured.templates[0]?.cardImage}
@@ -36,21 +45,25 @@ export default function TemplateShelf() {
           />
           <span
             aria-hidden
-            className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/75 to-transparent"
+            className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/80 to-transparent"
           />
-          <span className="absolute bottom-3 left-4 text-[17px] font-semibold text-white">
+          <span className="absolute bottom-3 left-3.5 text-[18px] font-semibold tracking-tight text-white">
             {featured.title}
           </span>
-          <span className="absolute right-3 top-3 rounded-full bg-black/60 px-3.5 py-1.5 text-[13px] font-semibold text-white backdrop-blur-sm">
+          <span className="absolute right-2.5 top-2.5 rounded-full border border-white/25 bg-white/15 px-3 py-1.5 text-[13px] font-semibold text-white backdrop-blur-md">
             Try it
           </span>
         </Link>
       )}
 
-      {TEMPLATE_CATEGORIES.map((category) => (
-        <div key={category.slug} className="mb-8">
-          <div className="flex items-center justify-between gap-4 px-2.5">
-            <h3 className="text-[16px] text-white">{category.title}</h3>
+      {rows.map((category) => (
+        <div key={category.slug} className="mb-6">
+          <div className="flex items-baseline justify-between gap-4 px-2.5">
+            {/* Gris et non blanc, et plus gros : c'est un intitulé de rayon
+                sur le modèle, pas un titre de section. */}
+            <h3 className="text-[1.15rem] font-semibold tracking-tight text-[#8e8e8e]">
+              {category.title}
+            </h3>
             <Link
               href={`/templates/category/${category.slug}`}
               className="flex shrink-0 items-center gap-0.5 text-[13px] font-medium text-[#8e8e8e] transition active:opacity-70"
@@ -61,10 +74,10 @@ export default function TemplateShelf() {
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="h-3.5 w-3.5"
+                className="h-4 w-4"
               >
                 <path d="M9 18l6-6-6-6" />
               </svg>
@@ -78,21 +91,29 @@ export default function TemplateShelf() {
               <Link
                 key={template.slug}
                 href={`/templates/category/${category.slug}#${template.slug}`}
-                className="shrink-0 snap-start transition focus:outline-none focus-visible:outline-none active:opacity-80"
+                // La largeur vit sur l'élément flex, pas sur la boîte
+                // interne : un pourcentage posé sur celle-ci se résoudrait
+                // contre un parent de largeur automatique, donc contre rien.
+                className="w-[calc(37.594%_-_8.2406px)] min-w-[110px] shrink-0 snap-start transition focus:outline-none focus-visible:outline-none active:opacity-80"
               >
-                <div className="relative aspect-[9/11] w-[min(347px,62vw)] overflow-hidden rounded-2xl bg-[#1c1c1c]">
+                {/* Largeur reprise telle quelle du modèle (portée par le
+                    lien ci-dessus) : elle laisse entrevoir une troisième
+                    vignette (≈2,7 visibles), ce qui signale que la rangée
+                    défile. À 62vw, on n'en voyait qu'une et demie et la
+                    rangée passait pour une impasse. */}
+                <div className="relative aspect-[9/11] overflow-hidden rounded-2xl bg-[#1c1c1c]">
                   <Image
                     src={template.cardImage}
                     alt=""
                     fill
-                    sizes="(max-width: 560px) 62vw, 347px"
+                    sizes="(max-width: 560px) 38vw, 210px"
                     className="object-cover"
                   />
                   {/* Dégradé sous le libellé : sans lui, un texte blanc sur
                       une vignette claire devient illisible. */}
                   <span
                     aria-hidden
-                    className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/75 to-transparent"
+                    className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/85 to-transparent"
                   />
                   <span className="absolute inset-x-0 bottom-0 px-2 pb-2.5 text-center text-[13px] font-semibold leading-tight text-white">
                     {template.label}
