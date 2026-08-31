@@ -74,7 +74,9 @@ export async function POST(req: NextRequest) {
     try {
       const session = await stripe.billingPortal.sessions.create({
         customer: customerId,
-        return_url: `${origin}/account`,
+        // Studio, pas l'ancienne /account — même correction que sur
+        // checkout/route.ts.
+        return_url: `${origin}/`,
       });
 
       return NextResponse.json({ url: session.url });
@@ -116,7 +118,7 @@ export async function POST(req: NextRequest) {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${origin}/account?upgrade=success`,
+      return_url: `${origin}/?upgrade=success`,
       flow_data: {
         type: "subscription_update_confirm",
         subscription_update_confirm: {

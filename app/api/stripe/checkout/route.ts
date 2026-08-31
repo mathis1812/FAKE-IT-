@@ -87,7 +87,11 @@ export async function POST(req: NextRequest) {
         mode: "payment",
         customer: customerId,
         line_items: [{ price: TOPUPS[packId].priceId, quantity: 1 }],
-        success_url: `${origin}/account?topup=success`,
+        // Le studio est la destination après paiement, pas l'ancienne
+        // /account (page morte depuis la refonte — voir la correction du
+        // même problème sur AuthSheet/sign-in/sign-up) ; rien ne lisait
+        // d'ailleurs ce paramètre ?topup=success, retiré avec elle.
+        success_url: `${origin}/?topup=success`,
         cancel_url: `${origin}/pricing`,
         metadata: { supabase_user_id: user.id, topup: packId },
       });
@@ -121,7 +125,9 @@ export async function POST(req: NextRequest) {
       mode: "subscription",
       customer: customerId,
       line_items: [{ price: priceIdFor(planId), quantity: 1 }],
-      success_url: `${origin}/account?checkout=success`,
+      // Même correction que le pack de crédits ci-dessus : studio, pas
+      // l'ancienne /account.
+      success_url: `${origin}/?checkout=success`,
       cancel_url: `${origin}/pricing`,
       metadata: { supabase_user_id: user.id, plan: planId },
     });

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { PLANS, TOPUPS, formatPrice, type PlanId, type TopupId } from "@/lib/stripe";
 import {
   hasRedSnap as planHasRedSnap,
@@ -84,7 +83,6 @@ const TOPUP_FEATURES: Feature[] = [
 ];
 
 export default function PricingCatalogue() {
-  const router = useRouter();
   const [tab, setTab] = useState<"subscription" | "topup">("subscription");
   const [selectedPlan, setSelectedPlan] = useState<PlanId>("pro");
   const [selectedTopup, setSelectedTopup] = useState<TopupId>("medium");
@@ -110,7 +108,14 @@ export default function PricingCatalogue() {
         return;
       }
       if (data?.url) {
-        router.push(data.url);
+        // router.push() est le routeur CLIENT de Next.js : il ne sait
+        // naviguer que dans l'app elle-même. `data.url` pointe vers
+        // checkout.stripe.com, un domaine externe — router.push() l'ignore
+        // silencieusement (aucune erreur, aucune navigation), ce qui
+        // laissait quiconque cliquait "Continue" bloqué sur /pricing sans
+        // jamais atteindre la page de paiement. Trouvé en testant un
+        // paiement complet de bout en bout, pas en lisant le code seul.
+        window.location.href = data.url;
       }
     } catch {
       setError("Network error. Please try again.");
