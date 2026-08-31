@@ -247,6 +247,28 @@ export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
         ),
       },
       {
+        slug: "lendemain-de-soiree",
+        label: "Morning After",
+        cardImage: "/templates/lendemain-de-soiree-card.jpg",
+        exampleImage: "/templates/lendemain-de-soiree.jpg",
+        beforeImage: "/templates/lendemain-de-soiree-before.jpg",
+        tips: ["Whole room", "Good light"],
+        prompt: buildInPlaceEditPrompt(
+          "the room wrecked the morning after a house party — empty bottles, crushed cans, pizza boxes, spilled drinks and confetti strewn across the floor, stains on the sofa, cushions thrown around, keeping the room's exact layout, furniture and framing",
+        ),
+      },
+      {
+        slug: "inondation",
+        label: "Flood",
+        cardImage: "/templates/inondation-card.jpg",
+        exampleImage: "/templates/inondation.jpg",
+        beforeImage: "/templates/inondation-before.jpg",
+        tips: ["Whole room", "Good light"],
+        prompt: buildInPlaceEditPrompt(
+          "the room flooded with murky standing water covering the floor, furniture partly submerged and belongings floating on the surface, damp marks climbing the walls, keeping the room's exact layout, furniture and framing",
+        ),
+      },
+      {
         slug: "degats-maison",
         label: "House Damage",
         cardImage: "/templates/degats-maison-card.jpg",
