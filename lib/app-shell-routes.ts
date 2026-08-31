@@ -12,6 +12,7 @@ export function hasOwnHeader(pathname: string): boolean {
     pathname.startsWith("/templates") ||
     pathname === "/gallery" ||
     pathname === "/settings" ||
-    pathname === "/pricing"
+    pathname === "/pricing" ||
+    pathname === "/red-snap"
   );
 }

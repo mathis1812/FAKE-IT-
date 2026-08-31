@@ -124,8 +124,17 @@ export default function MenuSheet({
   const isLoggedIn = credits !== null;
   /**
    * Le Red Snap est réservé aux paliers Pro et Max — Lite ne l'a pas.
-   * La carte n'est montrée qu'à ceux qui n'y ont pas droit : la vanter à
-   * un abonné qui la paie déjà, en l'envoyant vers la grille tarifaire,
+   *
+   * Corrigé le 31/08 : la carte était masquée à ceux qui ONT l'avantage,
+   * en partant du principe qu'elle ne servait qu'à le vendre. Relevé sur le
+   * modèle avec un compte Pro, c'est l'inverse — il la leur montre, et son
+   * bouton mène à l'écran qui explique comment envoyer un Snap rouge. Ce
+   * sont eux qui en ont l'usage ; la masquer les privait du mode d'emploi
+   * de ce qu'ils paient.
+   *
+   * La destination reste donc conditionnelle : le mode d'emploi pour un
+   * abonné Pro/Max (parcours vérifié sur le modèle), la grille tarifaire
+   * pour les autres, à qui montrer un tutoriel d'une option verrouillée
    * serait une impasse.
    */
   const hasRedSnap = planHasRedSnap(asPlanId(planId));
@@ -300,43 +309,42 @@ export default function MenuSheet({
             );
           })}
 
-          {!hasRedSnap && (
-            <>
-              <div
-                role="separator"
-                aria-orientation="horizontal"
-                className="mx-6 my-1 h-[1.5px] shrink-0 bg-white/15"
-              />
-              <Link
-                href="/pricing"
-                onClick={onClose}
-                className="mt-2 flex h-[96px] items-center justify-between gap-3 rounded-3xl bg-[#FFFC00] px-5 transition active:opacity-90"
+          {/* Toujours affichée, quel que soit le palier : c'est seulement la
+              destination qui change. Restreindre l'affichage priverait les
+              uns du mode d'emploi et les autres de l'argument de vente. */}
+          <div
+            role="separator"
+            aria-orientation="horizontal"
+            className="mx-6 my-1 h-[1.5px] shrink-0 bg-white/15"
+          />
+          <Link
+            href={hasRedSnap ? "/red-snap" : "/pricing"}
+            onClick={onClose}
+            className="mt-2 flex h-[96px] items-center justify-between gap-3 rounded-3xl bg-[#FFFC00] px-5 transition active:opacity-90"
+          >
+            <span className="text-[18px] font-semibold leading-tight text-black">
+              Send your AI generations
+              <br />
+              as a Red Snap
+            </span>
+            <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary py-2 pl-5 pr-4 text-[15px] font-semibold text-white">
+              See
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
               >
-                <span className="text-[18px] font-semibold leading-tight text-black">
-                  Send your AI generations
-                  <br />
-                  as a Red Snap
-                </span>
-                <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary py-2 pl-5 pr-4 text-[15px] font-semibold text-white">
-                  See
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <path d="M5 12h13" />
-                    <path d="m12 5 7 7-7 7" />
-                  </svg>
-                </span>
-              </Link>
-            </>
-          )}
+                <path d="M5 12h13" />
+                <path d="m12 5 7 7-7 7" />
+              </svg>
+            </span>
+          </Link>
         </div>
       </div>
     </div>

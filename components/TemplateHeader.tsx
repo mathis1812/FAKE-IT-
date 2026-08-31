@@ -13,9 +13,18 @@ import Link from "next/link";
 export default function TemplateHeader({
   backHref,
   title,
+  titleClassName = "text-[1.3rem] text-white",
 }: {
   backHref: string;
   title: string;
+  /**
+   * Taille et couleur du titre. Par défaut celles des écrans sombres, mais
+   * /red-snap pose un fond jaune Snapchat sous cet en-tête : le modèle y
+   * bascule le titre en foncé et l'agrandit (sa variable `--titre-barre`
+   * passe à #121212, et le titre à 1.8rem). Sans ce point d'entrée, un
+   * titre blanc y serait illisible.
+   */
+  titleClassName?: string;
 }) {
   return (
     <header className="pointer-events-none fixed inset-x-0 top-0 z-50 flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+12px)]">
@@ -40,7 +49,9 @@ export default function TemplateHeader({
 
       {/* Centré sur la page et non sur l'espace restant : sinon le titre se
           décale selon la largeur du bouton de retour. */}
-      <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[1.3rem] font-bold tracking-tight text-white">
+      <span
+        className={`pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-bold tracking-tight ${titleClassName}`}
+      >
         {title}
       </span>
     </header>
