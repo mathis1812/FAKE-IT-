@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import TemplateHeader from "@/components/TemplateHeader";
 import { createClient } from "@/lib/supabase/client";
 import { asPlanId, PLAN_ORDER, QUALITY_COST } from "@/lib/generation-tiers";
@@ -54,10 +55,19 @@ export default function SubscriptionPage() {
   const [credits, setCredits] = useState<number | null>(null);
   const [planId, setPlanId] = useState<PlanId | null>(null);
   const [renewal, setRenewal] = useState<string | null>(null);
+  const router = useRouter();
   const [loaded, setLoaded] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState("");
 
+  /**
+   * Écran de compte personnel : sans session, il n'a rien à montrer. Il
+   * affichait « 0 credits » et « No active subscription » à un visiteur
+   * déconnecté — un solde faux plutôt qu'absent — et ses boutons Top up ne
+   * pouvaient que retomber sur l'erreur brute « Sign in to continue. »,
+   * sans offrir de s'y connecter. Même redirection que /settings et
+   * /gallery, qui sont dans le même cas.
+   */
   useEffect(() => {
     const supabase = createClient();
     void (async () => {
@@ -65,7 +75,7 @@ export default function SubscriptionPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        setLoaded(true);
+        router.replace("/sign-in");
         return;
       }
       const { data } = await supabase
@@ -80,7 +90,7 @@ export default function SubscriptionPage() {
       );
       setLoaded(true);
     })();
-  }, []);
+  }, [router]);
 
   /**
    * Les trois actions partagent la même mécanique : demander une URL au
