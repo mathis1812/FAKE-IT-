@@ -45,6 +45,19 @@ const PROMPT_PLACEHOLDER = "Describe the scene you want…";
 const PROMPT_PLACEHOLDER_SHORT = "Edit…";
 
 /**
+ * Panneau d'aide, ouvert par le (i) en haut à droite du champ. Sur le
+ * modèle il ne s'ouvre pas par-dessus la barre : c'est la barre elle-même
+ * qui vire au bleu et échange son contenu, d'où le fait que ce texte vive
+ * ici et pas dans un composant de bulle séparé. Contenu traduit du modèle,
+ * pas inventé.
+ */
+const HELP_TITLE = "For a better result";
+const HELP_LINES = [
+  "Just describe what you want to change, nothing else. The rest of the image is preserved automatically.",
+  "Also use a sharp, well-lit and well-framed photo: it makes all the difference.",
+];
+
+/**
  * Durée du chargement simulé du paywall. Calée sur l'ordre de grandeur d'une
  * vraie génération pour que le parcours reste crédible, sans faire attendre
  * un visiteur qui ne verra de toute façon qu'un aperçu verrouillé.
@@ -310,6 +323,18 @@ export default function Home() {
    */
   const [barFocused, setBarFocused] = useState(false);
   /**
+   * Sélecteur de résolution replié par défaut : relevé sur le modèle, seul
+   * le cran choisi est visible, et le toucher déplie les autres (les crans
+   * repliés y passent en `max-width: 0`, pas en `display:none`, pour que
+   * l'ouverture glisse au lieu de sauter).
+   */
+  const [resolutionOpen, setResolutionOpen] = useState(false);
+  /**
+   * Panneau d'aide : sur le modèle il ne se superpose pas à la barre, c'est
+   * la barre qui vire au bleu et échange son contenu.
+   */
+  const [infoOpen, setInfoOpen] = useState(false);
+  /**
    * Largeur mesurée du bouton Templates : sur le modèle, ce n'est pas un
    * simple `hidden`/`flex` (qui saute instantanément) mais un conteneur
    * `overflow-hidden` dont la largeur glisse jusqu'à 0px en 550ms au focus,
@@ -559,7 +584,17 @@ export default function Home() {
   const canSubmit = !!prepared && !!userNote.trim() && !loading;
   const hasTemplates = TEMPLATE_CATEGORIES.length > 0;
   /** Outils visibles dès que le champ est actif ou porte du texte. */
-  const showTools = barFocused || userNote.trim().length > 0;
+  // `infoOpen` compte aussi : le panneau d'aide vit DANS la barre dépliée,
+  // donc la laisser se replier (au moment où le clic sur le (i) fait perdre
+  // le focus au champ) emporterait le panneau qu'on vient d'ouvrir.
+  const showTools = barFocused || userNote.trim().length > 0 || infoOpen;
+
+  // La rangée d'outils est démontée quand la barre se replie : sans ce
+  // nettoyage, un sélecteur laissé ouvert se retrouverait déjà déplié à la
+  // réouverture suivante, sans que le client l'ait redemandé.
+  useEffect(() => {
+    if (!showTools) setResolutionOpen(false);
+  }, [showTools]);
 
 
   return (
@@ -828,6 +863,62 @@ export default function Home() {
         </div>
 
         <div className="relative flex-1">
+          {/* Le fond, l'arrondi et la hauteur vivent sur ce conteneur, pas
+              sur le textarea : c'est lui qui vire au bleu pour le panneau
+              d'aide, et le textarea (devenu transparent) n'est qu'un de ses
+              deux contenus échangés en fondu — même structure que le modèle,
+              où ce conteneur porte l'attribut data-saisie. */}
+          <div
+            className={`relative overflow-hidden rounded-[32px] transition-[min-height,background-color] duration-[550ms,450ms] ease-[cubic-bezier(0.22,1,0.36,1),ease-in-out] ${
+              infoOpen
+                ? "min-h-[136px] bg-primary"
+                : showTools
+                  ? "min-h-[112px] bg-white/[0.07]"
+                  : "min-h-16 bg-white/[0.07]"
+            }`}
+          >
+            {/* Panneau d'aide : en flux normal, c'est lui qui donne sa
+                hauteur au conteneur quand il est là. */}
+            {infoOpen && (
+              <>
+                <div className="flex flex-col px-5 pb-5 pt-4 text-white">
+                  <p className="pr-12 text-[15px] font-semibold leading-tight">
+                    {HELP_TITLE}
+                  </p>
+                  {HELP_LINES.map((line) => (
+                    <p
+                      key={line}
+                      className="mt-2 text-[13px] leading-[18px] text-white/90"
+                    >
+                      {line}
+                    </p>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => setInfoOpen(false)}
+                  className="absolute right-3.5 top-4 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-primary-deep text-white transition active:opacity-70"
+                >
+                  <svg aria-hidden width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                  </svg>
+                </button>
+              </>
+            )}
+
+            {/* Contenu normal : jamais démonté quand l'aide s'ouvre, sinon le
+                champ perdrait son focus (et donc la barre se replierait). Il
+                sort du flux et s'efface, comme sur le modèle. */}
+            <div
+              className={`transition-opacity duration-200 ${
+                infoOpen
+                  ? "pointer-events-none absolute inset-0 opacity-0"
+                  : "opacity-100"
+              }`}
+            >
           <textarea
             rows={1}
             value={userNote}
@@ -841,12 +932,30 @@ export default function Home() {
             // outils "montent" en apparaissant — eux ne font qu'un fondu
             // d'opacité (voir animate-tools-in). Sans cette transition ici,
             // la barre sautait instantanément à sa hauteur dépliée.
-            className={`relative z-10 block w-full resize-none overflow-hidden rounded-3xl bg-white/[0.07] px-5 text-[17px] font-medium leading-6 text-white caret-white outline-none transition-[min-height] duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)] placeholder:text-white/35 ${
+            className={`relative z-10 block w-full resize-none overflow-hidden bg-transparent px-5 text-[17px] font-medium leading-6 text-white caret-white outline-none transition-[min-height] duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)] placeholder:text-white/35 ${
               showTools
-                ? "min-h-[112px] pb-16 pt-[18px]"
+                ? "min-h-[112px] pb-16 pr-14 pt-[18px]"
                 : "min-h-16 pb-[19px] pr-16 pt-[18px]"
             }`}
           />
+
+          {/* (i) en haut à droite du champ, présent seulement déplié —
+              mêmes position et fondu que sur le modèle. */}
+          {showTools && (
+            <button
+              type="button"
+              aria-label="How to get a better result"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setInfoOpen(true)}
+              className="animate-tools-in absolute right-2 top-[10px] z-20 flex h-10 w-10 items-center justify-center text-white/45 transition active:opacity-70"
+            >
+              <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
+              </svg>
+            </button>
+          )}
 
           {/* État replié : la flèche seule, centrée à droite, sans coût. */}
           {!showTools && (
@@ -870,10 +979,27 @@ export default function Home() {
               onMouseDown preventDefault pour qu'un clic sur un outil ne le
               fasse pas perdre le focus (sinon la rangée se replierait avant
               le clic). Chaque enfant réactive le pointeur. */}
+          {/* Ferme le sélecteur de résolution au toucher n'importe où
+              ailleurs, comme sur le modèle. Sous la rangée d'outils (z-30
+              contre z-40) pour ne pas intercepter les clics sur les crans
+              eux-mêmes. */}
+          {showTools && resolutionOpen && (
+            <button
+              type="button"
+              aria-hidden
+              tabIndex={-1}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setResolutionOpen(false)}
+              className="fixed inset-0 z-30 cursor-default"
+            />
+          )}
+
           {showTools && (
             <div
               onMouseDown={(e) => e.preventDefault()}
-              className="animate-tools-in pointer-events-none absolute inset-x-[6.5px] bottom-[6.5px] z-20 flex items-center gap-1.5 [&>*]:pointer-events-auto"
+              className={`animate-tools-in pointer-events-none absolute inset-x-[6.5px] bottom-[6.5px] flex items-center gap-1.5 [&>*]:pointer-events-auto ${
+                resolutionOpen ? "z-40" : "z-20"
+              }`}
             >
               {/* Mode + résolution dans un conteneur défilable : sur un écran
                   large tout tient, sur mobile ils glissent horizontalement
@@ -887,15 +1013,25 @@ export default function Home() {
                 <span className="flex h-10 items-center justify-center rounded-full bg-primary px-4 text-[14px] font-semibold text-white">
                   Photo
                 </span>
+                {/* Se replie pendant que la résolution est ouverte : les
+                    deux groupes se partagent la même largeur, et c'est ainsi
+                    que le modèle fait de la place aux trois crans plutôt que
+                    de pousser le bouton d'envoi hors de l'écran. */}
                 <button
                   type="button"
                   disabled
                   title="Video is coming soon"
                   aria-label="Video (coming soon)"
-                  className="flex h-10 items-center justify-center gap-1 rounded-full px-3 text-[14px] font-semibold text-white/40"
+                  aria-hidden={resolutionOpen || undefined}
+                  tabIndex={resolutionOpen ? -1 : undefined}
+                  className={`flex h-10 min-w-0 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full text-[14px] font-semibold text-white/40 transition-[max-width,padding] duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                    resolutionOpen
+                      ? "pointer-events-none max-w-0 px-0"
+                      : "max-w-24 px-3"
+                  }`}
                 >
                   Video
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
                     <rect width="14" height="10" x="5" y="11" rx="2" />
                     <path d="M8 11V7a4 4 0 0 1 8 0" />
                   </svg>
@@ -906,29 +1042,59 @@ export default function Home() {
                   cran choisi est plein bleu ; ceux au-dessus du palier sont
                   grisés avec un cadenas et désactivés ; 1K reste ouvert à
                   tous. */}
-              <div className="flex h-12 shrink-0 items-center rounded-full bg-[#333333] p-1">
+              <div
+                className="flex h-12 shrink-0 items-center rounded-full bg-[#333333] p-1"
+                role={resolutionOpen ? "radiogroup" : undefined}
+                aria-label={resolutionOpen ? "Image resolution" : undefined}
+              >
                 {IMAGE_QUALITIES.map((q) => {
                   const open = isQualityOpen(q, plan);
                   const active = quality === q;
+                  // Replié, seul le cran choisi occupe de la place : les
+                  // autres passent en max-w-0/px-0 (jamais display:none, pour
+                  // que l'ouverture glisse) et sortent de l'ordre de
+                  // tabulation. C'est le cran choisi qui porte alors le rôle
+                  // de bouton d'ouverture.
+                  const collapsed = !resolutionOpen && !active;
                   return (
                     <button
                       key={q}
                       type="button"
-                      disabled={!open}
-                      onClick={() => setQuality(q)}
-                      aria-pressed={active}
-                      aria-label={`Resolution ${QUALITY_LABEL[q]}${open ? "" : " (locked)"}`}
-                      className={`flex h-10 items-center justify-center gap-0.5 rounded-full px-2.5 text-[14px] font-semibold tabular-nums transition-colors ${
-                        active
+                      disabled={!open || collapsed}
+                      aria-hidden={collapsed || undefined}
+                      tabIndex={collapsed ? -1 : undefined}
+                      onClick={() => {
+                        if (!resolutionOpen) {
+                          setResolutionOpen(true);
+                          return;
+                        }
+                        setQuality(q);
+                        setResolutionOpen(false);
+                      }}
+                      {...(resolutionOpen
+                        ? { role: "radio", "aria-checked": active }
+                        : {
+                            "aria-haspopup": true,
+                            "aria-expanded": false,
+                            "aria-label": `Resolution: ${QUALITY_LABEL[q]}`,
+                          })}
+                      className={`flex h-10 min-w-0 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full text-[14px] font-semibold tabular-nums transition-[max-width,padding,background-color,color] duration-[400ms,400ms,300ms,300ms] ease-[cubic-bezier(0.22,1,0.36,1),cubic-bezier(0.22,1,0.36,1),ease,ease] ${
+                        collapsed
+                          ? "pointer-events-none max-w-0 px-0"
+                          : resolutionOpen
+                            ? "w-11 max-w-11 px-0"
+                            : "max-w-[52px] px-3"
+                      } ${
+                        active && resolutionOpen
                           ? "bg-primary text-white"
                           : open
                             ? "text-white active:opacity-70"
-                            : "text-white/30"
+                            : "text-white/25"
                       }`}
                     >
                       {QUALITY_LABEL[q]}
                       {!open && (
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
                           <rect width="18" height="11" x="3" y="11" rx="2" />
                           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                         </svg>
@@ -963,6 +1129,8 @@ export default function Home() {
               </button>
             </div>
           )}
+            </div>
+          </div>
         </div>
       </div>
 
