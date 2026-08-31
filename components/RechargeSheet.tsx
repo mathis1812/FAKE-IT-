@@ -8,10 +8,12 @@ import PricingCatalogue from "@/components/PricingCatalogue";
  * depuis « Subscription & packs » dans AccountSheet — les deux points
  * d'entrée relevés sur le modèle mènent à la même feuille.
  *
- * Contrairement à AuthSheet, pas d'image d'illustration en tête (le modèle
- * en a une propre à son produit — booster.webp — sans équivalent Bluminoo à
- * ce jour) : juste la poignée et le bouton de fermeture, sur le même fond
- * noir plein écran que MenuSheet et AccountSheet.
+ * Corrigé le 31/08 : cette feuille n'avait pas la bannière du modèle, sur
+ * la foi d'une note affirmant qu'elle lui était propre. Elle ne l'est pas —
+ * c'est un simple dégradé portant le mot « Upgrade », sans marque. Son
+ * absence n'était pas qu'un écart esthétique : la bannière est ce qui porte
+ * le bouton de fermeture, et sans elle ce bouton retombait sur la grille,
+ * où il chevauchait la pastille de remise de la dernière carte.
  */
 export default function RechargeSheet({
   isOpen,
@@ -48,33 +50,50 @@ export default function RechargeSheet({
         role="dialog"
         aria-modal="true"
         aria-label="Recharge"
-        className="animate-sheet-up absolute inset-x-0 bottom-0 top-0 flex flex-col overflow-hidden rounded-t-[47px] bg-black pb-[max(8px,calc(env(safe-area-inset-bottom)-14px))] pt-[calc(env(safe-area-inset-top)+20px)]"
+        // pt sur la racine, et non sur la bannière : la poignée et le bouton
+        // de fermeture sont positionnés en absolu par rapport à celle-ci, donc
+        // la rembourrer les décollerait de l'image qu'ils doivent survoler.
+        className="animate-sheet-up absolute inset-x-0 bottom-0 top-0 flex flex-col overflow-hidden rounded-t-[47px] bg-black pb-[max(8px,calc(env(safe-area-inset-bottom)-14px))] pt-[env(safe-area-inset-top)]"
       >
-        <span
-          aria-hidden
-          className="mx-auto h-1.5 w-9 shrink-0 rounded-full bg-white/30"
-        />
+        {/* Bannière : elle sert aussi de zone de sécurité, la poignée et la
+            croix se posant dessus plutôt que sur le contenu. */}
+        <div className="relative shrink-0 p-3">
+          <div className="overflow-clip rounded-[35px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/upgrade-banner.webp"
+              alt=""
+              fetchPriority="high"
+              className="block aspect-[2.2/1] w-full object-cover"
+            />
+          </div>
 
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="absolute right-6 top-[calc(env(safe-area-inset-top)+16px)] flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/20 text-white backdrop-blur-md transition active:opacity-70"
-        >
-          <svg
+          <span
             aria-hidden
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            className="h-[18px] w-[18px]"
-          >
-            <path d="M18 6 6 18M6 6l12 12" />
-          </svg>
-        </button>
+            className="absolute left-1/2 top-5 h-1.5 w-9 -translate-x-1/2 rounded-full bg-white/50"
+          />
 
-        <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-4">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute right-6 top-6 flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/20 text-white backdrop-blur-md transition active:opacity-70"
+          >
+            <svg
+              aria-hidden
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              className="h-[18px] w-[18px]"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-4">
           <PricingCatalogue />
         </div>
       </div>
