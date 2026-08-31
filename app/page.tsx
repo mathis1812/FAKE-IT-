@@ -15,6 +15,7 @@ import {
   maxQualityFor,
   photoCost,
   QUALITY_LABEL,
+  TESTING_UNLOCK_ALL_TIERS,
   type ImageQuality,
 } from "@/lib/generation-tiers";
 import { createClient } from "@/lib/supabase/client";
@@ -360,8 +361,14 @@ export default function Home() {
     return () => observer.disconnect();
   }, []);
 
-  /** Seul un compte connecté ET porteur d'un palier peut générer. */
-  const isSubscribed = isLoggedIn && !!planId;
+  /**
+   * Seul un compte connecté ET porteur d'un palier peut générer — sauf
+   * pendant la période de test (voir TESTING_UNLOCK_ALL_TIERS dans
+   * lib/generation-tiers.ts), où seule la connexion suffit : tant qu'aucun
+   * produit Stripe réel n'est configuré, exiger un palier bloquerait tout
+   * le monde. TEMPORAIRE, à retirer avec le même flag.
+   */
+  const isSubscribed = TESTING_UNLOCK_ALL_TIERS ? isLoggedIn : isLoggedIn && !!planId;
   const plan = asPlanId(planId);
   /**
    * Red Snap réservé aux paliers Pro et Max — voir lib/generation-tiers.ts.

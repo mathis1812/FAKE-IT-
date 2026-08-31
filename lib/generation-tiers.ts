@@ -70,8 +70,18 @@ export function asPlanId(value: string | null | undefined): PlanId | null {
   return (PLAN_ORDER as string[]).includes(value) ? (value as PlanId) : null;
 }
 
+/**
+ * TEMPORAIRE (demandé le 31/08, "pour le moment ... pour je puisse avoir
+ * accès") : lève toutes les barrières de palier — qualité, vidéo, Red Snap —
+ * tant qu'aucun produit Stripe réel n'est encore configuré, pour permettre
+ * de tester le parcours complet sans abonnement. À repasser à `false` une
+ * fois les produits Stripe (LITE/PRO/MAX) créés et l'accès payant voulu.
+ */
+export const TESTING_UNLOCK_ALL_TIERS = true;
+
 /** `plan` vaut `null` pour un visiteur sans abonnement. */
 function meetsPlan(plan: PlanId | null, required: PlanId): boolean {
+  if (TESTING_UNLOCK_ALL_TIERS) return true;
   if (!plan) return false;
   return PLAN_ORDER.indexOf(plan) >= PLAN_ORDER.indexOf(required);
 }
