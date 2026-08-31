@@ -200,11 +200,19 @@ export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
         slug: "voiture-accidentee",
         label: "Accident",
         cardImage: "/templates/voiture-accidentee-card.jpg",
-        exampleImage: "/templates/voiture-accidentee-extreme.jpg",
+        exampleImage: "/templates/voiture-accidentee-fort.jpg",
         beforeImage: "/templates/voiture-accidentee-before.jpg",
-        tips: ["Whole car", "Clear space"],
+        // « Bon angle » sur le modèle, pas « Clear space » : le second
+        // conseil portait sur le dégagement autour du véhicule alors qu'il
+        // parle du point de vue, comme sur la catégorie Swap vehicle.
+        tips: ["Whole car", "Good angle"],
         variantQuestion: "How much damage?",
-        defaultVariantSlug: "extreme",
+        // Le cran du milieu, relevé sur le modèle (son écran de choix
+        // s'ouvre sur « L'assurance en sueur » et son bouton Continuer
+        // pointe vers /fort). Bluminoo ouvrait sur le cran le plus extrême,
+        // ce qui poussait par défaut vers le rendu le plus spectaculaire au
+        // lieu du plus représentatif.
+        defaultVariantSlug: "fort",
         variants: [
           {
             slug: "modere",
