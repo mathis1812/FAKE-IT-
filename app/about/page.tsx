@@ -13,18 +13,12 @@ const FAQ_ITEMS = [
   },
   {
     question: "How long does a generation take?",
-    answer:
-      "About 15 to 30 seconds for an image, and 90 seconds or more for a video.",
+    answer: "About 30 seconds.",
   },
   {
     question: "Are my photos kept?",
     answer:
       "Your successful renders are saved to your Gallery, tied to your account — accessible from any device once signed in. The privacy policy details the subprocessors used to handle your photos.",
-  },
-  {
-    question: "How does the Video tab work?",
-    answer:
-      "Upload a source image (and optionally a photo of the replacement object), describe the change you want, and Bluminoo Studio generates a short video with the modification applied.",
   },
 ];
 
@@ -39,16 +33,13 @@ export default function AProposPage() {
           Bluminoo Studio
         </h2>
         <p className="mt-4 text-sm leading-relaxed text-neutral-400">
-          Bluminoo Studio turns a photo into an ultra-realistic life scene,
-          designed to impress everyone around you: add a luxury item (watch,
-          car) or place yourself in a real location of your choice
-          (restaurant, rooftop, or anywhere you have a photo of), while
-          preserving your face, pose, lighting, and original framing — as an
-          image or a video, ready to post to your story.
+          Bluminoo Studio turns a photo into an ultra-realistic scene,
+          designed to impress everyone around you. Describe the setting you
+          want and the AI places you in it, preserving your face, your pose
+          and the light of the original shot — ready to post to your story.
         </p>
         <p className="mt-3 text-sm leading-relaxed text-neutral-400">
-          Powered by Gemini 3 Pro Image (Google API) for images, and Kling
-          O1 (via fal.ai) for video.
+          Powered by Gemini 3 Pro Image (Google API).
         </p>
       </Panel>
 
