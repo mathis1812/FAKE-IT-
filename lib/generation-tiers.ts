@@ -77,7 +77,7 @@ export function asPlanId(value: string | null | undefined): PlanId | null {
  * de tester le parcours complet sans abonnement. À repasser à `false` une
  * fois les produits Stripe (LITE/PRO/MAX) créés et l'accès payant voulu.
  */
-export const TESTING_UNLOCK_ALL_TIERS = true;
+export const TESTING_UNLOCK_ALL_TIERS = false;
 
 /** `plan` vaut `null` pour un visiteur sans abonnement. */
 function meetsPlan(plan: PlanId | null, required: PlanId): boolean {
