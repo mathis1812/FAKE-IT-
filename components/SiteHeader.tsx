@@ -58,7 +58,10 @@ export default function SiteHeader() {
       {isLoggedIn !== null &&
         (isLoggedIn ? (
           <Link
-            href="/account"
+            // /account est l'ancienne page pré-refonte (celle du
+            // screenshot signalé) : /settings l'a remplacée comme véritable
+            // écran de compte, avec sa propre en-tête (voir hasOwnHeader).
+            href="/settings"
             className="rounded-full bg-white px-5 py-2.5 text-[15px] font-semibold text-black transition hover:bg-white/90"
           >
             My account

@@ -142,7 +142,12 @@ export default function AuthSheet() {
       }
 
       close();
-      router.push("/account");
+      // Le studio EST la page d'accueil connectée sur le modèle — il n'y a
+      // pas d'écran "compte" intermédiaire après connexion. `/account`
+      // (relevé comme non corrigé : c'est l'ancienne page pré-refonte,
+      // celle que /settings a remplacée) laissait le client dessus au lieu
+      // de le renvoyer dans le studio.
+      router.push("/");
       router.refresh();
     } catch {
       setError("Something went wrong, please try again in a moment.");

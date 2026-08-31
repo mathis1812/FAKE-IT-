@@ -34,7 +34,10 @@ export default function SignInPage() {
         return;
       }
 
-      router.push("/account");
+      // Le studio est la destination après connexion, pas l'ancienne page
+      // /account (pré-refonte, remplacée par /settings) — même correction
+      // que sur AuthSheet, l'autre parcours de connexion.
+      router.push("/");
       router.refresh();
     } catch {
       setError("Something went wrong, please try again in a moment.");

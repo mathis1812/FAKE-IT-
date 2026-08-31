@@ -42,7 +42,9 @@ export default function SignUpPage() {
         return;
       }
 
-      router.push("/account");
+      // Même correction que /sign-in et AuthSheet : le studio est la
+      // destination après création de compte, pas l'ancienne /account.
+      router.push("/");
       router.refresh();
     } catch {
       setError("Something went wrong, please try again in a moment.");
