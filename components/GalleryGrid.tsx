@@ -84,6 +84,12 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
 
   const visible =
     filter === "all" ? entries : entries.filter((e) => e.mode === filter);
+  // Relevé en direct sur /galerie (compte photos uniquement) : les onglets
+  // n'apparaissent pas du tout tant qu'aucune vidéo n'est présente — les
+  // filtrer n'aurait aucun sens sur un historique d'un seul type. Bluminoo
+  // ne génère encore que des photos, donc en pratique ils restent masqués
+  // pour tout le monde jusqu'au branchement du moteur vidéo.
+  const hasVideo = entries.some((e) => e.mode === "video");
 
   async function handleShare(entry: GalleryEntry) {
     setSharingId(entry.id);
@@ -117,30 +123,33 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
 
   return (
     <>
-      {/* Trois onglets, classes reprises du modèle : le filtrage reste utile
-          même si Bluminoo ne génère plus de vidéo — d'anciennes entrées
-          peuvent en porter, et les masquer romprait l'historique du client. */}
-      <div
-        role="tablist"
-        className="mb-4 flex shrink-0 gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {TABS.map((tab) => (
-          <button
-            key={tab.value}
-            type="button"
-            role="tab"
-            aria-selected={filter === tab.value}
-            onClick={() => setFilter(tab.value)}
-            className={`h-9 shrink-0 rounded-full px-4 text-[14px] font-semibold leading-none transition-colors duration-200 active:opacity-70 ${
-              filter === tab.value
-                ? "bg-white text-black"
-                : "border border-[#2d2d2d] bg-[#161616] text-[#cccccc]"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* Trois onglets, classes reprises du modèle — mais lui-même les
+          masque entièrement sur un historique sans aucune vidéo (relevé en
+          direct sur /galerie) : filtrer par type n'a pas de sens s'il n'y en
+          a qu'un seul. */}
+      {hasVideo && (
+        <div
+          role="tablist"
+          className="mb-4 flex shrink-0 gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {TABS.map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              role="tab"
+              aria-selected={filter === tab.value}
+              onClick={() => setFilter(tab.value)}
+              className={`h-9 shrink-0 rounded-full px-4 text-[14px] font-semibold leading-none transition-colors duration-200 active:opacity-70 ${
+                filter === tab.value
+                  ? "bg-white text-black"
+                  : "border border-[#2d2d2d] bg-[#161616] text-[#cccccc]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Vignette nue, sans libellé ni date en surimpression : elles vivent
           dans la modale de détail au clic, comme sur le modèle. */}
