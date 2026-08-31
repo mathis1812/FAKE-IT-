@@ -11,8 +11,12 @@ import { createClient } from "@/lib/supabase/client";
  * statut, deux boutons, et la déconnexion en simple lien texte rouge — pas
  * un bouton plein, contrairement aux deux au-dessus.
  *
- * « Subscription & packs » ouvre RechargeSheet, la même feuille que la
- * pastille de crédits du studio — deux points d'entrée, une seule feuille.
+ * « Subscription & packs » mène à /subscription, l'écran de gestion de
+ * l'abonnement (solde, formule en cours, changement de palier, packs,
+ * résiliation). Il ouvrait auparavant RechargeSheet, qui ne sait que
+ * *vendre* : un abonné n'y trouvait ni sa formule ni sa date de
+ * renouvellement. La feuille reste atteignable par la pastille de crédits
+ * du studio, son vrai rôle sur le modèle.
  *
  * « Réglages » mène en fait vers une vraie page (/reglages sur le modèle,
  * /settings ici) — ma première vérification l'avait ratée en cliquant trop
@@ -21,13 +25,11 @@ import { createClient } from "@/lib/supabase/client";
 export default function AccountSheet({
   isOpen,
   onClose,
-  onOpenRecharge,
   email,
   planId,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onOpenRecharge: () => void;
   email: string;
   planId: string | null;
 }) {
@@ -118,16 +120,13 @@ export default function AccountSheet({
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              onOpenRecharge();
-            }}
+          <Link
+            href="/subscription"
+            onClick={onClose}
             className="flex h-14 w-full items-center justify-center rounded-3xl bg-white text-[17px] font-medium text-black transition active:opacity-70"
           >
             Subscription & packs
-          </button>
+          </Link>
 
           <Link
             href="/settings"

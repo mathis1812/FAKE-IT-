@@ -107,14 +107,21 @@ export default function StudioTopBar({
           </Link>
         )}
 
-        {credits !== null && (
-          <button
-            type="button"
-            onClick={() => setRechargeOpen(true)}
-            aria-label={`${credits} credits — see the plans`}
-            aria-haspopup="dialog"
-            className="pointer-events-auto flex h-[42px] w-[92px] shrink-0 items-center justify-center gap-1 rounded-full border border-[#2d2d2d] bg-[#161616] text-white transition active:opacity-80"
-          >
+        {/* Toujours présente, même déconnecté : le modèle y affiche un tiret
+            plutôt que de retirer la pastille. La faire disparaître décalait
+            le mot-symbole et donnait deux en-têtes de largeurs différentes
+            selon l'état de connexion. */}
+        <button
+          type="button"
+          onClick={() => setRechargeOpen(true)}
+          aria-label={
+            credits !== null
+              ? `${credits} credits — see the plans`
+              : "Your credits — see the plans"
+          }
+          aria-haspopup="dialog"
+          className="pointer-events-auto flex h-[42px] w-[92px] shrink-0 items-center justify-center gap-1 rounded-full border border-[#2d2d2d] bg-[#161616] text-white transition active:opacity-80"
+        >
             <svg
               width="16"
               height="16"
@@ -132,10 +139,9 @@ export default function StudioTopBar({
                 changement de crédits, les chiffres n'ayant pas la même
                 largeur dans Geist. */}
             <span className="text-[15px] font-semibold tabular-nums">
-              {credits.toLocaleString("en-US")}
+              {credits !== null ? credits.toLocaleString("en-US") : "—"}
             </span>
           </button>
-        )}
       </header>
 
       <MenuSheet
@@ -151,7 +157,6 @@ export default function StudioTopBar({
       <AccountSheet
         isOpen={accountOpen}
         onClose={() => setAccountOpen(false)}
-        onOpenRecharge={() => setRechargeOpen(true)}
         email={email}
         planId={planId}
       />

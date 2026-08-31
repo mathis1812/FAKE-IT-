@@ -17,8 +17,12 @@ import type { PlanId } from "@/lib/stripe";
 export type ImageQuality = "normal" | "high" | "max";
 export type GenerationMode = "photo" | "video";
 
-/** Ordre croissant des paliers — l'index sert aux comparaisons de droits. */
-const PLAN_ORDER: PlanId[] = ["lite", "pro", "max"];
+/**
+ * Ordre croissant des paliers — l'index sert aux comparaisons de droits.
+ * Exporté pour que l'écran d'abonnement puisse proposer le palier suivant
+ * sans redéfinir cet ordre de son côté (deux listes divergeraient).
+ */
+export const PLAN_ORDER: PlanId[] = ["lite", "pro", "max"];
 
 export const IMAGE_QUALITIES: ImageQuality[] = ["normal", "high", "max"];
 

@@ -13,6 +13,7 @@ export function hasOwnHeader(pathname: string): boolean {
     pathname === "/gallery" ||
     pathname === "/settings" ||
     pathname === "/pricing" ||
-    pathname === "/red-snap"
+    pathname === "/red-snap" ||
+    pathname === "/subscription"
   );
 }
