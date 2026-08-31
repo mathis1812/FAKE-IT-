@@ -24,12 +24,27 @@ export default function SettingsPage() {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
+  /**
+   * Écran réservé aux comptes connectés, comme /gallery qui redirige déjà
+   * côté serveur. Sans cette garde, un visiteur déconnecté obtenait la page
+   * entière : carte « Account » vide, et surtout le parcours de suppression
+   * de compte au complet — un bouton destructeur qui ne pouvait que finir
+   * en erreur d'API. Le corps n'est rendu qu'une fois la session confirmée,
+   * pour ne pas faire clignoter ce bouton pendant la vérification.
+   */
+  const [ready, setReady] = useState(false);
+
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
-      setEmail(user?.email ?? "");
+      if (!user) {
+        router.replace("/sign-in");
+        return;
+      }
+      setEmail(user.email ?? "");
+      setReady(true);
     });
-  }, []);
+  }, [router]);
 
   const handleDelete = useCallback(async () => {
     setDeleting(true);
@@ -56,6 +71,10 @@ export default function SettingsPage() {
     <>
       <TemplateHeader backHref="/" title="Settings" />
 
+      {!ready ? (
+        // Session encore inconnue : l'en-tête suffit, le corps attend.
+        <div className="min-h-dvh" />
+      ) : (
       <div className="animate-fade-up flex min-h-dvh flex-col gap-3 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+76px)]">
         <section className="flex flex-col gap-1 rounded-3xl border-[1.5px] border-white/15 bg-black/30 p-4">
           <span className="text-[13px] font-semibold uppercase tracking-wide text-white/40">
@@ -113,6 +132,7 @@ export default function SettingsPage() {
           )}
         </section>
       </div>
+      )}
     </>
   );
 }
