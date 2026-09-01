@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { openAuthSheet } from "@/components/AuthSheet";
 import FaqAccordion from "@/components/FaqAccordion";
 import HeroSlider from "@/components/HeroSlider";
+import SpecularButton from "@/components/SpecularButton";
 import TemplatesCarousel from "@/components/TemplatesCarousel";
 import TestimonialMarquee from "@/components/TestimonialMarquee";
 import {
@@ -19,6 +21,11 @@ const FAQ_ITEMS = [
     question: "How does the image generation work?",
     answer:
       "You send your photo, add 1 to 3 photos of the place you want to appear in (or just describe the scene), and the AI blends you in photorealistically while preserving your face, pose, and the original lighting.",
+  },
+  {
+    question: "How long does it take?",
+    answer:
+      "A few seconds for an image, one to two minutes for a video. You can start a render and send it right away.",
   },
   {
     question: "Do the photos belong to me?",
@@ -44,6 +51,11 @@ const FAQ_ITEMS = [
     question: "Are my generated photos private?",
     answer:
       "Your Gallery is private and tied only to your account. The privacy policy details the subprocessors used to handle photos.",
+  },
+  {
+    question: "What if I don't like the result?",
+    answer:
+      "AI output can vary from one generation to the next — just run it again. For best results, use a sharp, well-lit photo with the subject clearly visible.",
   },
 ];
 
@@ -135,6 +147,7 @@ function CtaButton({
 }
 
 export default function LandingPage() {
+  const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -178,12 +191,35 @@ export default function LandingPage() {
           results, in seconds.
         </p>
 
-        <CtaButton
-          isLoggedIn={isLoggedIn}
-          label={ctaLabel}
-          ctaId="hero_primary"
-          className="mt-3 w-full max-w-[440px] self-center"
-        />
+        <SpecularButton
+          size="lg"
+          radius={18}
+          tint="#ffffff"
+          tintOpacity={0}
+          blur={0}
+          textColor="#f5f5f5"
+          lineColor="#ffffff"
+          baseColor="#0285fe"
+          intensity={2}
+          shineSize={10}
+          shineFade={40}
+          thickness={2.5}
+          speed={0.35}
+          followMouse
+          proximity={250}
+          autoAnimate={false}
+          className="mt-3 self-center"
+          onClick={() => {
+            trackLandingCtaClick("hero_primary");
+            if (isLoggedIn) {
+              router.push("/");
+            } else {
+              openAuthSheet("signup");
+            }
+          }}
+        >
+          {ctaLabel}
+        </SpecularButton>
 
         <div className="mt-8 flex w-full justify-center">
           <HeroSlider />
