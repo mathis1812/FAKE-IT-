@@ -1,0 +1,56 @@
+{
+  "id": "lego_world",
+  "version": "2.1.0",
+  "name": "Univers LEGO",
+  "category": "universe_swap",
+  "target_model": "google/gemini-3-pro-image",
+  "model_alias": "Nano Banana Pro",
+  "mode": "edit",
+
+  "user_input": {
+    "image": "required",
+    "text": "none",
+    "options": "none"
+  },
+
+  "request": {
+    "model": "google/gemini-3-pro-image",
+    "image_urls": ["{{USER_PHOTO}}", "{{STYLE_REFERENCE}}"],
+    "aspect_ratio": "{{MATCH_SOURCE}}",
+    "resolution": "2K",
+    "prompt": "{{PROMPT}}"
+  },
+
+  "prompt": "Rebuild this entire photograph as a scene made of real LEGO bricks, photographed like an official LEGO set render.\n\nTURN THE PERSON INTO A LEGO MINIFIGURE while keeping them recognizable: a classic minifigure body — cylindrical head, C-shaped claw hands, short legs, blocky torso — but printed and colored to match this specific person. Keep the same skin tone as the minifigure head color, the same hairstyle and hair color rebuilt as a moulded LEGO hair piece or hat, and the same outfit reproduced as printed torso and leg decoration with matching colors. Keep the same pose as far as a minifigure's joints allow, the same head angle, and the same position, size and framing in the image. Do not change the camera angle or crop. Output the final image in the exact same aspect ratio, framing and crop as the input photograph — no cropping, no zooming, no added borders, bars or padding, no change to the composition.\n\nREBUILD EVERYTHING ELSE IN BRICKS: reconstruct the whole environment out of visible LEGO elements — standard bricks, plates, tiles, slopes and specialty parts — with glossy injection-moulded plastic material, visible studs on exposed top surfaces, small sprue marks and fine mould seams, and the slight imperfect alignment of a hand-built model. Follow the real layout of the original scene closely so it reads as the same place rebuilt in LEGO. Ground becomes baseplates and tiles, terrain becomes stepped brick slopes, vegetation becomes LEGO plant pieces (leaf parts, flower studs, tree assemblies), water becomes trans-blue plates and tiles, vehicles become brick-built models.\n\nADAPT TO WHAT YOU SEE: city scenes use LEGO City parts, walls, windows and road plates; nature scenes use green baseplates, brick rockwork and LEGO trees; beaches use tan plates and trans-blue water; interiors use brick walls, tiled floors, brick-built furniture and printed decoration.\n\nSKY AND LIGHT: keep the sky as a smooth photographic studio backdrop matching the original colors, not brick-built. Preserve the original lighting direction, warmth and shadow direction, rendered as clean product-photography light with soft shadows and gentle specular highlights on the plastic.\n\nFINISH: crisp LEGO set box-art render — macro product photography look, shallow depth of field with the minifigure in sharp focus and the far bricks slightly soft, soft global illumination, subtle contact shadows under every brick, light bloom on glossy edges.\n\nThe final image contains only the minifigure and the brick-built world: no game interface, no LEGO logo, no set number, no text, no watermark, no real humans.",
+
+  "style_reference": {
+    "enabled": true,
+    "image": "/templates/lego.jpg",
+    "note": "Joint comme seconde image par POST /api/generate (catégorie worlds). Le modèle en tire le style, jamais le contenu."
+  },
+
+  "fallback_negative_prompt": "realistic human, photographic skin, real hair, non-brick environment, matte plastic, different face, wrong outfit colors, melted bricks, deformed minifigure, extra limbs, LEGO logo, set number, box art text, watermark, text, blurry subject, duplicate figure, cropped, added borders, letterboxing",
+  "fallback_negative_prompt_note": "Non utilisé avec Nano Banana Pro (pas de champ negative_prompt). À garder uniquement si tu bascules un jour sur SDXL, Flux ou Seedream.",
+
+  "quality_guardrails": {
+    "retry_if": [
+      "la personne reste humaine et n'est pas devenue une minifigure",
+      "la minifigure n'est plus reconnaissable (tenue ou coiffure perdue)",
+      "le décor n'est pas entièrement en briques",
+      "le plastique paraît mat au lieu de brillant",
+      "le cadrage ou l'aspect ratio a été modifié"
+    ],
+    "retry_prompt_suffix": "The previous result was off. Regenerate as a glossy brick-built LEGO set render: the person as a recognizable minifigure with matching hair and printed outfit, the whole environment rebuilt from visible LEGO bricks with studs, same position, aspect ratio and framing."
+  },
+
+  "ui": {
+    "label_fr": "Univers LEGO",
+    "label_en": "LEGO World",
+    "tagline_fr": "Ta photo en boîte LEGO.",
+    "best_source_photos": [
+      "sujet net, pose simple et lisible",
+      "tenue aux couleurs marquées",
+      "décor pas trop chargé"
+    ]
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "id": "gta5_world",
+  "version": "2.1.0",
+  "name": "Univers GTA V",
+  "category": "universe_swap",
+  "target_model": "google/gemini-3-pro-image",
+  "model_alias": "Nano Banana Pro",
+  "mode": "edit",
+
+  "user_input": {
+    "image": "required",
+    "text": "none",
+    "options": "none"
+  },
+
+  "request": {
+    "model": "google/gemini-3-pro-image",
+    "image_urls": ["{{USER_PHOTO}}", "{{STYLE_REFERENCE}}"],
+    "aspect_ratio": "{{MATCH_SOURCE}}",
+    "resolution": "2K",
+    "prompt": "{{PROMPT}}"
+  },
+
+  "prompt": "Repaint this entire photograph as official Grand Theft Auto V cover art — a hand-painted digital illustration, not a photo, not a 3D render.\n\nKEEP THE IDENTITY, RESTYLE THE RENDER: the person must stay instantly recognizable — same face shape, same features and their proportions, same hairstyle and hair color, same skin tone, same exact pose, same hand and head position, same full outfit with its colors and its shapes, same position, size and framing in the image. Do not change the camera angle or crop. Output the final image in the exact same aspect ratio, framing and crop as the input photograph — no cropping, no zooming, no added borders, bars or padding, no change to the composition. What changes is only the medium: the person is redrawn as a GTA V illustration.\n\nGTA V ILLUSTRATION STYLE: bold clean vector-like linework with confident dark outlines around the subject, flat blocked-in base colors with a limited number of hard-edged shadow and highlight steps, minimal soft gradients, slightly exaggerated and stylized proportions in the Rockstar house style, a light warm grain over the whole image. Faces are drawn with simplified planes and crisp specular highlights, not photographic detail.\n\nADAPT THE SETTING TO WHAT YOU SEE: keep the same place and layout as the original photo but redraw it in the same painted style with a sun-baked Los Santos palette — bleached asphalt, dry golden hills, palm trees, hazy turquoise sky, distant downtown towers. Streets become wide illustrated boulevards, buildings get simplified facades and flat signage, cars become stylized generic vehicles. Interiors get flat painted walls, simplified furniture and strong window light. Push the color grade toward warm highlights and teal shadows.\n\nLIGHT: preserve the original sun direction, time of day and shadow direction, but render light as illustrated blocks of warm highlight and cool shade rather than photographic falloff. Strong rim light on the subject.\n\nFINISH: high-contrast poster-grade GTA V key-art look, sharp on the subject, slightly looser on the far background, subtle vignette. The whole frame reads as one coherent illustration.\n\nThe final image contains only the person and the illustrated world: no game interface, no mini-map, no weapon wheel, no health bar, no money counter, no text, no logo, no GTA in-game characters.",
+
+  "style_reference": {
+    "enabled": true,
+    "image": "/templates/gta-5.jpg",
+    "note": "Joint comme seconde image par POST /api/generate (catégorie worlds). Le modèle en tire le style, jamais le contenu."
+  },
+
+  "fallback_negative_prompt": "photographic face, real photo texture, 3D render, plastic skin, different face, changed outfit, deformed hands, extra fingers, game HUD, mini-map, weapon wheel, health bar, money counter, subtitles, watermark, text, logo, blurry subject, duplicate person, GTA loading screen, cropped, added borders, letterboxing",
+  "fallback_negative_prompt_note": "Non utilisé avec Nano Banana Pro (pas de champ negative_prompt). À garder uniquement si tu bascules un jour sur SDXL, Flux ou Seedream.",
+
+  "quality_guardrails": {
+    "retry_if": [
+      "le visage reste photographique ou n'est plus reconnaissable",
+      "la tenue a changé de couleur ou de forme",
+      "un élément d'interface de jeu est visible",
+      "le cadrage ou l'aspect ratio a été modifié",
+      "le rendu ressemble à de la 3D et non à une illustration peinte"
+    ],
+    "retry_prompt_suffix": "The previous result was off. Regenerate as a flat hand-painted GTA V cover illustration with bold outlines and blocked colors across the whole frame, keeping the person recognizable with the same face, outfit, pose, position, aspect ratio and framing."
+  },
+
+  "ui": {
+    "label_fr": "Univers GTA V",
+    "label_en": "GTA V World",
+    "tagline_fr": "Ta photo en jaquette de jeu.",
+    "best_source_photos": [
+      "sujet net, de face ou de trois quarts",
+      "décor urbain ou extérieur lisible",
+      "lumière franche, ombres marquées"
+    ]
+  }
+}

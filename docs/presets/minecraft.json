@@ -1,0 +1,55 @@
+{
+  "id": "minecraft_world",
+  "version": "2.1.0",
+  "name": "Univers Minecraft",
+  "category": "universe_swap",
+  "target_model": "google/gemini-3-pro-image",
+  "model_alias": "Nano Banana Pro",
+  "mode": "edit",
+
+  "user_input": {
+    "image": "required",
+    "text": "none",
+    "options": "none"
+  },
+
+  "request": {
+    "model": "google/gemini-3-pro-image",
+    "image_urls": ["{{USER_PHOTO}}", "{{STYLE_REFERENCE}}"],
+    "aspect_ratio": "{{MATCH_SOURCE}}",
+    "resolution": "2K",
+    "prompt": "{{PROMPT}}"
+  },
+
+  "prompt": "Rebuild the world around the person in this photo as a Minecraft-style voxel world, while keeping the person completely untouched.\n\nKEEP EXACTLY AS IN THE ORIGINAL PHOTO — this is the most important instruction: the person stays fully photorealistic and unedited. Preserve their face, skin texture, hair, body proportions, exact pose, hand position, head angle, and their entire outfit including every garment, its color, its fabric texture, its folds, plus any cap, hood, backpack, belt and shoes. Keep them at the exact same position, size and framing within the image. Do not stylize, redraw, smooth, or blockify the person in any way. Do not change the camera angle or crop. Output the final image in the exact same aspect ratio, framing and crop as the input photograph — no cropping, no zooming, no added borders, bars or padding, no change to the composition.\n\nREBUILD EVERYTHING ELSE OUT OF CUBES: reconstruct the entire environment from uniform one-meter voxel blocks with hard ninety-degree edges, flat faces and sharp silhouettes, using visible 16x16 pixel-art block textures with crisp texel edges and no blurring. Follow the real shape of the original landscape closely — the terrain should read as the same place, rebuilt in blocks. Turn the ground into grass blocks with pixelated green tops and brown dirt sides, arranged in stepped terraces that follow the original slope. Turn any path or trail into a stepped walkway of coarse dirt, gravel and podzol blocks. Turn hills, mountains and cliffs into massive stacked stone and andesite blocks forming staircase-shaped terrain that mirrors the original ridgelines. Replace vegetation with flat cross-shaped pixel-art sprites of tall grass, poppies, dandelions, white daisies and oxeye flowers planted on the grass blocks.\n\nADAPT TO WHAT YOU SEE: identify the type of environment in the photo and choose the matching block palette. Mountains use stone, andesite and cobblestone with snow blocks on the highest peaks. Forests use oak and birch log blocks with cubic layered leaf canopies. Beaches use sand and sandstone blocks with flat translucent blue water blocks. Cities use stone bricks, quartz blocks, grid-patterned glass block windows and stone slab streets. Snow scenes use snow blocks and packed ice with cubic spruce trees. Deserts use sand, sandstone and layered terracotta mesa cliffs. Fields use grass blocks, hay bales and wheat crop sprites. Interiors use plank block walls, stone brick floors, glass pane windows and lantern blocks.\n\nSKY AND LIGHT: keep the sky as a smooth photographic gradient, not voxelized, matching the original sky colors and time of day. Add flat rectangular slab-shaped clouds floating horizontally at several depths. If the moon or sun is visible, render it as a low-resolution pixelated shape. Preserve the original lighting exactly: same sun direction, same warmth, same rim light on the person, same shadow direction, same overall color grade.\n\nFINISH: cinematic 3D voxel render with soft global illumination, ambient occlusion in the block crevices, gentle volumetric light, warm atmospheric haze on distant blocks, subtle lens bloom, shallow depth of field on the far terrain and sharp focus on the person. The person must remain a real photograph composited into a blocky world — that contrast is the entire point of the image.\n\nThe final image contains only the person and the voxel landscape: no game interface, no hotbar, no crosshair, no health or hunger bar, no text, no logo, and no Minecraft game characters or creatures.",
+
+  "style_reference": {
+    "enabled": true,
+    "image": "/templates/minecraft.jpg",
+    "note": "Joint comme seconde image par POST /api/generate (catégorie worlds). Le modèle en tire le style, jamais le contenu."
+  },
+
+  "fallback_negative_prompt": "voxelized person, blocky body, pixelated face, Minecraft skin character, Steve, Alex, creeper, villager, cartoon person, low-poly human, changed outfit, different face, deformed hands, game HUD, hotbar, crosshair, health bar, UI overlay, watermark, text, logo, blurry subject, duplicate person, cropped, added borders, letterboxing",
+  "fallback_negative_prompt_note": "Non utilisé avec Nano Banana Pro (pas de champ negative_prompt). À garder uniquement si tu bascules un jour sur SDXL, Flux ou Seedream.",
+
+  "quality_guardrails": {
+    "retry_if": [
+      "le visage ou le corps apparaît cubique ou stylisé",
+      "la tenue a changé de couleur ou de forme",
+      "un élément d'interface de jeu est visible",
+      "le cadrage ou l'aspect ratio a été modifié"
+    ],
+    "retry_prompt_suffix": "The person in the previous result was altered. Regenerate keeping the person pixel-identical to the source photograph — same face, same outfit, same pose, same position, same aspect ratio and framing — and only rebuild the surrounding environment in voxel blocks."
+  },
+
+  "ui": {
+    "label_fr": "Univers Minecraft",
+    "label_en": "Minecraft World",
+    "tagline_fr": "Ta photo, ton monde en cubes.",
+    "best_source_photos": [
+      "photo en extérieur avec un décor large et visible",
+      "sujet net et bien détaché du fond",
+      "lumière naturelle marquée (lever ou coucher de soleil idéal)"
+    ]
+  }
+}
