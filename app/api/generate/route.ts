@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { refundCredits, spendCredits } from "@/lib/credits";
 import { persistImageBytes } from "@/lib/gallery-server";
-import { generateGeminiImage } from "@/lib/gemini-jobs";
+import { assessTemplateResult, generateGeminiImage } from "@/lib/gemini-jobs";
 import { buildPlacePrompt, buildScenePrompt } from "@/lib/place-prompt";
 import {
   asPlanId,
@@ -16,6 +16,7 @@ import {
 } from "@/lib/generation-tiers";
 import {
   resolveTemplatePrompt,
+  getQualityCheck,
   STYLE_REFERENCE_INSTRUCTION,
   templateUsesStyleReference,
 } from "@/lib/template-prompts";
@@ -320,6 +321,29 @@ export async function POST(req: NextRequest) {
     });
     bytes = generated.bytes;
     mimeType = generated.mimeType;
+
+    // Contrôle qualité + une seule régénération, pour les gabarits qui en
+    // déclarent un (univers). Best-effort : le juge ne peut que déclencher un
+    // retry, jamais faire échouer une génération déjà obtenue. Le retry ne
+    // re-débite pas de crédits — c'est le même acte de génération, réessayé.
+    const qualityCheck = templateSlug ? getQualityCheck(templateSlug) : null;
+    if (qualityCheck) {
+      const passed = await assessTemplateResult(geminiApiKey, {
+        imageBytes: bytes,
+        mimeType,
+        criteria: qualityCheck.criteria,
+      });
+      if (!passed) {
+        const retried = await generateGeminiImage(geminiApiKey, {
+          prompt: `${finalPrompt}\n\n${qualityCheck.retrySuffix}`,
+          imageUrls: imageInput,
+          resolution,
+          matchFirstImageAspect: isTemplateRequest,
+        });
+        bytes = retried.bytes;
+        mimeType = retried.mimeType;
+      }
+    }
   } catch (err) {
     await refundCredits(user.id, cost);
     const message =

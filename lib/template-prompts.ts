@@ -132,6 +132,50 @@ export const STYLE_REFERENCE_INSTRUCTION =
   "composition come exclusively from the first image.";
 
 /**
+ * Contrôle qualité optionnel d'un rendu de gabarit. Après la première
+ * génération, `POST /api/generate` demande au juge si le rendu satisfait
+ * `criteria` ; si non, il régénère UNE fois en ajoutant `retrySuffix` au
+ * prompt (sans re-débiter de crédits). Best-effort : voir
+ * `assessTemplateResult`.
+ *
+ * Seuls les univers en ont besoin (transformation totale, plus incertaine).
+ * Les pranks et le swap véhicule sont des éditions fiables : pas de check.
+ * Les critères reprennent les `quality_guardrails` des fiches JSON.
+ */
+type QualityCheck = { criteria: string; retrySuffix: string };
+
+const TEMPLATE_QUALITY_CHECKS: Record<string, QualityCheck> = {
+  minecraft: {
+    criteria:
+      "- The person stays a real, un-stylized photograph (face, skin and outfit NOT turned into blocks).\n" +
+      "- The environment around them is rebuilt from Minecraft-style voxel cubes.\n" +
+      "- No game interface, hotbar, health bar, text or logo is visible.",
+    retrySuffix:
+      "The previous result was off. Regenerate keeping the person pixel-identical to the source photograph — same face, outfit, pose and position — and only rebuild the surrounding environment in voxel blocks.",
+  },
+  "gta-5": {
+    criteria:
+      "- The whole image looks like a 3D video-game engine render, NOT a real photograph and NOT a flat cartoon/illustration.\n" +
+      "- The person is recognizably the same individual, with the same outfit and pose.\n" +
+      "- No on-screen interface, minimap, text, logo or brand name is visible.",
+    retrySuffix:
+      "Regenerate. Keep the exact same face, outfit and pose as the source photograph, but render the whole image as a real-time game engine screenshot — smooth shader skin, sculpted hair geometry, baked cloth folds — not as a photograph and not as a cartoon.",
+  },
+  lego: {
+    criteria:
+      "- The person is turned into a glossy LEGO minifigure, still recognizable (matching hair and outfit colors).\n" +
+      "- The whole environment is rebuilt from visible LEGO bricks with studs.\n" +
+      "- No game interface, LEGO logo, set number, text or watermark is visible.",
+    retrySuffix:
+      "The previous result was off. Regenerate as a glossy brick-built LEGO set render: the person as a recognizable minifigure with matching hair and printed outfit, the whole environment rebuilt from visible LEGO bricks with studs, same position and framing.",
+  },
+};
+
+export function getQualityCheck(templateSlug: string): QualityCheck | null {
+  return TEMPLATE_QUALITY_CHECKS[templateSlug] ?? null;
+}
+
+/**
  * Résout le prompt à appliquer, à partir des seuls identifiants d'URL.
  *
  * Renvoie `null` si le gabarit est inconnu, si une variante est demandée

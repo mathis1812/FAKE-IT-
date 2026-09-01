@@ -12,6 +12,12 @@ const GEMINI_TIMEOUT_MS = 240_000;
 // gemini-3-pro-image (Nano Banana Pro, sans suffixe -preview) est son
 // remplacement officiel — voir ai.google.dev/gemini-api/docs/deprecations.
 const MODEL_ID = "gemini-3-pro-image";
+// Modèle texte+vision utilisé pour juger un rendu de gabarit (boucle retry).
+// Séparé du modèle image : ici on veut une réponse texte PASS/FAIL, pas une
+// image. Rapide et bon marché. Si ce modèle est indisponible, le juge échoue
+// proprement et l'appelant garde le premier rendu (voir assessTemplateResult).
+const JUDGE_MODEL_ID = "gemini-2.5-flash";
+const JUDGE_TIMEOUT_MS = 30_000;
 
 type GeminiInlineData = {
   mimeType?: string;
@@ -148,4 +154,82 @@ export async function generateGeminiImage(
     bytes: Buffer.from(imagePart.inlineData.data, "base64"),
     mimeType: imagePart.inlineData.mimeType || "image/png",
   };
+}
+
+/**
+ * Lit le verdict du juge dans sa réponse texte. Le prompt lui demande de
+ * répondre par PASS ou FAIL ; on cherche le premier de ces deux mots.
+ *
+ * Défensif : toute réponse ambiguë ou vide est traitée comme PASS. Le juge
+ * ne sert qu'à DÉCLENCHER une régénération de confort — dans le doute on ne
+ * régénère pas, plutôt que de relancer à tort (coût, latence) sur un rendu
+ * peut-être déjà bon.
+ */
+export function parseAssessment(text: string): boolean {
+  const match = text.toUpperCase().match(/\b(PASS|FAIL)\b/);
+  return match?.[1] !== "FAIL";
+}
+
+/**
+ * Juge un rendu de gabarit : renvoie `true` s'il satisfait `criteria`,
+ * `false` s'il faut régénérer. Envoie l'image générée à un modèle
+ * texte+vision qui répond PASS/FAIL.
+ *
+ * BEST-EFFORT : ce juge n'est qu'un confort. Timeout, erreur réseau, modèle
+ * indisponible, réponse illisible → renvoie `true` (pas de régénération).
+ * Il ne peut donc jamais faire échouer une génération déjà réussie, ni
+ * ajouter de la latence non bornée (timeout court dédié).
+ */
+export async function assessTemplateResult(
+  apiKey: string,
+  input: { imageBytes: Buffer; mimeType: string; criteria: string },
+): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), JUDGE_TIMEOUT_MS);
+  try {
+    const res = await fetch(
+      `${GEMINI_API_BASE}/models/${JUDGE_MODEL_ID}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text:
+                    "You are a strict QA checker for an image transformation. " +
+                    "The attached image must satisfy ALL of these requirements:\n" +
+                    input.criteria +
+                    "\nReply with exactly one word: PASS if every requirement holds, " +
+                    "or FAIL if any is violated. No explanation.",
+                },
+                {
+                  inlineData: {
+                    mimeType: input.mimeType,
+                    data: input.imageBytes.toString("base64"),
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+        signal: controller.signal,
+      },
+    );
+    if (!res.ok) return true;
+    const json = (await res.json()) as GeminiGenerateContentResponse;
+    const text =
+      json.candidates?.[0]?.content?.parts
+        ?.map((p) => p.text ?? "")
+        .join("") ?? "";
+    return parseAssessment(text);
+  } catch {
+    return true;
+  } finally {
+    clearTimeout(timer);
+  }
 }

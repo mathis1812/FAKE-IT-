@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 import { TEMPLATE_CATEGORIES, allTemplates, hasVariants } from "@/lib/templates";
 import {
   TEMPLATE_PROMPTS,
+  getQualityCheck,
   resolveTemplatePrompt,
   templateUsesStyleReference,
 } from "@/lib/template-prompts";
@@ -100,5 +101,22 @@ describe("templateUsesStyleReference", () => {
 
   it("faux pour un gabarit inconnu", () => {
     expect(templateUsesStyleReference("nexiste-pas")).toBe(false);
+  });
+});
+
+describe("getQualityCheck", () => {
+  it("fournit un check pour les univers", () => {
+    for (const slug of ["minecraft", "gta-5", "lego"]) {
+      const check = getQualityCheck(slug);
+      expect(check, slug).not.toBeNull();
+      expect(check?.criteria.length).toBeGreaterThan(0);
+      expect(check?.retrySuffix.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("null pour les gabarits sans check (pranks, swap, inconnu)", () => {
+    expect(getQualityCheck("voiture-accidentee")).toBeNull();
+    expect(getQualityCheck("aventador-svj")).toBeNull();
+    expect(getQualityCheck("nexiste-pas")).toBeNull();
   });
 });
