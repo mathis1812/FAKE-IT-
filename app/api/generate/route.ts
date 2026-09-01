@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { refundCredits, spendCredits } from "@/lib/credits";
@@ -12,7 +14,12 @@ import {
   TEMPLATE_QUALITY,
   type ImageQuality,
 } from "@/lib/generation-tiers";
-import { resolveTemplatePrompt } from "@/lib/templates";
+import {
+  resolveTemplatePrompt,
+  STYLE_REFERENCE_INSTRUCTION,
+  templateUsesStyleReference,
+} from "@/lib/template-prompts";
+import { findTemplate } from "@/lib/templates";
 import {
   DISALLOWED_ASSET_URL_MESSAGE,
   isAllowedAssetUrl,
@@ -24,6 +31,35 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 const MAX_PLACE_IMAGES = 3;
+
+/**
+ * Charge l'exemple de rendu d'un gabarit depuis `public/` et le renvoie en
+ * data URL, prêt à être joint comme seconde image (référence de style).
+ * Lecture disque locale : pas de réseau, donc hors allowlist SSRF (ce n'est
+ * pas une URL fournie par l'utilisateur). Renvoie `null` si le fichier
+ * manque — on génère alors sans référence plutôt que d'échouer.
+ */
+async function loadTemplateStyleReference(
+  templateSlug: string,
+): Promise<string | null> {
+  const template = findTemplate(templateSlug);
+  if (!template) return null;
+
+  const relativePath = template.exampleImage.replace(/^\//, "");
+  try {
+    const bytes = await readFile(path.join(process.cwd(), "public", relativePath));
+    const ext = path.extname(relativePath).toLowerCase();
+    const mimeType =
+      ext === ".png"
+        ? "image/png"
+        : ext === ".webp"
+          ? "image/webp"
+          : "image/jpeg";
+    return `data:${mimeType};base64,${bytes.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
 
 type GenerateBody = {
   sourceImageUrl?: string;
@@ -232,6 +268,17 @@ export async function POST(req: NextRequest) {
   let finalPrompt: string;
   if (isTemplateRequest) {
     finalPrompt = (prompt as string).trim();
+    // Univers (Minecraft, LEGO, GTA V) : joindre l'exemple de rendu comme
+    // référence de style améliore nettement la fidélité — plus que
+    // n'importe quel ajout au prompt. Le studio libre et les pranks
+    // n'en ont pas besoin (ils éditent la scène réelle).
+    if (templateSlug && templateUsesStyleReference(templateSlug)) {
+      const styleRef = await loadTemplateStyleReference(templateSlug);
+      if (styleRef) {
+        imageInput.push(styleRef);
+        finalPrompt += STYLE_REFERENCE_INSTRUCTION;
+      }
+    }
   } else if (placeUrls.length > 0) {
     imageInput.push(...placeUrls);
     // Gemini reçoit les photos du lieu et fait l'analyse lui-même : le prompt
@@ -266,6 +313,10 @@ export async function POST(req: NextRequest) {
       prompt: finalPrompt,
       imageUrls: imageInput,
       resolution,
+      // Le rendu de référence d'un gabarit doit garder le cadrage de la
+      // photo déposée : c'est un avant/après, un ratio qui change casse la
+      // comparaison. Le studio libre, lui, peut recomposer la scène.
+      matchFirstImageAspect: isTemplateRequest,
     });
     bytes = generated.bytes;
     mimeType = generated.mimeType;

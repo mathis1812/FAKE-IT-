@@ -94,26 +94,6 @@ export function buildInPlaceEditPrompt(change: string): string {
   );
 }
 
-/**
- * Prompt utilisé par les gabarits d'univers (Minecraft, GTA 5, LEGO) : toute
- * la photo — sujet et décor — est retraduite dans un style fictif donné.
- *
- * Ne réutilise `REALISM_CORE` d'aucune façon : celui-ci exige que le rendu
- * « se lise comme une vraie photo, pas un rendu », l'exact opposé d'un
- * résultat en blocs Minecraft ou en briques LEGO. L'exigence ici est la
- * fidélité au style, pas le photoréalisme — les deux ne peuvent pas
- * cohabiter dans le même prompt sans se contredire.
- */
-export function buildWorldStylePrompt(style: string): string {
-  return (
-    `Reimagine this exact photograph entirely in ${style}. Keep the same subject, pose, framing and ` +
-    "composition, and keep the surroundings recognizable as the same scene, but rendered fully in " +
-    "that style — nothing should look like an unstyled photograph pasted into a stylized scene. " +
-    "Apply the style consistently to every part of the image: the subject, their clothing, the " +
-    "background, the lighting and the materials. No text, no watermark, no added people."
-  );
-}
-
 export function buildScenePrompt(description: string): string {
   return (
     "The image shows the subject. Produce a single photograph of that same subject in the scene " +

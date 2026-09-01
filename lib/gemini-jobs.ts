@@ -1,3 +1,5 @@
+import { nearestAspectRatio, readImageSize } from "@/lib/image-dimensions";
+
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 // La fonction Vercel qui appelle ceci a un budget total de 300 s (voir
 // maxDuration dans app/api/generate/route.ts), dont jusqu'à 45 s peuvent
@@ -29,14 +31,16 @@ type GeminiGenerateContentResponse = {
   promptFeedback?: { blockReason?: string };
 };
 
-async function fetchAsInlineData(url: string): Promise<GeminiInlineData> {
+async function downloadImage(
+  url: string,
+): Promise<{ mimeType: string; bytes: Buffer }> {
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Failed to download the reference image (${res.status}).`);
   }
   const mimeType = res.headers.get("content-type") || "image/png";
   const bytes = Buffer.from(await res.arrayBuffer());
-  return { mimeType, data: bytes.toString("base64") };
+  return { mimeType, bytes };
 }
 
 /**
@@ -53,13 +57,27 @@ export async function generateGeminiImage(
     prompt: string;
     imageUrls: string[];
     resolution: "1K" | "2K" | "4K";
+    /**
+     * Verrouille le ratio de sortie sur celui de la première image (le
+     * sujet), ramené au ratio accepté le plus proche. Sans consigne
+     * explicite, gemini-3-pro-image dérive parfois vers un autre cadrage.
+     * Ignoré si les dimensions sont illisibles.
+     */
+    matchFirstImageAspect?: boolean;
   },
 ): Promise<{ bytes: Buffer; mimeType: string }> {
-  const imageParts = await Promise.all(
-    input.imageUrls.map(async (url) => ({
-      inlineData: await fetchAsInlineData(url),
-    })),
-  );
+  const images = await Promise.all(input.imageUrls.map(downloadImage));
+  const imageParts = images.map((img) => ({
+    inlineData: { mimeType: img.mimeType, data: img.bytes.toString("base64") },
+  }));
+
+  let aspectRatio: string | undefined;
+  if (input.matchFirstImageAspect && images.length > 0) {
+    const size = readImageSize(images[0].bytes);
+    if (size) {
+      aspectRatio = nearestAspectRatio(size.width, size.height) ?? undefined;
+    }
+  }
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
@@ -80,7 +98,10 @@ export async function generateGeminiImage(
             },
           ],
           generationConfig: {
-            imageConfig: { imageSize: input.resolution },
+            imageConfig: {
+              imageSize: input.resolution,
+              ...(aspectRatio ? { aspectRatio } : {}),
+            },
           },
         }),
         signal: controller.signal,

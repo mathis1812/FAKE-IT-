@@ -14,6 +14,10 @@ export default defineConfig({
     alias: {
       // Mirror the Next.js `@` path alias so test imports match production imports.
       "@": path.resolve(__dirname, "."),
+      // `server-only` throws on import outside a React Server Component. Next
+      // provides the real guard in production; tests swap in an empty module
+      // so server-only files (e.g. lib/template-prompts.ts) can be exercised.
+      "server-only": path.resolve(__dirname, "__tests__/stubs/server-only.ts"),
     },
   },
 });
