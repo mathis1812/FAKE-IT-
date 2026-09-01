@@ -105,15 +105,22 @@ export const TEMPLATE_PROMPTS: Record<string, PromptEntry> = {
 };
 
 /**
- * Un style d'univers (Minecraft, LEGO, GTA V) est bien mieux rendu quand le
- * modèle reçoit un exemple visuel du style en plus de la photo à
- * transformer : c'est un levier de fidélité bien plus fort qu'un prompt plus
- * long. `POST /api/generate` joint alors l'`exampleImage` du gabarit comme
- * seconde image, et ajoute `STYLE_REFERENCE_INSTRUCTION` au prompt pour
- * cadrer son rôle. Les pranks et le swap véhicule, eux, éditent la scène
- * réelle : pas de référence de style à donner.
+ * Un style d'univers est souvent mieux rendu quand le modèle reçoit un
+ * exemple visuel du style en plus de la photo à transformer : c'est un levier
+ * de fidélité fort. `POST /api/generate` joint alors l'`exampleImage` du
+ * gabarit comme seconde image, et ajoute `STYLE_REFERENCE_INSTRUCTION` au
+ * prompt pour cadrer son rôle. Les pranks et le swap véhicule éditent la
+ * scène réelle : pas de référence à donner.
+ *
+ * Exception `gta-5` : sa fiche (los_santos_game) n'envoie que la photo user.
+ * Son prompt décrit tout le look moteur de jeu lui-même, et joindre l'exemple
+ * (une scène précise avec personnage et panneau) ferait fuiter ce contenu
+ * dans le rendu. On ne joint donc PAS de référence pour GTA.
  */
+const STYLE_REFERENCE_EXCLUDED = new Set(["gta-5"]);
+
 export function templateUsesStyleReference(templateSlug: string): boolean {
+  if (STYLE_REFERENCE_EXCLUDED.has(templateSlug)) return false;
   return categoryOfTemplate(templateSlug)?.slug === "worlds";
 }
 

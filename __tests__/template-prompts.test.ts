@@ -84,10 +84,13 @@ describe("resolveTemplatePrompt", () => {
 });
 
 describe("templateUsesStyleReference", () => {
-  it("vrai pour les univers", () => {
+  it("vrai pour minecraft et lego", () => {
     expect(templateUsesStyleReference("minecraft")).toBe(true);
-    expect(templateUsesStyleReference("gta-5")).toBe(true);
     expect(templateUsesStyleReference("lego")).toBe(true);
+  });
+
+  it("faux pour gta-5 (fiche los_santos_game: photo user seule)", () => {
+    expect(templateUsesStyleReference("gta-5")).toBe(false);
   });
 
   it("faux pour les pranks et le swap véhicule", () => {
