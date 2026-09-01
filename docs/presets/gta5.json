@@ -1,13 +1,21 @@
 {
   "id": "los_santos_game",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "name": "Univers GTA",
-  "category": "universe_swap",
+  "category": "render_restyle",
   "target_model": "google/gemini-3-pro-image",
   "model_alias": "Nano Banana Pro",
   "mode": "edit",
 
-  "core_rule": "FULL SCENE RESTYLE. Unlike the Minecraft preset, the subject IS re-rendered as a video game character. Preserve likeness and outfit, not photographic texture.",
+  "core_rule": "IN-PLACE RENDER TRANSFER. The location stays the same location. Do not relocate the subject to another city or setting. Re-render the existing scene as a game engine screenshot and enrich it with props.",
+
+  "changelog_v2": [
+    "CORRECTION MAJEURE : v1 remplaçait le décor par une ville type Los Santos. v2 conserve le lieu d'origine et le re-rend en moteur de jeu.",
+    "Ajout de l'enrichissement de scène (props, mobilier, densité de décor).",
+    "Ajout des étiquettes textuelles en capitales sur les objets, avec substitution des marques réelles.",
+    "Ajout du HUD générique en bas à gauche.",
+    "Ajout du renforcement des traits du visage (vieillissement léger, structure plus marquée)."
+  ],
 
   "user_input": {
     "image": "required",
@@ -23,36 +31,37 @@
     "prompt": "{{PROMPT}}"
   },
 
-  "prompt": "Transform this photo into a single in-game screenshot from a modern open-world crime video game set in a fictional Southern California city, rendered in a high-end game engine.\n\nTHE PERSON: re-render them as a fully 3D video game character while keeping them instantly recognizable. Preserve their facial structure, features, skin tone, hairstyle, facial hair, body type, exact pose, hand position and head angle. Preserve their outfit exactly: every garment, its cut, color and fabric, plus any cap, hood, jewelry, watch, belt and shoes. Now render all of it in game-engine style: skin with a smooth semi-matte shader and subtle subsurface scattering rather than real pore detail, clothing with slightly simplified folds and clean baked normal-map creases, hair as sculpted layered geometry instead of individual strands, and a subtle darker outline separating the character from the background. Proportions are very slightly stylized — a touch broader in the shoulders and hands, faces a little more angular — in the way game characters read as heightened versions of real people. They must still look like the same person, just rendered by a game engine.\n\nTHE ENVIRONMENT: rebuild the surroundings as a sunlit fictional Los Angeles-style city. Wide clean asphalt streets with faded lane markings and concrete curbs, single-story suburban houses with tiled roofs and dry front lawns, tall thin palm trees, dusty green scrub-covered hills rising in the background, generic yellow diamond road signs, power lines, chain-link fences, wheelie bins, and a few parked cars along the street rendered as generic unbranded vehicles. Keep the overall composition, camera height and depth arrangement of the original photo — if the subject stood in front of something, keep an equivalent object there.\n\nADAPT TO THE SOURCE: identify what is behind the person and translate it into the equivalent city district rather than replacing it arbitrarily. Open landscape or countryside becomes dry scrub hills and freeway overpasses. Beach or water becomes a boardwalk with palms, sand and a pier. Dense city becomes a downtown block of glass office towers and wide boulevards. Street or suburb becomes low residential houses and driveways. Night scenes become neon storefronts, orange sodium street lights and wet reflective asphalt. Interiors become a stylized game interior with simplified furniture and strong window light.\n\nLIGHT AND GRADE: warm late-afternoon golden hour sun, low and slightly behind the scene, casting long soft shadows and a warm rim light on the character. Hazy smog-tinted atmosphere fading the distant hills into pale beige. Slightly desaturated color grade with muted olive greens, warm sand tones and cool blue shadows. Mild bloom on highlights, subtle chromatic aberration at the frame edges, light film grain, and a gentle wide-angle lens feel with a slightly low camera position that makes the character look imposing.\n\nRENDER QUALITY: sharp, clean, high-fidelity real-time game render, screen-space ambient occlusion, crisp contact shadows under the feet and objects, detailed ground textures, high dynamic range, ultra detailed, no blur on the subject.\n\nThe image contains only the character and the city scene: no interface elements, no minimap, no text overlays, no on-screen icons, no logos, no brand names, no readable signage text, no watermark, and no other people unless they were in the original photo.",
+  "prompt": "Re-render this photograph as a single in-game screenshot from a modern open-world crime video game, using a high-end real-time game engine.\n\nKEEP THE SAME PLACE. This is critical: do not move the subject to a different location, city or setting. Whatever room, street or landscape they are in stays that same place, with the same layout, the same furniture and objects in the same positions, the same window views, the same camera angle, the same framing and the same distances. You are changing how the scene is rendered, not where it happens.\n\nTHE PERSON: re-render them as a 3D game character while keeping them clearly recognizable. Preserve their facial structure, features, skin tone, hairstyle, facial hair, body type, exact pose, hand position and head angle, and their entire outfit down to the cut, color and fabric of every garment plus any watch, tie, jewelry, glasses and shoes. Render all of it in game-engine style: skin with a smooth semi-matte shader and subtle subsurface scattering instead of real pore detail, slightly sharper and more chiseled facial structure with deeper defined creases around the eyes and mouth, hair as sculpted layered geometry rather than individual strands, clothing with simplified folds and clean baked normal-map creases, and a subtle darker edge separating the character from the background. Proportions very slightly heightened — a touch broader in the shoulders and hands, features a little more angular. They must still read as the same person, rendered by a game engine.\n\nTHE SCENE: rebuild every surface and object in the same game engine style, and enrich the environment so it feels like a purpose-built game level rather than a bare room. Add depth and density to what is already there: warmer and richer materials, wood panelling and detailed grain on furniture, fuller and more organised shelving, additional plausible props that fit the setting, a warm practical light source such as a brass desk lamp, stacked papers and folders, and small everyday objects on surfaces. Everything must stay consistent with the original location and its purpose — you are dressing the existing set, not inventing a new one.\n\nPROP LABELS: give a few foreground objects short bold labels in uppercase condensed type, the way game props are labelled — for example a book spine, a folder cover or a file tab. Keep them legible, clean and perfectly rendered. Replace any real brand name or real company name visible in the photo with an invented generic equivalent of the same kind, and keep any personal or case names as short invented ones. Never reproduce a real logo or real trademark.\n\nLIGHT AND GRADE: keep the original light direction and time of day, but push it into game-engine lighting — stronger contrast, warm golden key light, deep controlled shadows, soft global illumination bouncing warm tones onto nearby surfaces, and a clear warm-to-cool separation between lit areas and shadow. Rich saturated color grade leaning warm amber and deep navy, gentle vignette at the frame corners, mild bloom on bright highlights, faint chromatic aberration at the edges and a light film grain.\n\nHUD: in the bottom left corner, overlay a simple game interface: a small semi-transparent square minimap showing an abstract grey street or floorplan layout with a white directional arrow at its center, a couple of tiny monochrome icons stacked along its left edge, and three thin horizontal status bars below it in green, blue and yellow. Keep the HUD understated, flat, low-opacity and purely graphic, with no text, no numbers, no logo and no branding of any kind.\n\nRENDER QUALITY: sharp high-fidelity real-time render, screen-space ambient occlusion, crisp contact shadows, detailed material textures, high dynamic range, ultra detailed, subject in sharp focus with a slight depth-of-field falloff on the background.\n\nThe image contains only the character, the scene and the corner HUD: no other interface elements, no real logos, no real brand names, no watermark, and no additional people unless they were in the original photo.",
 
   "style_reference": {
     "enabled": false,
     "note": "Cette fiche n'envoie que la photo user (image_urls). Le prompt décrit tout le look moteur de jeu ; joindre public/templates/gta-5.jpg ferait fuiter son contenu. Voir STYLE_REFERENCE_EXCLUDED dans lib/template-prompts.ts."
   },
 
-  "fallback_negative_prompt": "photorealistic skin pores, real photograph, cartoon, anime, cel shaded flat colors, claymation, plastic toy, deformed face, changed identity, different outfit, extra limbs, malformed hands, blurry subject, game HUD, minimap, text, logo, brand name, watermark, duplicate person, oversaturated colors",
-  "fallback_negative_prompt_note": "Non utilisé par Nano Banana Pro. Utile seulement si tu bascules sur SDXL, Flux ou Seedream.",
+  "fallback_negative_prompt": "photorealistic skin pores, real photograph, cartoon, anime, cel shaded, claymation, plastic toy, deformed face, changed identity, different outfit, different location, relocated background, extra limbs, malformed hands, blurry subject, real brand logo, trademark, watermark, duplicate person, flat lighting, washed out colors",
+  "fallback_negative_prompt_note": "Non utilisé par Nano Banana Pro. Utile seulement pour SDXL, Flux ou Seedream.",
 
   "quality_guardrails": {
     "retry_if": [
-      "le visage n'est plus reconnaissable",
+      "le décor a été remplacé par un autre lieu",
       "le rendu reste photographique au lieu de passer en moteur de jeu",
+      "le visage n'est plus reconnaissable",
       "le résultat vire au cartoon ou au style Pixar",
-      "la tenue a changé de couleur ou de coupe",
-      "du texte, un logo ou une interface apparaît"
+      "un logo ou une marque réelle apparaît",
+      "le HUD contient du texte ou des chiffres illisibles"
     ],
-    "retry_prompt_suffix": "Regenerate. Keep the exact same face, outfit and pose as the source photograph, but render the whole image as a real-time game engine screenshot — smooth shader skin, sculpted hair geometry, baked cloth folds — not as a photograph and not as a cartoon."
+    "retry_prompt_suffix": "Regenerate. Keep the exact same location, layout, camera angle, face, outfit and pose as the source photograph. Change only the rendering: make it a real-time game engine screenshot with shader skin, sculpted hair, baked cloth folds, warm contrasted game lighting and a small graphic HUD in the bottom left corner. Not a photograph, not a cartoon."
   },
 
   "ui": {
     "label_fr": "Univers GTA",
     "label_en": "Crime City",
-    "tagline_fr": "Bienvenue à Los Santos.",
+    "tagline_fr": "Ta vie en cinématique.",
     "best_source_photos": [
-      "plan en pied ou américain, sujet bien détaché du fond",
-      "pose affirmée, de face ou légèrement de trois quarts",
-      "extérieur en lumière naturelle, idéalement fin de journée",
-      "tenue lisible et contrastée"
+      "scène lisible avec du décor autour du sujet",
+      "pose naturelle et expressive",
+      "lumière directionnelle marquée",
+      "intérieur meublé ou extérieur avec de la profondeur"
     ]
   }
 }

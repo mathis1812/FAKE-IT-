@@ -154,12 +154,17 @@ const TEMPLATE_QUALITY_CHECKS: Record<string, QualityCheck> = {
       "The previous result was off. Regenerate keeping the person pixel-identical to the source photograph — same face, outfit, pose and position — and only rebuild the surrounding environment in voxel blocks.",
   },
   "gta-5": {
+    // v2 : le lieu doit rester le même (pas de relocalisation), et un petit
+    // HUD graphique en bas à gauche est ATTENDU — mais sans texte/chiffres ni
+    // marque réelle. Ne pas traiter le HUD comme un défaut.
     criteria:
       "- The whole image looks like a 3D video-game engine render, NOT a real photograph and NOT a flat cartoon/illustration.\n" +
+      "- It is the SAME location as the source: the scene has not been moved to a different room, street or city.\n" +
       "- The person is recognizably the same individual, with the same outfit and pose.\n" +
-      "- No on-screen interface, minimap, text, logo or brand name is visible.",
+      "- No real brand name or real logo is visible.\n" +
+      "- A small graphic HUD in a corner is allowed and expected; only fail the HUD if it shows readable text or numbers.",
     retrySuffix:
-      "Regenerate. Keep the exact same face, outfit and pose as the source photograph, but render the whole image as a real-time game engine screenshot — smooth shader skin, sculpted hair geometry, baked cloth folds — not as a photograph and not as a cartoon.",
+      "Regenerate. Keep the exact same location, layout, camera angle, face, outfit and pose as the source photograph. Change only the rendering: make it a real-time game engine screenshot with shader skin, sculpted hair, baked cloth folds, warm contrasted game lighting and a small graphic HUD in the bottom left corner. Not a photograph, not a cartoon.",
   },
   lego: {
     criteria:
