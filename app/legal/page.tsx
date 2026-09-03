@@ -70,12 +70,12 @@ export default function MentionsLegalesPage() {
             </h3>
             <p>
               The images and videos produced by the service are generated
-              automatically by third-party artificial intelligence models
-              accessible via kie.ai (Nano Banana Pro / Gemini 3 Pro Image
-              for images, Kling 3.0 for video) from the photos and
-              instructions supplied by the user. Bluminoo Studio does not
-              guarantee the accuracy, compliance, or error-free nature of
-              the generated content.
+              automatically by third-party artificial intelligence models,
+              from the photos and instructions supplied by the user: images
+              through Google&apos;s Gemini API (Nano Banana Pro / Gemini 3
+              Pro Image), videos through fal.ai (Kling O1). Bluminoo Studio
+              does not guarantee the accuracy, compliance, or error-free
+              nature of the generated content.
             </p>
           </section>
 

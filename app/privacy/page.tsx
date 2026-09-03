@@ -76,8 +76,9 @@ export default function ConfidentialitePage() {
             <p>The following providers process data on our behalf:</p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>
-                <strong>Supabase</strong> — database hosting and account
-                authentication.
+                <strong>Supabase</strong> — database hosting, account
+                authentication, and storage of the photos you upload as well
+                as your generation results.
               </li>
               <li>
                 <strong>Vercel</strong> — application hosting.
@@ -86,10 +87,15 @@ export default function ConfidentialitePage() {
                 <strong>Stripe</strong> — payment and card data processing.
               </li>
               <li>
-                <strong>kie.ai</strong> — generation of images (Nano Banana
-                Pro / Gemini 3 Pro Image) and videos (Kling 3.0), and
-                temporary hosting of the photos provided while processing
-                is underway.
+                <strong>Google</strong> — image generation through the Gemini
+                API (Nano Banana Pro / Gemini 3 Pro Image). The photos you
+                submit are sent to this provider for the time needed to
+                produce the result.
+              </li>
+              <li>
+                <strong>fal.ai</strong> — video generation (Kling O1). The
+                videos you submit are sent to this provider for the time
+                needed to produce the result.
               </li>
             </ul>
             <p className="mt-2">
@@ -106,12 +112,13 @@ export default function ConfidentialitePage() {
             </h3>
             <p>
               Account data is retained for as long as the account remains
-              active. Photos uploaded for a generation are transmitted to
-              AI providers for the duration of processing and are not
-              retained by Bluminoo Studio beyond that operation. Successful
-              generation results (images and videos) are stored in your
-              Gallery, associated with your account, until your account is
-              deleted or you request their removal.
+              active. Photos you upload for a generation are stored in our
+              own storage, associated with your account, and are transmitted
+              to the AI provider only for the duration of processing.
+              Successful generation results (images and videos) are stored in
+              your Gallery, also associated with your account. Both your
+              uploaded photos and your results are erased when your account
+              is deleted, or earlier if you request their removal.
             </p>
           </section>
 

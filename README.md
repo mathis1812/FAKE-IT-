@@ -7,10 +7,10 @@ d'origine — en **image** ou en **vidéo**. Génération verrouillée par compt
 crédits, abonnements Stripe mensuels ou annuels.
 
 Propulsée par l'**API Gemini** directe (`gemini-3-pro-image` pour
-l'image), **fal.ai** (Kling O1 pour la vidéo), **kie.ai** (hébergement
-des uploads et analyse vision du lieu), **Supabase** (auth, base de données,
-stockage), **Stripe** (abonnements), Next.js 14 (App Router), TypeScript et
-Tailwind CSS. Fond animé **DotField** (React Bits).
+l'image), **fal.ai** (Kling O1 pour la vidéo), **Supabase** (auth, base de
+données, stockage des photos sources et des rendus), **Stripe**
+(abonnements), Next.js 14 (App Router), TypeScript et Tailwind CSS. Fond
+animé **DotField** (React Bits).
 
 > Le projet Vercel et le dépôt s'appellent toujours `bluminoo` : seule
 > l'interface a été rebaptisée.
@@ -19,11 +19,13 @@ Tailwind CSS. Fond animé **DotField** (React Bits).
 
 ### Image (API Gemini directe, `gemini-3-pro-image`)
 - Upload par glisser-déposer ou clic, avec aperçu immédiat de l'original
-- Photo(s) du lieu réel analysées par un modèle vision kie.ai
-  (`lib/place-prompt.ts`) pour produire un prompt structuré automatiquement ;
+- Photo(s) du lieu réel envoyées à Gemini avec la grille de lecture
+  (`lib/place-prompt.ts`), qui fait l'analyse et la génération en une passe ;
   ancien flux (prompt libre + photo d'objet) conservé pour compatibilité
-- Compression/redimensionnement automatique côté client (> 2 Mo → max 1536 px, JPEG 0.9)
-- Upload sécurisé via `/api/kie/upload` (hébergement kie.ai), génération via
+- Ré-encodage côté client seulement si nécessaire (> 4 Mo → paliers 2560 px
+  JPEG 0.92 puis dégressifs) : l'entrée reste au-dessus de la taille de
+  sortie, sinon le modèle agrandit et invente le détail manquant
+- Upload direct navigateur → bucket Supabase `photo-uploads`, génération via
   l'API Gemini directe (`GEMINI_API_KEY`)
 - Comparaison Avant / Après, téléchargement et régénération
 
@@ -31,8 +33,7 @@ Tailwind CSS. Fond animé **DotField** (React Bits).
 - Upload vidéo source (requis) + photo de l'objet de remplacement (requis)
 - Prompt libre décrivant le remplacement
 - Génération d'une courte vidéo (~5 s) via `fal-ai/kling-video/o1/video-to-video/edit`
-- Upload sécurisé via `/api/kie/upload` (hébergement kie.ai) — `KIE_API_KEY`
-  et `FAL_KEY` jamais exposées au client
+- `FAL_KEY` utilisée côté serveur uniquement, jamais exposée au client
 
 ### Comptes & crédits (Supabase)
 - Inscription / connexion par email + mot de passe
@@ -97,7 +98,6 @@ app/
   api/
     generate/              Image → API Gemini directe (gemini-3-pro-image)
     generate-video/        Vidéo → fal.ai Kling O1
-    kie/upload/            Upload d'image vers kie.ai (proxy)
     stripe/checkout/       Création de session Stripe Checkout
     stripe/portal/         Portail de facturation Stripe
     stripe/webhook/        Événements Stripe (crédits, paliers)
@@ -106,7 +106,8 @@ lib/
   gallery-server.ts        Persistance des résultats en galerie
   gemini-jobs.ts           Génération d'image via l'API Gemini directe
   fal-jobs.ts              createTask/pollTask fal.ai (vidéo)
-  place-prompt.ts          Analyse vision du lieu (kie.ai) → prompt structuré
+  place-prompt.ts          Grille de lecture du lieu → prompt structuré
+  studio-image.ts          Ré-encodage + upload navigateur → Supabase Storage
   stripe.ts                Config Stripe, paliers, prix mensuel/annuel
   supabase/                Clients Supabase (browser/server/service)
 supabase/migrations/       Schéma Postgres + policies RLS
@@ -114,8 +115,6 @@ supabase/migrations/       Schéma Postgres + policies RLS
 
 ## 1. Obtenir les clés API
 
-- kie.ai (hébergement des uploads + analyse vision du lieu) :
-  [kie.ai/api-key](https://kie.ai/api-key)
 - Gemini (génération d'image) :
   [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
 - fal.ai (génération vidéo) : [fal.ai/dashboard/keys](https://fal.ai/dashboard/keys)
@@ -128,7 +127,7 @@ supabase/migrations/       Schéma Postgres + policies RLS
 
 ## 2. Configurer Supabase
 
-Dans le **SQL Editor** du dashboard Supabase, exécuter dans l'ordre les 4
+Dans le **SQL Editor** du dashboard Supabase, exécuter dans l'ordre les
 migrations de `supabase/migrations/` :
 
 1. `0001_create_profiles.sql` — table `profiles` + trigger de création à
@@ -138,6 +137,11 @@ migrations de `supabase/migrations/` :
 3. `0003_credit_functions.sql` — fonctions `spend_credits`/`refund_credits`
    (verrouillées à `service_role`)
 4. `0004_gallery.sql` — table `gallery_entries` + bucket Storage `gallery`
+5. `0005_video_uploads.sql` + `0006_video_uploads_limits.sql` — bucket
+   `video-uploads` (upload direct navigateur), plafonds et policies
+6. `0007_landing_events.sql` — table d'événements de la page d'accueil
+7. `0008_photo_uploads.sql` — bucket `photo-uploads` : les photos sources
+   vont directement du navigateur vers notre Storage, sans hébergeur tiers
 
 Il n'y a pas de CLI Supabase configurée dans ce projet : ces migrations
 s'appliquent à la main, une par une.
@@ -151,7 +155,6 @@ npm install
 Créez un fichier `.env.local` à la racine (basé sur `.env.example`) :
 
 ```bash
-KIE_API_KEY=votre_cle_kie
 GEMINI_API_KEY=votre_cle_gemini
 FAL_KEY=votre_cle_fal
 NEXT_PUBLIC_SUPABASE_URL=https://votre-projet.supabase.co
@@ -246,8 +249,6 @@ en compte.
 
 ## Sécurité
 
-- `KIE_API_KEY` : utilisée côté serveur uniquement (`app/api/generate` pour
-  l'analyse vision du lieu, `app/api/kie/upload`) — jamais exposée au client
 - `GEMINI_API_KEY` : utilisée côté serveur uniquement (`app/api/generate`) —
   jamais exposée au client
 - `FAL_KEY` : utilisée côté serveur uniquement (`app/api/generate-video`) —
