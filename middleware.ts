@@ -43,9 +43,18 @@ import { createServerClient } from "@supabase/ssr";
     }
 
     export const config = {
-    matcher: [
-      "/((?!_next/static|_next/image|favicon.ico|api|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-    ],
+    // Ce middleware rafraîchit la session Supabase, ce qui coûte un
+    // aller-retour réseau **avant** que la page puisse répondre. Il ne doit
+    // donc s'exécuter que là où un Server Component lit réellement la
+    // session : le studio, la galerie, le compte et les tarifs (qui affiche
+    // le palier en cours). Les pages publiques — landing, mentions légales,
+    // CGV, confidentialité, à propos, connexion, inscription — s'en passent
+    // et gagnent ce délai sur leur TTFB.
+    //
+    // Étendre cette liste dès qu'une nouvelle page lit la session côté
+    // serveur, sinon elle verra un utilisateur déconnecté après expiration
+    // du jeton.
+    matcher: ["/", "/galerie/:path*", "/compte/:path*", "/tarifs/:path*"],
     // Autorise jose (utilisé par @supabase/auth-js) à utiliser du code dynamique
     // en Edge runtime — nécessaire depuis jose 6.x.
     unstable_allowDynamic: [

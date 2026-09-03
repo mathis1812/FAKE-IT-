@@ -43,6 +43,33 @@ body {
   z-index: 0;
 }
 
+/* Repli du fond animé : approxime le rendu au repos de ColorBends (une
+   bande violette diffuse basse sur l'écran) avec des dégradés CSS seuls.
+   Sert pendant le premier chargement, et définitivement sur les appareils
+   qui ne doivent pas payer three.js — voir components/StudioBackdrop.tsx. */
+.studio-backdrop-static {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(
+      ellipse 120% 60% at 50% 108%,
+      rgba(168, 85, 247, 0.3),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 80% 45% at 15% 85%,
+      rgba(126, 34, 206, 0.22),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 70% 40% at 88% 72%,
+      rgba(216, 180, 254, 0.12),
+      transparent 60%
+    );
+}
+
 .studio-vignette {
   pointer-events: none;
   position: fixed;

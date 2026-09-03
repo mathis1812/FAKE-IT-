@@ -8,6 +8,7 @@ import {
 import { persistImageBytes } from "@/lib/gallery-server";
 import { generateGeminiImage } from "@/lib/gemini-jobs";
 import { buildPlacePrompt } from "@/lib/place-prompt";
+import { buildScenePrompt, getScene } from "@/lib/scenes";
 import { PLANS, type PlanId } from "@/lib/stripe";
 import {
   DISALLOWED_ASSET_URL_MESSAGE,
@@ -23,6 +24,12 @@ const MAX_PLACE_IMAGES = 3;
 
 type GenerateBody = {
   sourceImageUrl?: string;
+  /**
+   * Scène choisie dans le catalogue (`lib/scenes.ts`). Chemin principal :
+   * le prompt est figé et connu à l'avance, donc aucune analyse vision n'est
+   * nécessaire — c'est ce qui retire un aller-retour réseau du parcours.
+   */
+  sceneId?: string;
   /** 1 à 3 photos du lieu réel où intégrer le sujet. */
   placeImageUrls?: string[];
   /** Note libre optionnelle de l'utilisateur, intégrée au prompt généré. */
@@ -34,19 +41,10 @@ type GenerateBody = {
 };
 
 export async function POST(req: NextRequest) {
-  // Deux fournisseurs distincts : kie.ai analyse les photos du lieu et
-  // héberge les uploads, Gemini génère l'image.
-  const kieApiKey = process.env.KIE_API_KEY?.trim();
-  if (!kieApiKey) {
-    return NextResponse.json(
-      {
-        error:
-          "Clé API manquante. Définissez KIE_API_KEY dans vos variables d'environnement.",
-      },
-      { status: 500 },
-    );
-  }
-
+  // kie.ai n'intervient plus que sur le flux « photos du lieu » (analyse
+  // vision) : sa clé est donc vérifiée plus bas, au moment où ce flux est
+  // effectivement emprunté. Une génération par scène ne doit pas échouer
+  // pour une clé dont elle n'a pas l'usage.
   const geminiApiKey = process.env.GEMINI_API_KEY?.trim();
   if (!geminiApiKey) {
     return NextResponse.json(
@@ -68,8 +66,28 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { sourceImageUrl, placeImageUrls, userNote, objectImageUrl, prompt, label } =
-    body;
+  const {
+    sourceImageUrl,
+    sceneId,
+    placeImageUrls,
+    userNote,
+    objectImageUrl,
+    prompt,
+    label,
+  } = body;
+
+  // Résolue avant l'auth et avant tout débit : un identifiant de scène
+  // inconnu est une erreur de requête, pas une génération à facturer.
+  const scene =
+    typeof sceneId === "string" && sceneId.trim()
+      ? getScene(sceneId.trim())
+      : undefined;
+  if (sceneId && !scene) {
+    return NextResponse.json(
+      { error: "Scène inconnue. Rechargez la page et réessayez." },
+      { status: 400 },
+    );
+  }
 
   if (!sourceImageUrl || typeof sourceImageUrl !== "string") {
     return NextResponse.json(
@@ -104,15 +122,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Les photos du lieu sont facultatives. Deux flux possibles : avec photos
-  // de lieu, le prompt est généré automatiquement par analyse vision ; sans
-  // elles, la description libre de l'utilisateur tient lieu de prompt. Il
-  // faut l'un ou l'autre, sinon le modèle n'a aucune indication de scène.
-  if (placeUrls.length === 0 && (!prompt || !prompt.trim())) {
+  // Trois flux possibles, par ordre de préférence :
+  //   1. scène du catalogue — prompt figé, aucune analyse préalable ;
+  //   2. photos du lieu     — prompt produit par analyse vision ;
+  //   3. description libre  — la note de l'utilisateur tient lieu de prompt.
+  // Il en faut au moins un, sinon le modèle n'a aucune indication de scène.
+  if (!scene && placeUrls.length === 0 && (!prompt || !prompt.trim())) {
     return NextResponse.json(
       {
         error:
-          "Ajoutez une photo du lieu, ou décrivez la scène souhaitée dans la note.",
+          "Choisissez une scène, ajoutez une photo du lieu, ou décrivez la scène souhaitée.",
       },
       { status: 400 },
     );
@@ -165,8 +184,31 @@ export async function POST(req: NextRequest) {
   }
 
   const imageInput = [sourceImageUrl];
+  const note = typeof userNote === "string" ? userNote : undefined;
   let finalPrompt: string;
-  if (placeUrls.length > 0) {
+  if (scene) {
+    // Chemin principal. Le prompt est connu sans appeler personne : on
+    // économise l'aller-retour d'analyse vision (jusqu'à 45 s de timeout,
+    // en série avant la génération) et le rendu devient reproductible d'un
+    // utilisateur à l'autre, donc corrigeable scène par scène.
+    //
+    // Les éventuelles photos de lieu restent jointes en référence si
+    // l'utilisateur en a fourni : le modèle les voit de toute façon, elles
+    // précisent la scène sans coûter d'appel supplémentaire.
+    imageInput.push(...placeUrls);
+    finalPrompt = buildScenePrompt(scene, note);
+  } else if (placeUrls.length > 0) {
+    const kieApiKey = process.env.KIE_API_KEY?.trim();
+    if (!kieApiKey) {
+      await refundCredits(user.id, IMAGE_GENERATION_COST);
+      return NextResponse.json(
+        {
+          error:
+            "Clé API manquante. Définissez KIE_API_KEY dans vos variables d'environnement.",
+        },
+        { status: 500 },
+      );
+    }
     imageInput.push(...placeUrls);
     // Étape d'analyse : un modèle vision examine les photos du lieu
     // (éclairage, matériaux, ambiance, angle) et produit un prompt structuré.
@@ -177,7 +219,7 @@ export async function POST(req: NextRequest) {
       kieApiKey,
       sourceImageUrl,
       placeUrls,
-      typeof userNote === "string" ? userNote : undefined,
+      note,
     );
   } else {
     finalPrompt = (prompt as string).trim();
@@ -220,7 +262,9 @@ export async function POST(req: NextRequest) {
       user.id,
       bytes,
       mimeType,
-      label?.trim() || "Génération image",
+      // La scène nomme la génération mieux qu'un libellé générique : la
+      // galerie devient lisible d'un coup d'œil.
+      label?.trim() || scene?.label || "Génération image",
     );
     return NextResponse.json({ imageUrl });
   } catch (err) {

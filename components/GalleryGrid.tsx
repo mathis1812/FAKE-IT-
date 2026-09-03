@@ -115,12 +115,20 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
               className="block w-full cursor-zoom-in"
               aria-label={`Voir en grand : ${entry.label}`}
             >
+              {/* Vignettes servies depuis le fichier pleine résolution — un
+                  PNG de génération pèse plusieurs Mo. Sans chargement
+                  différé, ouvrir la galerie téléchargeait l'intégralité de
+                  l'historique d'un coup pour n'afficher que des carrés de
+                  quelques centaines de pixels. `preload="none"` joue le même
+                  rôle pour les vidéos, que le navigateur mettait sinon en
+                  mémoire tampon toutes en parallèle. */}
               {entry.mode === "video" ? (
                 <video
                   src={entry.result_url}
                   muted
                   loop
                   playsInline
+                  preload="none"
                   className="aspect-square w-full object-cover"
                 />
               ) : (
@@ -128,6 +136,8 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
                 <img
                   src={entry.result_url}
                   alt={entry.label}
+                  loading="lazy"
+                  decoding="async"
                   className="aspect-square w-full object-cover"
                 />
               )}
@@ -187,6 +197,10 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
               <img
                 src={selected.result_url}
                 alt={selected.label}
+                // Contrairement aux vignettes, celle-ci est ce que
+                // l'utilisateur vient explicitement de demander à voir.
+                fetchPriority="high"
+                decoding="async"
                 className="max-h-[75vh] max-w-[90vw] rounded-2xl object-contain"
               />
             )}

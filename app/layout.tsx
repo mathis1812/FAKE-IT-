@@ -5,16 +5,24 @@ import StudioBackdrop from "@/components/StudioBackdrop";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 
+// Les graisses déclarées ici sont celles réellement utilisées dans les
+// pages, et rien de plus : chaque graisse en trop est un fichier woff2
+// téléchargé pour rien au premier rendu. Vérifiable d'une commande —
+//   grep -roh "font-display[^\"]*" app components
+// ne renvoie que `font-semibold`, d'où l'unique graisse 600 côté display.
+// Ajouter une graisse ici sans l'utiliser, ou l'utiliser sans l'ajouter (la
+// police serait alors synthétisée par le navigateur), sont deux erreurs
+// symétriques : garder les deux listes alignées.
 const cormorant = Cormorant({
   subsets: ["latin"],
   variable: "--font-display",
-  weight: ["400", "500", "600", "700"],
+  weight: ["600"],
 });
 
 const montserrat = Montserrat({
   subsets: ["latin"],
   variable: "--font-body",
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const SITE_URL = "https://bluminoo.vercel.app";

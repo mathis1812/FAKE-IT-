@@ -11,6 +11,8 @@ import {
   sendAsRedSnap as sendAsRedSnapFn,
   SNAP_UPLOAD_LENS_URL,
 } from "@/lib/share-utils";
+import ScenePicker from "@/components/ScenePicker";
+import { SCENES } from "@/lib/scenes";
 
 type Mode = "image" | "video";
 
@@ -401,6 +403,13 @@ export default function Home() {
   const [prepared, setPrepared] = useState<PreparedImage | null>(null);
   const [fileName, setFileName] = useState("");
   const [placeImages, setPlaceImages] = useState<PreparedImage[]>([]);
+  const [sceneId, setSceneId] = useState<string>(SCENES[0].id);
+  /**
+   * Le bloc « lieu perso » (photos du lieu + note) est replié par défaut :
+   * il reste disponible, mais ne concurrence plus le choix d'une scène, qui
+   * est le parcours principal.
+   */
+  const [customOpen, setCustomOpen] = useState(false);
   const [userNote, setUserNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -598,9 +607,9 @@ export default function Home() {
     // Les photos du lieu sont facultatives : sans elles, la note sert de
     // description. Il en faut donc au moins une des deux, sinon le modèle
     // n'a aucune indication sur la scène à produire.
-    if (placeImages.length === 0 && !userNote.trim()) {
+    if (!sceneId && placeImages.length === 0 && !userNote.trim()) {
       setError(
-        "Ajoutez une photo du lieu, ou décrivez la scène souhaitée dans la note.",
+        "Choisissez une scène, ajoutez une photo du lieu, ou décrivez la scène souhaitée.",
       );
       return;
     }
@@ -621,53 +630,70 @@ export default function Home() {
     }
 
     try {
-      const blob = await (await fetch(prepared.previewUrl)).blob();
-      if (blob.size > MAX_VIDEO_FILE_BYTES) {
+      // Les uploads étaient enchaînés en série : avec 3 photos de lieu, on
+      // attendait quatre allers-retours l'un après l'autre avant même que la
+      // génération commence. Ils sont indépendants — on les lance ensemble.
+      const toUpload: Array<{ image: PreparedImage; name: string }> = [
+        { image: prepared, name: fileName || "image.jpg" },
+        ...placeImages.map((image, i) => ({ image, name: `lieu-${i + 1}.jpg` })),
+      ];
+
+      const blobs = await Promise.all(
+        toUpload.map(async ({ image }) =>
+          (await fetch(image.previewUrl)).blob(),
+        ),
+      );
+      // Contrôle de taille avant d'engager le moindre upload : sinon on aurait
+      // déjà poussé des fichiers pour rien avant de découvrir le dépassement.
+      const oversized = blobs.findIndex((b) => b.size > MAX_VIDEO_FILE_BYTES);
+      if (oversized !== -1) {
         setError(
-          "Image trop volumineuse après compression (max 4 Mo). Essayez une photo plus simple.",
+          oversized === 0
+            ? "Image trop volumineuse après compression (max 4 Mo). Essayez une photo plus simple."
+            : "Photo du lieu trop volumineuse après compression (max 4 Mo).",
         );
         return;
       }
-      const file = new File([blob], fileName || "image.jpg", {
-        type: prepared.mimeType,
-      });
-      const sourceImageUrl = await uploadImage(file);
 
-      const placeImageUrls: string[] = [];
-      for (let i = 0; i < placeImages.length; i++) {
-        const placeBlob = await (
-          await fetch(placeImages[i].previewUrl)
-        ).blob();
-        if (placeBlob.size > MAX_VIDEO_FILE_BYTES) {
-          setError(
-            "Photo du lieu trop volumineuse après compression (max 4 Mo).",
-          );
-          return;
-        }
-        const placeFile = new File([placeBlob], `lieu-${i + 1}.jpg`, {
-          type: placeImages[i].mimeType,
-        });
-        placeImageUrls.push(await uploadImage(placeFile));
-      }
+      const [sourceImageUrl, ...placeImageUrls] = await Promise.all(
+        blobs.map((blob, i) =>
+          uploadImage(
+            new File([blob], toUpload[i].name, {
+              type: toUpload[i].image.mimeType,
+            }),
+          ),
+        ),
+      );
 
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          placeImageUrls.length > 0
+          sceneId
             ? {
+                // Chemin principal : la scène porte le prompt, la note n'est
+                // qu'une préférence secondaire et les photos de lieu, si
+                // présentes, servent de simple référence visuelle.
                 sourceImageUrl,
+                sceneId,
                 placeImageUrls,
                 userNote: userNote.trim() || undefined,
-                label: "Génération image",
               }
-            : {
-                // Sans photo de lieu, la note devient la description : le
-                // serveur bascule alors sur son flux « prompt libre ».
-                sourceImageUrl,
-                prompt: userNote.trim(),
-                label: "Génération image",
-              },
+            : placeImageUrls.length > 0
+              ? {
+                  sourceImageUrl,
+                  placeImageUrls,
+                  userNote: userNote.trim() || undefined,
+                  label: "Génération image",
+                }
+              : {
+                  // Sans scène ni photo de lieu, la note devient la
+                  // description : le serveur bascule sur son flux
+                  // « prompt libre ».
+                  sourceImageUrl,
+                  prompt: userNote.trim(),
+                  label: "Génération image",
+                },
         ),
       });
       const data = await res.json().catch(() => null);
@@ -697,7 +723,15 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [prepared, userNote, fileName, placeImages, refreshCredits, isSubscribed]);
+  }, [
+    prepared,
+    sceneId,
+    userNote,
+    fileName,
+    placeImages,
+    refreshCredits,
+    isSubscribed,
+  ]);
 
   /**
    * Sur mobile, un lien `download` ouvre l'image dans un onglet au lieu de
@@ -757,6 +791,10 @@ export default function Home() {
     setResult("");
     setError("");
     setUserNote("");
+    // La scène revient au premier choix du catalogue plutôt qu'à vide : un
+    // studio remis à zéro doit être immédiatement générable.
+    setSceneId(SCENES[0].id);
+    setCustomOpen(false);
     if (inputRef.current) inputRef.current.value = "";
   }, []);
 
@@ -1088,6 +1126,11 @@ export default function Home() {
                     <img
                       src={result}
                       alt="Résultat généré"
+                      // Le point d'orgue du parcours, après une minute
+                      // d'attente : ce téléchargement passe avant tout le
+                      // reste de ce qui traîne encore sur la page.
+                      fetchPriority="high"
+                      decoding="async"
                       className="h-full w-full object-cover"
                     />
                     <RevealBurst />
@@ -1154,7 +1197,32 @@ export default function Home() {
                 if (files.length) void handlePlaceFiles(files);
               }}
             />
-            <div className="mb-4">
+            <ScenePicker
+              value={sceneId}
+              onChange={setSceneId}
+              disabled={loading}
+            />
+
+            <button
+              type="button"
+              onClick={() => setCustomOpen((open) => !open)}
+              aria-expanded={customOpen}
+              className="mb-3 flex w-full items-center justify-between gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-left text-xs font-medium text-neutral-400 transition hover:border-white/20 hover:text-neutral-200"
+            >
+              <span>
+                {sceneId
+                  ? "Utiliser mon propre lieu, ou préciser la scène"
+                  : "Lieu perso et note"}
+              </span>
+              <span aria-hidden className="text-base leading-none">
+                {customOpen ? "−" : "+"}
+              </span>
+            </button>
+
+            {/* Le bloc reste monté quand il est replié : sinon un utilisateur
+                qui replie après avoir ajouté une photo de lieu la verrait
+                disparaître de l'écran tout en la laissant dans la requête. */}
+            <div className={customOpen ? "mb-4" : "hidden"}>
               <div className="mb-2 flex items-center gap-2">
                 <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary-soft">
                   1 à 3 photos
@@ -1203,20 +1271,20 @@ export default function Home() {
                   </span>
                 </button>
               )}
-            </div>
 
-            <textarea
-              id="user-note"
-              value={userNote}
-              onChange={(e) => setUserNote(e.target.value)}
-              rows={2}
-              placeholder={
-                placeImages.length > 0
-                  ? IMAGE_NOTE_PLACEHOLDER_WITH_PLACE
-                  : IMAGE_NOTE_PLACEHOLDER_WITHOUT_PLACE
-              }
-              className="mb-4 w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-700 focus:border-primary/50"
-            />
+              <textarea
+                id="user-note"
+                value={userNote}
+                onChange={(e) => setUserNote(e.target.value)}
+                rows={2}
+                placeholder={
+                  sceneId || placeImages.length > 0
+                    ? IMAGE_NOTE_PLACEHOLDER_WITH_PLACE
+                    : IMAGE_NOTE_PLACEHOLDER_WITHOUT_PLACE
+                }
+                className="mt-2 w-full resize-y rounded-2xl border border-white/10 bg-black/40 p-3.5 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-700 focus:border-primary/50"
+              />
+            </div>
 
             {error && (
               <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">

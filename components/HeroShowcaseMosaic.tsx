@@ -20,8 +20,17 @@ const SHOWCASE_IMAGES = Array.from(
   (_, i) => `/landing/showcase/${i + 1}.webp`,
 );
 
-/** Répétitions pour remplir la largeur sans trou, comme sur la référence. */
-const ROW_REPEATS = 3;
+/**
+ * Répétitions pour remplir la largeur sans trou.
+ *
+ * Le calcul, à ne pas baisser à l'aveugle : chaque rangée reçoit la moitié
+ * des vignettes répétées, et le composant en rend deux copies pour la boucle
+ * sans couture. À 2 répétitions cela fait 18 vignettes par copie, soit
+ * ~5040 px à 280 px de large — assez pour couvrir n'importe quel écran même
+ * avec la rotation et le `scale` appliqués au conteneur. Passer à 3 doublait
+ * le nombre de nœuds (108 balises `img`) sans rien couvrir de plus.
+ */
+const ROW_REPEATS = 2;
 
 function MosaicRow({
   images,
@@ -56,6 +65,10 @@ function MosaicRow({
                 height={1254}
                 loading="lazy"
                 decoding="async"
+                // Décor posé derrière le titre : il ne doit jamais disputer
+                // la bande passante au texte et aux polices, qui portent le
+                // LCP de la page.
+                fetchPriority="low"
                 className="h-full w-full object-cover grayscale-[25%]"
               />
             </div>
