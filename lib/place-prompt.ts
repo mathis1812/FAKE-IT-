@@ -67,16 +67,36 @@ export function buildPlacePrompt(userNote?: string): string {
  * sujet reconnaissable », qui contredit directement un remplacement
  * d'identité. Les deux prompts servent des opérations opposées et ne
  * doivent jamais partager cette ligne.
+ *
+ * Volontairement court, et sans `REALISM_CORE`. Comparé au rendu d'un
+ * concurrent dont la requête tient en une phrase, notre version détaillée
+ * sortait plus faible sur trois points, tous imputables à l'excès de
+ * consignes :
+ *   - « cale l'échelle du nouveau véhicule sur celle de l'ancien » →
+ *     disait littéralement au modèle de mettre une McLaren à la taille
+ *     d'une citadine. Remplacé par « taille réelle du modèle ».
+ *   - « cale l'ombre sur la position de l'ancien véhicule » → le modèle
+ *     tentait de réconcilier la grande voiture avec la petite ombre
+ *     d'origine → rendu qui flotte. Remplacé par une consigne d'ombre
+ *     autonome (contact sombre + portée selon la lumière de la scène).
+ *   - le bloc `REALISM_CORE` poussait le modèle d'édition à re-générer
+ *     toute l'image → sol et décor repeints. D'où l'interdiction
+ *     explicite de toucher au moindre pixel hors du véhicule.
  */
 export function buildVehicleSwapPrompt(vehicleSpec: string): string {
   return (
     `Replace the most prominent vehicle in the photo with a factory-stock, ${vehicleSpec}. ` +
-    `Produce a single photograph of the exact same scene with only that vehicle changed. ` +
-    REALISM_CORE +
-    " Keep the location, camera angle, framing, ground and background exactly as photographed. " +
-    "Match the new vehicle's scale, ground contact and cast shadow to the original vehicle's position. " +
-    "Any license plate must read as an unreadable, plausible plate — never the plate from the source " +
-    "photo, never a real one."
+    "Change only that vehicle. Keep everything else exactly as in the original photograph: the same " +
+    "location, camera angle, framing, background, ground surface, lighting and time of day. Do not " +
+    "repaint, smooth, relight or restyle the road, ground, scenery or sky — leave every pixel outside " +
+    "the new vehicle untouched. " +
+    "Render the vehicle at the true real-world size and proportions of that exact model; do not shrink " +
+    "or stretch it to match the footprint of the vehicle it replaces. Its tyres must sit in firm " +
+    "contact with the ground where the original vehicle stood, with a dark contact shadow directly " +
+    "under the body and a longer cast shadow matching the direction, length and hardness of the light " +
+    "in the scene. " +
+    "The result must read as one real photograph: no added text, watermark or people. Any licence " +
+    "plate must be left blank or unreadable, never the source plate and never a real one."
   );
 }
 
