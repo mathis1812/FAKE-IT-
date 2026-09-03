@@ -174,6 +174,33 @@ export function templateLocksAspectRatio(templateSlug: string): boolean {
   return categoryOfTemplate(templateSlug)?.slug === "worlds";
 }
 
+/**
+ * Swap véhicule : joindre une photo du modèle cible comme seconde image.
+ *
+ * Gemini ne reçoit sinon que le nom du modèle en texte et reconstitue la
+ * carrosserie de mémoire — proportions, face avant, empattement approximés.
+ * Une photo de référence du vrai véhicule (`public/templates/<slug>.jpg`,
+ * déjà utilisée comme vignette d'exemple) verrouille le dessin exact.
+ *
+ * Différent de `templateUsesStyleReference` (univers) : ici on copie le
+ * *contenu* — la forme de la voiture — pas une *technique de rendu*. D'où
+ * une consigne dédiée, `VEHICLE_REFERENCE_INSTRUCTION`. Les catégories sont
+ * exclusives : un slug est soit « worlds », soit « swap-vehicule ».
+ */
+export function templateUsesVehicleReference(templateSlug: string): boolean {
+  return categoryOfTemplate(templateSlug)?.slug === "swap-vehicule";
+}
+
+/** Ajouté au prompt quand la photo du modèle cible est jointe (swap véhicule). */
+export const VEHICLE_REFERENCE_INSTRUCTION =
+  "\n\nVEHICLE REFERENCE: the second image shows the exact car model to build. " +
+  "Reproduce its silhouette, proportions, stance, wheelbase, panel lines, head- and " +
+  "tail-lights, front and rear bumpers, air intakes, mirrors, badges and wheel design " +
+  "faithfully, so the result is unmistakably this model and not a generic supercar. " +
+  "Use only its shape and detailing — its colour, background, lighting, camera angle and " +
+  "number plate are irrelevant: the colour is the one stated above, and the scene, " +
+  "viewpoint and light come entirely from the first photo.";
+
 /** Ajouté au prompt quand une image de référence de style est jointe. */
 export const STYLE_REFERENCE_INSTRUCTION =
   "\n\nSTYLE REFERENCE: one extra image is attached only as a style reference. " +

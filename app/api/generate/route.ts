@@ -20,6 +20,8 @@ import {
   STYLE_REFERENCE_INSTRUCTION,
   templateLocksAspectRatio,
   templateUsesStyleReference,
+  templateUsesVehicleReference,
+  VEHICLE_REFERENCE_INSTRUCTION,
 } from "@/lib/template-prompts";
 import { findTemplate } from "@/lib/templates";
 import {
@@ -289,6 +291,17 @@ export async function POST(req: NextRequest) {
       if (styleRef) {
         imageInput.push(styleRef);
         finalPrompt += STYLE_REFERENCE_INSTRUCTION;
+      }
+    }
+    // Swap véhicule : joindre la photo du vrai modèle comme référence
+    // d'identité (forme, empattement, face avant) — le texte seul laissait
+    // Gemini approximer la carrosserie. Catégories exclusives : ce bloc et
+    // celui du dessus ne se déclenchent jamais ensemble.
+    if (templateSlug && templateUsesVehicleReference(templateSlug)) {
+      const vehicleRef = await loadTemplateStyleReference(templateSlug);
+      if (vehicleRef) {
+        imageInput.push(vehicleRef);
+        finalPrompt += VEHICLE_REFERENCE_INSTRUCTION;
       }
     }
   } else if (placeUrls.length > 0) {
