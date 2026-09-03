@@ -16,7 +16,6 @@ import {
   resolveTemplatePrompt,
   templateLocksAspectRatio,
   templateUsesStyleReference,
-  templateUsesVehicleReference,
 } from "@/lib/template-prompts";
 
 describe("le catalogue client ne fuite aucun prompt", () => {
@@ -120,28 +119,6 @@ describe("getQualityCheck", () => {
     expect(getQualityCheck("voiture-accidentee")).toBeNull();
     expect(getQualityCheck("aventador-svj")).toBeNull();
     expect(getQualityCheck("nexiste-pas")).toBeNull();
-  });
-});
-
-describe("templateUsesVehicleReference", () => {
-  it("vrai pour le swap véhicule", () => {
-    expect(templateUsesVehicleReference("720s")).toBe(true);
-    expect(templateUsesVehicleReference("aventador-svj")).toBe(true);
-  });
-
-  it("faux pour univers, pranks et inconnu", () => {
-    expect(templateUsesVehicleReference("gta-5")).toBe(false);
-    expect(templateUsesVehicleReference("voiture-accidentee")).toBe(false);
-    expect(templateUsesVehicleReference("nexiste-pas")).toBe(false);
-  });
-
-  it("exclusif avec templateUsesStyleReference", () => {
-    for (const slug of ["720s", "minecraft", "lego", "gta-5", "rat"]) {
-      expect(
-        templateUsesVehicleReference(slug) && templateUsesStyleReference(slug),
-        slug,
-      ).toBe(false);
-    }
   });
 });
 
