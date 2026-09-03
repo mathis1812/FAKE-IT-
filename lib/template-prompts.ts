@@ -31,11 +31,47 @@ type PromptEntry =
   | { prompt: string; variants?: never }
   | { prompt?: never; variants: Record<string, string> };
 
+/**
+ * Swap véhicule : couleur d'usine + modèle exact + code de génération, par
+ * slug. Gemini ne reçoit que du texte pour la voiture cible — sans couleur
+ * ni millésime il produit une « supercar générique » aux proportions et à
+ * la face avant approximatives. Ces specs reprennent 1:1 les requêtes du
+ * front usenoway (fichier `noway_templates_extracted.json`), seule donnée
+ * de cette extraction directement réutilisable.
+ *
+ * Une clé manquante retombe sur `VEHICLE_MODELS[].target` (nom nu) via le
+ * `?? target` ci-dessous ; le test d'alignement du catalogue couvre la
+ * complétude.
+ */
+const VEHICLE_SWAP_SPEC: Record<string, string> = {
+  "aventador-svj": "matte black Lamborghini Aventador SVJ with gloss black details",
+  "gt3-rs": "full black Porsche 911 GT3 RS (992)",
+  chiron: "full black Bugatti Chiron Super Sport",
+  revuelto: "orange Lamborghini Revuelto with black details",
+  m4: "dark green BMW M4 Competition (G82)",
+  rs6: "full black Audi RS6 Avant (C8)",
+  rs3: "full black Audi RS3 Sportback (8Y)",
+  "812-superfast": "dark grey Ferrari 812 Superfast",
+  "amg-gt-black-series": "light grey Mercedes-AMG GT Black Series",
+  sf90: "red Ferrari SF90 Stradale",
+  m3: "dark blue BMW M3 Competition (G80)",
+  "911-turbo-s": "full black Porsche 911 Turbo S (992)",
+  "huracan-sto": "full black Lamborghini Huracán STO",
+  "golf-r": "full black Volkswagen Golf R (Mk8)",
+  "c63-s": "full black Mercedes-AMG C 63 S E Performance (W206)",
+  "a45-s": "full black Mercedes-AMG A 45 S (W177)",
+  temerario: "full black Lamborghini Huracán Tecnica",
+  "gtr-nismo": "white Nissan GT-R Nismo (R35)",
+  r8: "red Audi R8 V10 performance (4S)",
+  m2: "matte black BMW M2 (G87) with silver wheels",
+  "720s": "dark green McLaren 720S",
+};
+
 /** Swap véhicule : un prompt par modèle, sans variante. */
 const VEHICLE_PROMPTS: Record<string, PromptEntry> = Object.fromEntries(
   VEHICLE_MODELS.map(({ slug, target }) => [
     slug,
-    { prompt: buildVehicleSwapPrompt(target) },
+    { prompt: buildVehicleSwapPrompt(VEHICLE_SWAP_SPEC[slug] ?? target) },
   ]),
 );
 

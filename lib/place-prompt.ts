@@ -57,15 +57,21 @@ export function buildPlacePrompt(userNote?: string): string {
  * la photo montre un véhicule que le rendu doit remplacer par un modèle
  * donné, tout en gardant la scène réelle — lieu, angle, lumière — inchangée.
  *
+ * `vehicleSpec` décrit couleur + modèle exact + code de génération, ex.
+ * « matte black Lamborghini Aventador SVJ with gloss black details » ou
+ * « dark green BMW M4 Competition (G82) ». La couleur et le millésime sont
+ * portés par la fiche (cf. `VEHICLE_SWAP_SPEC` dans `template-prompts.ts`) :
+ * sans eux le modèle produit une « supercar générique » approximative.
+ *
  * Ne réutilise pas `buildScenePrompt` : celui-ci ajoute « garde le même
  * sujet reconnaissable », qui contredit directement un remplacement
  * d'identité. Les deux prompts servent des opérations opposées et ne
  * doivent jamais partager cette ligne.
  */
-export function buildVehicleSwapPrompt(targetVehicle: string): string {
+export function buildVehicleSwapPrompt(vehicleSpec: string): string {
   return (
-    `The photograph shows a vehicle. Produce a single photograph of the exact same scene, but with ` +
-    `that vehicle replaced by a ${targetVehicle}. ` +
+    `Replace the most prominent vehicle in the photo with a factory-stock, ${vehicleSpec}. ` +
+    `Produce a single photograph of the exact same scene with only that vehicle changed. ` +
     REALISM_CORE +
     " Keep the location, camera angle, framing, ground and background exactly as photographed. " +
     "Match the new vehicle's scale, ground contact and cast shadow to the original vehicle's position. " +

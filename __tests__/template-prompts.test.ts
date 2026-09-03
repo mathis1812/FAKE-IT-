@@ -120,3 +120,25 @@ describe("getQualityCheck", () => {
     expect(getQualityCheck("nexiste-pas")).toBeNull();
   });
 });
+
+describe("swap véhicule : couleur d'usine + modèle exact (base usenoway)", () => {
+  const cars =
+    TEMPLATE_CATEGORIES.find((c) => c.slug === "swap-vehicule")?.templates ?? [];
+
+  it("la catégorie porte bien des voitures", () => {
+    expect(cars.length).toBeGreaterThan(0);
+  });
+
+  for (const car of cars) {
+    it(`${car.slug} : prompt « factory-stock » avec une couleur explicite`, () => {
+      const prompt = resolveTemplatePrompt(car.slug) ?? "";
+      // Formulation reprise du front usenoway.
+      expect(prompt).toContain("factory-stock,");
+      // Un simple nom de modèle (fallback `target`) n'aurait pas de couleur :
+      // ce test échoue si un slug n'a pas reçu de spec dédiée.
+      expect(prompt.toLowerCase()).toMatch(
+        /\b(black|white|red|orange|grey|gray|green|blue|silver)\b/,
+      );
+    });
+  }
+});
