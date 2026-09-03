@@ -1,10 +1,56 @@
+import sharp from "sharp";
 import { createServiceClient } from "@/lib/supabase/service";
 
 const BUCKET = "gallery";
 
 function extensionForMimeType(mimeType: string): string {
+  if (mimeType === "image/jpeg") return "jpg";
   const subtype = mimeType.split("/")[1];
   return subtype && /^[a-z0-9]+$/i.test(subtype) ? subtype : "png";
+}
+
+/**
+ * Qualité JPEG de livraison. Mesuré sur un rendu réel de 2390×1792 : le PNG
+ * RGBA de Gemini pèse 8,17 Mo, le même en q95 sans sous-échantillonnage
+ * chroma pèse 1,35 Mo — six fois moins, sans perte visible, y compris sur
+ * les aplats de couleur saturée (feux arrière, néons) que le 4:2:0 salit.
+ */
+const JPEG_QUALITY = 95;
+
+/**
+ * Convertit le rendu du fournisseur en JPEG de livraison.
+ *
+ * Gemini renvoie du PNG RGBA : sans perte, mais avec un canal alpha
+ * entièrement opaque et un poids cinq à six fois supérieur à ce que le
+ * produit a besoin de servir. Chaque génération stockée coûtait ~8 Mo de
+ * Storage, et autant à télécharger sur mobile à chaque affichage.
+ *
+ * BEST-EFFORT : une conversion qui échoue renvoie les octets d'origine
+ * inchangés. Une génération déjà payée par le client ne doit jamais être
+ * perdue pour un problème d'encodage — mieux vaut un fichier lourd qu'un
+ * crédit débité sans résultat.
+ */
+export async function toDeliverableJpeg(
+  bytes: Buffer,
+  mimeType: string,
+): Promise<{ bytes: Buffer; mimeType: string }> {
+  if (mimeType === "image/jpeg") return { bytes, mimeType };
+
+  try {
+    const converted = await sharp(bytes)
+      // Aplatit l'alpha : le rendu est opaque, le canal ne porte rien.
+      .flatten({ background: "#000000" })
+      .jpeg({
+        quality: JPEG_QUALITY,
+        mozjpeg: true,
+        chromaSubsampling: "4:4:4",
+      })
+      .toBuffer();
+    return { bytes: converted, mimeType: "image/jpeg" };
+  } catch (err) {
+    console.error("JPEG conversion failed, keeping the original bytes:", err);
+    return { bytes, mimeType };
+  }
 }
 
 /**
@@ -21,11 +67,12 @@ export async function persistImageBytes(
   label: string,
 ): Promise<string> {
   const service = createServiceClient();
-  const path = `${userId}/${crypto.randomUUID()}.${extensionForMimeType(mimeType)}`;
+  const delivered = await toDeliverableJpeg(bytes, mimeType);
+  const path = `${userId}/${crypto.randomUUID()}.${extensionForMimeType(delivered.mimeType)}`;
 
   const { error: uploadError } = await service.storage
     .from(BUCKET)
-    .upload(path, bytes, { contentType: mimeType });
+    .upload(path, delivered.bytes, { contentType: delivered.mimeType });
   if (uploadError) throw uploadError;
 
   const {
