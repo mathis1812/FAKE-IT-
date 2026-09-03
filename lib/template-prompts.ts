@@ -160,6 +160,20 @@ export function templateUsesStyleReference(templateSlug: string): boolean {
   return categoryOfTemplate(templateSlug)?.slug === "worlds";
 }
 
+/**
+ * Verrou du ratio de sortie (`imageConfig.aspectRatio` passé à Gemini).
+ *
+ * Réservé aux univers : ce sont des re-rendus complets de la scène, où
+ * gemini-3-pro-image dérive sinon vers un autre cadrage. Le swap véhicule et
+ * les pranks sont des éditions chirurgicales — forcer le ratio pousse le
+ * modèle d'édition à recomposer toute l'image (sol repeint, gabarit du
+ * véhicule faussé, cadrage décalé). On le laisse éditer sans contrainte,
+ * comme une requête nue « remplace la voiture par… ».
+ */
+export function templateLocksAspectRatio(templateSlug: string): boolean {
+  return categoryOfTemplate(templateSlug)?.slug === "worlds";
+}
+
 /** Ajouté au prompt quand une image de référence de style est jointe. */
 export const STYLE_REFERENCE_INSTRUCTION =
   "\n\nSTYLE REFERENCE: one extra image is attached only as a style reference. " +

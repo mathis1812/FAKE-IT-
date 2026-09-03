@@ -14,6 +14,7 @@ import {
   TEMPLATE_PROMPTS,
   getQualityCheck,
   resolveTemplatePrompt,
+  templateLocksAspectRatio,
   templateUsesStyleReference,
 } from "@/lib/template-prompts";
 
@@ -118,6 +119,24 @@ describe("getQualityCheck", () => {
     expect(getQualityCheck("voiture-accidentee")).toBeNull();
     expect(getQualityCheck("aventador-svj")).toBeNull();
     expect(getQualityCheck("nexiste-pas")).toBeNull();
+  });
+});
+
+describe("templateLocksAspectRatio", () => {
+  it("vrai pour les univers (re-rendu complet de la scène)", () => {
+    for (const slug of ["minecraft", "gta-5", "lego"]) {
+      expect(templateLocksAspectRatio(slug), slug).toBe(true);
+    }
+  });
+
+  it("faux pour swap véhicule et pranks (édition chirurgicale)", () => {
+    expect(templateLocksAspectRatio("720s")).toBe(false);
+    expect(templateLocksAspectRatio("aventador-svj")).toBe(false);
+    expect(templateLocksAspectRatio("voiture-accidentee")).toBe(false);
+  });
+
+  it("faux pour un gabarit inconnu", () => {
+    expect(templateLocksAspectRatio("nexiste-pas")).toBe(false);
   });
 });
 

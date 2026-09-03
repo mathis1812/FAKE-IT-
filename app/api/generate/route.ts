@@ -18,6 +18,7 @@ import {
   resolveTemplatePrompt,
   getQualityCheck,
   STYLE_REFERENCE_INSTRUCTION,
+  templateLocksAspectRatio,
   templateUsesStyleReference,
 } from "@/lib/template-prompts";
 import { findTemplate } from "@/lib/templates";
@@ -222,6 +223,11 @@ export async function POST(req: NextRequest) {
   // obtiendrait le 4K sans le payer en palier.
   const isTemplateRequest =
     typeof templateSlug === "string" && templateSlug.trim().length > 0;
+  // Ratio de sortie forcé uniquement pour les univers (re-rendu complet).
+  // Sur un swap véhicule / prank, forcer `imageConfig.aspectRatio` fait
+  // recomposer toute l'image au modèle d'édition. Cf. templateLocksAspectRatio.
+  const lockAspectRatio =
+    isTemplateRequest && templateLocksAspectRatio(templateSlug as string);
   let quality: ImageQuality;
   if (isTemplateRequest) {
     quality = TEMPLATE_QUALITY;
@@ -314,10 +320,9 @@ export async function POST(req: NextRequest) {
       prompt: finalPrompt,
       imageUrls: imageInput,
       resolution,
-      // Le rendu de référence d'un gabarit doit garder le cadrage de la
-      // photo déposée : c'est un avant/après, un ratio qui change casse la
-      // comparaison. Le studio libre, lui, peut recomposer la scène.
-      matchFirstImageAspect: isTemplateRequest,
+      // Voir lockAspectRatio ci-dessus : verrou de cadrage pour les univers
+      // seulement. Swap véhicule / prank = édition libre (comme le studio).
+      matchFirstImageAspect: lockAspectRatio,
     });
     bytes = generated.bytes;
     mimeType = generated.mimeType;
@@ -338,7 +343,7 @@ export async function POST(req: NextRequest) {
           prompt: `${finalPrompt}\n\n${qualityCheck.retrySuffix}`,
           imageUrls: imageInput,
           resolution,
-          matchFirstImageAspect: isTemplateRequest,
+          matchFirstImageAspect: lockAspectRatio,
         });
         bytes = retried.bytes;
         mimeType = retried.mimeType;

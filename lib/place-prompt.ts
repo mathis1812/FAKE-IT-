@@ -68,35 +68,30 @@ export function buildPlacePrompt(userNote?: string): string {
  * d'identité. Les deux prompts servent des opérations opposées et ne
  * doivent jamais partager cette ligne.
  *
- * Volontairement court, et sans `REALISM_CORE`. Comparé au rendu d'un
- * concurrent dont la requête tient en une phrase, notre version détaillée
- * sortait plus faible sur trois points, tous imputables à l'excès de
- * consignes :
- *   - « cale l'échelle du nouveau véhicule sur celle de l'ancien » →
- *     disait littéralement au modèle de mettre une McLaren à la taille
- *     d'une citadine. Remplacé par « taille réelle du modèle ».
- *   - « cale l'ombre sur la position de l'ancien véhicule » → le modèle
- *     tentait de réconcilier la grande voiture avec la petite ombre
- *     d'origine → rendu qui flotte. Remplacé par une consigne d'ombre
- *     autonome (contact sombre + portée selon la lumière de la scène).
- *   - le bloc `REALISM_CORE` poussait le modèle d'édition à re-générer
- *     toute l'image → sol et décor repeints. D'où l'interdiction
- *     explicite de toucher au moindre pixel hors du véhicule.
+ * Volontairement très court, et sans `REALISM_CORE`. Une requête concurrente
+ * qui tient en une phrase (« Replace the most prominent vehicle… with a
+ * <couleur> <modèle> ») sort un meilleur résultat que notre version
+ * détaillée : véhicule aux vraies proportions, ombre naturelle, décor
+ * intact. Chaque consigne ajoutée pousse gemini-3-pro-image (modèle
+ * d'édition) de la retouche chirurgicale vers la re-génération complète de
+ * la scène. En particulier, décrire l'ombre à dessiner donnait une ombre
+ * plate et fausse ; ne rien en dire donne une ombre correcte.
+ *
+ * On ne garde qu'un ajout par rapport à la requête nue : « taille réelle du
+ * modèle », parce que le modèle a tendance à caler le nouveau véhicule sur
+ * l'empreinte de l'ancien (une supercar ramenée à la taille d'une citadine).
+ *
+ * Le verrou de ratio (`imageConfig.aspectRatio`) est aussi désactivé pour
+ * cette catégorie côté route — cf. `templateLocksAspectRatio`.
  */
 export function buildVehicleSwapPrompt(vehicleSpec: string): string {
   return (
     `Replace the most prominent vehicle in the photo with a factory-stock, ${vehicleSpec}. ` +
-    "Change only that vehicle. Keep everything else exactly as in the original photograph: the same " +
-    "location, camera angle, framing, background, ground surface, lighting and time of day. Do not " +
-    "repaint, smooth, relight or restyle the road, ground, scenery or sky — leave every pixel outside " +
-    "the new vehicle untouched. " +
-    "Render the vehicle at the true real-world size and proportions of that exact model; do not shrink " +
-    "or stretch it to match the footprint of the vehicle it replaces. Its tyres must sit in firm " +
-    "contact with the ground where the original vehicle stood, with a dark contact shadow directly " +
-    "under the body and a longer cast shadow matching the direction, length and hardness of the light " +
-    "in the scene. " +
-    "The result must read as one real photograph: no added text, watermark or people. Any licence " +
-    "plate must be left blank or unreadable, never the source plate and never a real one."
+    "Change only that vehicle; keep the location, camera angle, framing, background, ground and " +
+    "lighting exactly as in the original photograph. " +
+    "Render it at the true real-world size and proportions of that exact model, not scaled to the " +
+    "vehicle it replaces. " +
+    "Any licence plate must be left blank or unreadable, never a real one."
   );
 }
 
