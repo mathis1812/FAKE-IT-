@@ -62,7 +62,14 @@ export async function generateGeminiImage(
   input: {
     prompt: string;
     imageUrls: string[];
-    resolution: "1K" | "2K" | "4K";
+    /**
+     * `imageConfig.imageSize` (1K/2K/4K). Omis → le modèle rend à la taille
+     * de l'image d'entrée. Pour une édition chirurgicale (swap véhicule,
+     * prank), forcer une taille pousse gemini-3-pro-image à re-projeter la
+     * scène — léger changement d'angle et de proportions. On ne le passe
+     * donc que pour le studio libre et les univers (re-rendu complet).
+     */
+    resolution?: "1K" | "2K" | "4K";
     /**
      * Verrouille le ratio de sortie sur celui de la première image (le
      * sujet), ramené au ratio accepté le plus proche. Sans consigne
@@ -103,12 +110,21 @@ export async function generateGeminiImage(
               parts: [{ text: input.prompt }, ...imageParts],
             },
           ],
-          generationConfig: {
-            imageConfig: {
-              imageSize: input.resolution,
-              ...(aspectRatio ? { aspectRatio } : {}),
-            },
-          },
+          // `imageConfig` seulement s'il y a quelque chose à forcer. Vide,
+          // on n'envoie pas `generationConfig` du tout : le modèle édite
+          // l'image sans re-projeter la scène (cf. `resolution` optionnel).
+          ...(input.resolution || aspectRatio
+            ? {
+                generationConfig: {
+                  imageConfig: {
+                    ...(input.resolution
+                      ? { imageSize: input.resolution }
+                      : {}),
+                    ...(aspectRatio ? { aspectRatio } : {}),
+                  },
+                },
+              }
+            : {}),
         }),
         signal: controller.signal,
       },

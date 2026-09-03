@@ -228,6 +228,11 @@ export async function POST(req: NextRequest) {
   // recomposer toute l'image au modèle d'édition. Cf. templateLocksAspectRatio.
   const lockAspectRatio =
     isTemplateRequest && templateLocksAspectRatio(templateSlug as string);
+  // Édition chirurgicale (swap véhicule, prank) : aucun `imageConfig` envoyé
+  // à Gemini — ni ratio ni taille. Chaque paramètre forcé pousse le modèle
+  // d'édition à re-projeter la scène (angle, proportions, sol repeint). Les
+  // univers et le studio libre gardent leur `imageConfig`.
+  const surgicalEdit = isTemplateRequest && !lockAspectRatio;
   let quality: ImageQuality;
   if (isTemplateRequest) {
     quality = TEMPLATE_QUALITY;
@@ -319,9 +324,8 @@ export async function POST(req: NextRequest) {
     const generated = await generateGeminiImage(geminiApiKey, {
       prompt: finalPrompt,
       imageUrls: imageInput,
-      resolution,
-      // Voir lockAspectRatio ci-dessus : verrou de cadrage pour les univers
-      // seulement. Swap véhicule / prank = édition libre (comme le studio).
+      // surgicalEdit → pas d'imageConfig du tout (voir plus haut).
+      resolution: surgicalEdit ? undefined : resolution,
       matchFirstImageAspect: lockAspectRatio,
     });
     bytes = generated.bytes;
@@ -342,7 +346,7 @@ export async function POST(req: NextRequest) {
         const retried = await generateGeminiImage(geminiApiKey, {
           prompt: `${finalPrompt}\n\n${qualityCheck.retrySuffix}`,
           imageUrls: imageInput,
-          resolution,
+          resolution: surgicalEdit ? undefined : resolution,
           matchFirstImageAspect: lockAspectRatio,
         });
         bytes = retried.bytes;
