@@ -87,9 +87,10 @@ type GenerateBody = {
 
 export async function POST(req: NextRequest) {
   // Un seul fournisseur sur le chemin de génération depuis le 25/08 :
-  // Gemini analyse les photos du lieu et génère l'image en une passe. kie.ai
-  // ne sert plus qu'à héberger les uploads, via app/api/kie/upload, qui
-  // vérifie sa propre clé.
+  // Gemini analyse les photos du lieu et génère l'image en une passe. Et un
+  // seul hébergeur depuis le 03/09 : les photos sources vont directement du
+  // navigateur vers notre bucket Supabase `photo-uploads` (cf.
+  // `uploadImage`), kie.ai ne fait plus partie du chemin.
   const geminiApiKey = process.env.GEMINI_API_KEY?.trim();
   if (!geminiApiKey) {
     return NextResponse.json(
@@ -228,11 +229,15 @@ export async function POST(req: NextRequest) {
   // recomposer toute l'image au modèle d'édition. Cf. templateLocksAspectRatio.
   const lockAspectRatio =
     isTemplateRequest && templateLocksAspectRatio(templateSlug as string);
-  // Édition chirurgicale (swap véhicule, prank) : aucun `imageConfig` envoyé
-  // à Gemini — ni ratio ni taille. Chaque paramètre forcé pousse le modèle
-  // d'édition à re-projeter la scène (angle, proportions, sol repeint). Les
-  // univers et le studio libre gardent leur `imageConfig`.
-  const surgicalEdit = isTemplateRequest && !lockAspectRatio;
+  // `imageConfig.imageSize` est en revanche envoyé pour TOUS les gabarits.
+  //
+  // Testé le 03/09 dans les deux sens, sur le même gabarit et la même photo :
+  // ne rien envoyer donne un rendu nettement moins bon. L'hypothèse inverse
+  // — « tout paramètre forcé pousse le modèle d'édition à re-projeter » —
+  // vaut pour `aspectRatio`, pas pour `imageSize`. Sans consigne de taille,
+  // gemini-3-pro-image ne rend pas à la taille de l'entrée : il retombe sur
+  // un défaut plus petit, et l'image y perd. Ne pas re-tenter de le retirer
+  // sans une comparaison A/B sur des rendus réels.
   let quality: ImageQuality;
   if (isTemplateRequest) {
     quality = TEMPLATE_QUALITY;
@@ -324,8 +329,7 @@ export async function POST(req: NextRequest) {
     const generated = await generateGeminiImage(geminiApiKey, {
       prompt: finalPrompt,
       imageUrls: imageInput,
-      // surgicalEdit → pas d'imageConfig du tout (voir plus haut).
-      resolution: surgicalEdit ? undefined : resolution,
+      resolution,
       matchFirstImageAspect: lockAspectRatio,
     });
     bytes = generated.bytes;
@@ -346,7 +350,7 @@ export async function POST(req: NextRequest) {
         const retried = await generateGeminiImage(geminiApiKey, {
           prompt: `${finalPrompt}\n\n${qualityCheck.retrySuffix}`,
           imageUrls: imageInput,
-          resolution: surgicalEdit ? undefined : resolution,
+          resolution,
           matchFirstImageAspect: lockAspectRatio,
         });
         bytes = retried.bytes;

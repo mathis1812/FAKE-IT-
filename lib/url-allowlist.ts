@@ -8,32 +8,17 @@
  * de la requête permettrait donc de faire émettre à notre serveur une requête
  * arbitraire (SSRF) : réseau interne, métadonnées cloud, ports non HTTP.
  *
- * Hôtes légitimes, et ce sont les seuls endroits où l'application fait
- * héberger les fichiers qu'elle envoie ensuite aux fournisseurs :
- *  - l'hôte de l'API de fichiers kie.ai (`KIE_UPLOAD_URL` ci-dessous), utilisé
- *    par `app/api/kie/upload/route.ts` pour uploader les images ;
- *  - l'hôte de téléchargement kie.ai (`KIE_DOWNLOAD_HOSTNAME` ci-dessous),
- *    constaté empiriquement, qui sert réellement les fichiers uploadés ;
- *  - l'hôte du projet Supabase, dérivé de `NEXT_PUBLIC_SUPABASE_URL`, qui sert
- *    le bucket Storage `video-uploads` (upload direct navigateur → Supabase
- *    dans `app/page.tsx`) et le bucket `gallery`.
+ * Un seul hôte légitime depuis le 2026-09-03 : celui du projet Supabase,
+ * dérivé de `NEXT_PUBLIC_SUPABASE_URL`. Il sert le bucket `photo-uploads`
+ * (photos sources, upload direct navigateur → Supabase dans
+ * `lib/studio-image.ts`), le bucket `video-uploads` et le bucket `gallery`.
+ *
+ * L'hébergeur tiers kie.ai a été retiré d'ici en même temps que du chemin
+ * critique : ses deux hôtes (upload et CDN de téléchargement) n'ont plus
+ * aucune raison d'être joignables par notre serveur, et la route
+ * `app/api/kie/upload` qui les utilisait — sans aucun contrôle
+ * d'authentification — a été supprimée.
  */
-
-/** Endpoint d'hébergement de fichiers kie.ai — source unique de vérité. */
-export const KIE_UPLOAD_URL =
-  "https://kieai.redpandaai.co/api/file-stream-upload";
-
-/**
- * Hôte réel depuis lequel kie.ai sert les fichiers uploadés (le champ
- * `downloadUrl` renvoyé par `app/api/kie/upload/route.ts`), constaté
- * empiriquement lors d'un upload réel sur l'API kie.ai le 2026-08-19 : cet
- * hôte n'apparaît nulle part ailleurs dans le code, seul `downloadUrl` le
- * porte à l'exécution, et il diffère de l'hôte d'upload `KIE_UPLOAD_URL`.
- * Sans lui, `isAllowedAssetUrl` rejette `sourceImageUrl`, les
- * `placeImageUrls` et l'`objectImageUrl` du mode vidéo. À revérifier si
- * kie.ai change de CDN.
- */
-export const KIE_DOWNLOAD_HOSTNAME = "tempfile.redpandaai.co";
 
 export const DISALLOWED_ASSET_URL_MESSAGE =
   "Media URL not allowed. Files must be uploaded through " +
@@ -44,7 +29,7 @@ export const DISALLOWED_ASSET_URL_MESSAGE =
  * lue à l'exécution et non figée au build.
  */
 function allowedHostnames(): string[] {
-  const hostnames = [new URL(KIE_UPLOAD_URL).hostname, KIE_DOWNLOAD_HOSTNAME];
+  const hostnames: string[] = [];
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   if (supabaseUrl) {

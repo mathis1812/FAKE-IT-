@@ -63,11 +63,12 @@ export async function generateGeminiImage(
     prompt: string;
     imageUrls: string[];
     /**
-     * `imageConfig.imageSize` (1K/2K/4K). Omis → le modèle rend à la taille
-     * de l'image d'entrée. Pour une édition chirurgicale (swap véhicule,
-     * prank), forcer une taille pousse gemini-3-pro-image à re-projeter la
-     * scène — léger changement d'angle et de proportions. On ne le passe
-     * donc que pour le studio libre et les univers (re-rendu complet).
+     * `imageConfig.imageSize` (1K/2K/4K). Toujours renseigné pour les
+     * gabarits : omettre ce champ ne fait PAS rendre le modèle à la taille de
+     * l'image d'entrée, il retombe sur un défaut plus petit et le rendu y
+     * perd nettement (comparé sur rendus réels le 03/09). `aspectRatio`, lui,
+     * reste réservé aux univers (voir `matchFirstImageAspect`) car forcer le
+     * ratio pousse gemini-3-pro-image à recomposer toute la scène.
      */
     resolution?: "1K" | "2K" | "4K";
     /**
