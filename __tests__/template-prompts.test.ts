@@ -13,10 +13,13 @@ import { TEMPLATE_CATEGORIES, allTemplates, hasVariants } from "@/lib/templates"
 import {
   TEMPLATE_PROMPTS,
   getQualityCheck,
+  modelForTemplate,
   resolveTemplatePrompt,
+  temperatureForTemplate,
   templateLocksAspectRatio,
   templateUsesStyleReference,
 } from "@/lib/template-prompts";
+import { LITE_IMAGE_MODEL_ID } from "@/lib/gemini-jobs";
 
 describe("le catalogue client ne fuite aucun prompt", () => {
   const serialized = JSON.stringify(TEMPLATE_CATEGORIES).toLowerCase();
@@ -137,6 +140,52 @@ describe("templateLocksAspectRatio", () => {
 
   it("faux pour un gabarit inconnu", () => {
     expect(templateLocksAspectRatio("nexiste-pas")).toBe(false);
+  });
+});
+
+describe("modelForTemplate", () => {
+  it("Nano Banana 2 Lite pour toutes les voitures", () => {
+    const cars =
+      TEMPLATE_CATEGORIES.find((c) => c.slug === "swap-vehicule")?.templates ??
+      [];
+    expect(cars.length).toBeGreaterThan(0);
+    for (const car of cars) {
+      expect(modelForTemplate(car.slug), car.slug).toBe(LITE_IMAGE_MODEL_ID);
+    }
+  });
+
+  it("modèle par défaut pour les pranks et les univers", () => {
+    // Non jugés sur le Lite : ils doivent rester sur Nano Banana Pro tant
+    // qu'une comparaison n'a pas été faite.
+    for (const slug of ["voiture-accidentee", "minecraft", "gta-5", "lego"]) {
+      expect(modelForTemplate(slug), slug).toBeUndefined();
+    }
+  });
+
+  it("modèle par défaut pour un gabarit inconnu", () => {
+    expect(modelForTemplate("nexiste-pas")).toBeUndefined();
+  });
+});
+
+describe("temperatureForTemplate", () => {
+  it("température resserrée sur les voitures, dans les bornes du modèle", () => {
+    const cars =
+      TEMPLATE_CATEGORIES.find((c) => c.slug === "swap-vehicule")?.templates ??
+      [];
+    for (const car of cars) {
+      const t = temperatureForTemplate(car.slug);
+      expect(t, car.slug).toBeDefined();
+      // `maxTemperature` vaut 1 sur toute la famille Nano Banana : au-delà,
+      // l'API rejette la requête.
+      expect(t).toBeGreaterThan(0);
+      expect(t).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("défaut du modèle pour les pranks, les univers et l'inconnu", () => {
+    for (const slug of ["voiture-accidentee", "minecraft", "nexiste-pas"]) {
+      expect(temperatureForTemplate(slug), slug).toBeUndefined();
+    }
   });
 });
 

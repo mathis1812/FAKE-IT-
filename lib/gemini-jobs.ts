@@ -12,6 +12,27 @@ const GEMINI_TIMEOUT_MS = 240_000;
 // gemini-3-pro-image (Nano Banana Pro, sans suffixe -preview) est son
 // remplacement officiel — voir ai.google.dev/gemini-api/docs/deprecations.
 const MODEL_ID = "gemini-3-pro-image";
+/**
+ * « Nano Banana 2 Lite ». Identifiant relevé le 04/09 sur l'endpoint
+ * `/v1beta/models` de notre propre clé, pas déduit du nom commercial.
+ *
+ * Retenu pour les swaps véhicule après comparaison des modèles : plus rapide
+ * que Nano Banana Pro, et surtout meilleur sur les proportions de
+ * carrosserie — le seul défaut que ni le prompt ni les paramètres d'image
+ * n'avaient réussi à corriger sur cette catégorie.
+ */
+export const LITE_IMAGE_MODEL_ID = "gemini-3.1-flash-lite-image";
+
+/**
+ * Modèles qui refusent `imageConfig.imageSize` et répondent
+ * `400 INVALID_ARGUMENT — Image size 2K is not supported for this model`.
+ *
+ * Constaté le 04/09 en basculant les swaps véhicule sur le Lite : toutes les
+ * générations échouaient. La taille est une capacité du modèle, pas un choix
+ * de l'appelant — le filtre est donc ici, pour qu'aucun appelant ne puisse
+ * reproduire cette erreur en passant simplement un autre modèle.
+ */
+const MODELS_WITHOUT_IMAGE_SIZE = new Set<string>([LITE_IMAGE_MODEL_ID]);
 // Modèle texte+vision utilisé pour juger un rendu de gabarit (boucle retry).
 // Séparé du modèle image : ici on veut une réponse texte PASS/FAIL, pas une
 // image. Rapide et bon marché. Si ce modèle est indisponible, le juge échoue
@@ -63,6 +84,18 @@ export async function generateGeminiImage(
     prompt: string;
     imageUrls: string[];
     /**
+     * Modèle d'image à utiliser. Par défaut `MODEL_ID` (Nano Banana Pro).
+     * Les swaps véhicule passent `LITE_IMAGE_MODEL_ID` — cf. son commentaire.
+     */
+    model?: string;
+    /**
+     * `generationConfig.temperature`, entre 0 et 1. Omis → le modèle applique
+     * son défaut, qui vaut 1 (son maximum) sur toute la famille Nano Banana :
+     * deux générations de la même photo diffèrent alors beaucoup. La baisser
+     * rend les rendus plus reproductibles, au prix d'un peu d'audace.
+     */
+    temperature?: number;
+    /**
      * `imageConfig.imageSize` (1K/2K/4K). Toujours renseigné pour les
      * gabarits : omettre ce champ ne fait PAS rendre le modèle à la taille de
      * l'image d'entrée, il retombe sur un défaut plus petit et le rendu y
@@ -85,6 +118,11 @@ export async function generateGeminiImage(
     inlineData: { mimeType: img.mimeType, data: img.bytes.toString("base64") },
   }));
 
+  const model = input.model ?? MODEL_ID;
+  const imageSize = MODELS_WITHOUT_IMAGE_SIZE.has(model)
+    ? undefined
+    : input.resolution;
+
   let aspectRatio: string | undefined;
   if (input.matchFirstImageAspect && images.length > 0) {
     const size = readImageSize(images[0].bytes);
@@ -98,7 +136,7 @@ export async function generateGeminiImage(
   let res: Response;
   try {
     res = await fetch(
-      `${GEMINI_API_BASE}/models/${MODEL_ID}:generateContent`,
+      `${GEMINI_API_BASE}/models/${model}:generateContent`,
       {
         method: "POST",
         headers: {
@@ -108,21 +146,31 @@ export async function generateGeminiImage(
         body: JSON.stringify({
           contents: [
             {
-              parts: [{ text: input.prompt }, ...imageParts],
+              // Images AVANT le texte : c'est l'ordre d'AI Studio, où le
+              // même modèle rendait mieux à prompt et photo identiques. Sur
+              // un modèle d'édition, l'instruction lue après l'image semble
+              // mieux s'y ancrer. Inversé le 04/09 ; si un A/B montrait le
+              // contraire, remettre le texte en tête.
+              parts: [...imageParts, { text: input.prompt }],
             },
           ],
           // `imageConfig` seulement s'il y a quelque chose à forcer. Vide,
           // on n'envoie pas `generationConfig` du tout : le modèle édite
           // l'image sans re-projeter la scène (cf. `resolution` optionnel).
-          ...(input.resolution || aspectRatio
+          ...(imageSize || aspectRatio || input.temperature !== undefined
             ? {
                 generationConfig: {
-                  imageConfig: {
-                    ...(input.resolution
-                      ? { imageSize: input.resolution }
-                      : {}),
-                    ...(aspectRatio ? { aspectRatio } : {}),
-                  },
+                  ...(input.temperature !== undefined
+                    ? { temperature: input.temperature }
+                    : {}),
+                  ...(imageSize || aspectRatio
+                    ? {
+                        imageConfig: {
+                          ...(imageSize ? { imageSize } : {}),
+                          ...(aspectRatio ? { aspectRatio } : {}),
+                        },
+                      }
+                    : {}),
                 },
               }
             : {}),

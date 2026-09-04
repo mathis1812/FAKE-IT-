@@ -137,5 +137,11 @@ export function videoCost(duration: VideoDuration): number {
  * Qualité appliquée aux gabarits. Le modèle la fixe à 2K quel que soit le
  * palier (`CRAN_TEMPLATE = "high"`) : un gabarit a un rendu de référence
  * montré au client, il doit sortir au même niveau pour tout le monde.
+ *
+ * Le 4K a été essayé le 03/09 puis abandonné : plus lourd et plus lent, sans
+ * gain visible. La photo d'entrée dépasse rarement 4000 px, donc demander du
+ * 4K en sortie revient à faire agrandir le modèle — le défaut même que la
+ * pleine résolution d'entrée avait corrigé (cf. `ENCODE_STEPS` dans
+ * `lib/studio-image.ts`).
  */
 export const TEMPLATE_QUALITY: ImageQuality = "high";

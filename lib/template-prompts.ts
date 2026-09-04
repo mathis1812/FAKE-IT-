@@ -4,6 +4,7 @@ import {
   buildInPlaceEditPrompt,
   buildVehicleSwapPrompt,
 } from "@/lib/place-prompt";
+import { LITE_IMAGE_MODEL_ID } from "@/lib/gemini-jobs";
 import { categoryOfTemplate, VEHICLE_MODELS } from "@/lib/templates";
 import {
   GTA5_WORLD_PROMPT,
@@ -44,7 +45,14 @@ type PromptEntry =
  * complétude.
  */
 const VEHICLE_SWAP_SPEC: Record<string, string> = {
-  "aventador-svj": "matte black Lamborghini Aventador SVJ with gloss black details",
+  // ⚠️ ESSAI 04/09 — seule spec qui s'écarte du texte de référence, qui dit
+  // « matte black Lamborghini Aventador SVJ with gloss black details ».
+  // Demander deux finitions à la fois, mate ET brillante, sur une carrosserie
+  // noire photographiée au couchant, c'est une contrainte de plus dans la
+  // zone la plus pauvre en information de l'image — d'où des rendus moins
+  // nets que sur les voitures colorées. Si ça n'améliore rien, remettre la
+  // fin de phrase.
+  "aventador-svj": "matte black Lamborghini Aventador SVJ",
   "gt3-rs": "full black Porsche 911 GT3 RS (992)",
   chiron: "full black Bugatti Chiron Super Sport",
   revuelto: "orange Lamborghini Revuelto with black details",
@@ -170,6 +178,45 @@ export function templateUsesStyleReference(templateSlug: string): boolean {
  * véhicule faussé, cadrage décalé). On le laisse éditer sans contrainte,
  * comme une requête nue « remplace la voiture par… ».
  */
+/**
+ * Modèle d'image à employer pour un gabarit, ou `undefined` pour laisser le
+ * défaut (Nano Banana Pro).
+ *
+ * Les swaps véhicule passent sur Nano Banana 2 Lite depuis le 04/09 :
+ * comparaison des modèles faite sur des rendus réels, il tient bien mieux les
+ * proportions de carrosserie et il est plus rapide. C'était le seul défaut
+ * restant sur cette catégorie, et ni le prompt ni `imageConfig` ne l'avaient
+ * corrigé — plusieurs allers-retours pour rien avant d'en arriver là.
+ *
+ * Volontairement limité à `swap-vehicule` : les pranks et les univers n'ont
+ * pas été jugés sur ce modèle. Ne les basculer qu'après comparaison.
+ */
+export function modelForTemplate(templateSlug: string): string | undefined {
+  return categoryOfTemplate(templateSlug)?.slug === "swap-vehicule"
+    ? LITE_IMAGE_MODEL_ID
+    : undefined;
+}
+
+/**
+ * ⚠️ ESSAI EN COURS — température d'échantillonnage d'un gabarit, ou
+ * `undefined` pour laisser le défaut du modèle.
+ *
+ * Toute la famille Nano Banana tourne par défaut à `temperature: 1`, qui est
+ * aussi son maximum (relevé sur `/v1beta/models/…` le 04/09). D'où des écarts
+ * importants entre deux générations de la même photo avec le même prompt :
+ * aileron, ouïes de capot, position au sol changent à chaque tirage. Le
+ * prompt d'une phrase, volontairement minimal, ne contraint rien de tout ça.
+ *
+ * 0,5 est mis à l'essai sur les swaps véhicule pour resserrer cette
+ * dispersion. À juger sur plusieurs rendus de la MÊME photo : plus régulier
+ * sans devenir fade ? Si les rendus deviennent plats, remonter ou retirer.
+ */
+export function temperatureForTemplate(templateSlug: string): number | undefined {
+  return categoryOfTemplate(templateSlug)?.slug === "swap-vehicule"
+    ? 0.5
+    : undefined;
+}
+
 export function templateLocksAspectRatio(templateSlug: string): boolean {
   return categoryOfTemplate(templateSlug)?.slug === "worlds";
 }

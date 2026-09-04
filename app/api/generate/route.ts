@@ -17,6 +17,8 @@ import {
 import {
   resolveTemplatePrompt,
   getQualityCheck,
+  modelForTemplate,
+  temperatureForTemplate,
   STYLE_REFERENCE_INSTRUCTION,
   templateLocksAspectRatio,
   templateUsesStyleReference,
@@ -323,12 +325,23 @@ export async function POST(req: NextRequest) {
     finalPrompt = buildScenePrompt(prompt as string);
   }
 
+  // Certaines catégories rendent mieux sur un autre modèle que le défaut —
+  // les swaps véhicule sur Nano Banana 2 Lite. Cf. `modelForTemplate`.
+  const model = isTemplateRequest
+    ? modelForTemplate(templateSlug as string)
+    : undefined;
+  const temperature = isTemplateRequest
+    ? temperatureForTemplate(templateSlug as string)
+    : undefined;
+
   let bytes: Buffer;
   let mimeType: string;
   try {
     const generated = await generateGeminiImage(geminiApiKey, {
       prompt: finalPrompt,
       imageUrls: imageInput,
+      model,
+      temperature,
       resolution,
       matchFirstImageAspect: lockAspectRatio,
     });
@@ -350,6 +363,8 @@ export async function POST(req: NextRequest) {
         const retried = await generateGeminiImage(geminiApiKey, {
           prompt: `${finalPrompt}\n\n${qualityCheck.retrySuffix}`,
           imageUrls: imageInput,
+          model,
+          temperature,
           resolution,
           matchFirstImageAspect: lockAspectRatio,
         });
