@@ -7,10 +7,12 @@
  */
 
 import { describe, expect, it } from "vitest";
+import sharp from "sharp";
 import {
   ENCODE_STEPS,
   MAX_UPLOAD_BYTES,
   dataUrlByteLength,
+  readExifOrientation,
 } from "@/lib/studio-image";
 
 /** Côté long de la sortie 2K de gemini-3-pro-image. */
@@ -36,6 +38,60 @@ describe("dataUrlByteLength", () => {
     const bytes = 512 * 1024;
     const dataUrl = `data:image/jpeg;base64,${Buffer.alloc(bytes).toString("base64")}`;
     expect(dataUrlByteLength(dataUrl)).toBe(bytes);
+  });
+});
+
+describe("readExifOrientation", () => {
+  /** JPEG 8×8 portant l'orientation EXIF demandée. */
+  const jpegWithOrientation = (orientation?: number) =>
+    sharp({
+      create: {
+        width: 8,
+        height: 8,
+        channels: 3,
+        background: { r: 10, g: 20, b: 30 },
+      },
+    })
+      .withMetadata(orientation ? { orientation } : {})
+      .jpeg()
+      .toBuffer();
+
+  const asArrayBuffer = (b: Buffer) =>
+    b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer;
+
+  // 6 et 8 sont les deux cas courants : photo prise en portrait, appareil
+  // tourné dans un sens ou dans l'autre.
+  for (const orientation of [1, 3, 6, 8]) {
+    it(`lit l'orientation ${orientation}`, async () => {
+      const jpeg = await jpegWithOrientation(orientation);
+      expect(readExifOrientation(asArrayBuffer(jpeg))).toBe(orientation);
+    });
+  }
+
+  it("rend 1 pour un JPEG sans EXIF", async () => {
+    const jpeg = await jpegWithOrientation();
+    expect(readExifOrientation(asArrayBuffer(jpeg))).toBe(1);
+  });
+
+  it("rend 1 pour un PNG", async () => {
+    const png = await sharp({
+      create: {
+        width: 8,
+        height: 8,
+        channels: 3,
+        background: { r: 0, g: 0, b: 0 },
+      },
+    })
+      .png()
+      .toBuffer();
+    expect(readExifOrientation(asArrayBuffer(png))).toBe(1);
+  });
+
+  it("rend 1 sur des octets illisibles plutôt que de lever", () => {
+    // Un EXIF corrompu ne doit jamais empêcher l'envoi d'une photo.
+    const garbage = Buffer.from([0xff, 0xd8, 0xff, 0xe1, 0x00]);
+    expect(readExifOrientation(asArrayBuffer(garbage))).toBe(1);
+    expect(readExifOrientation(new ArrayBuffer(0))).toBe(1);
   });
 });
 

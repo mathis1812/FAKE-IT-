@@ -61,6 +61,79 @@ function readFileAsDataUrl(file: File | Blob): Promise<string> {
   });
 }
 
+/** Nombre d'octets lus pour chercher le segment EXIF : il vit en tête. */
+const EXIF_SCAN_BYTES = 128 * 1024;
+const EXIF_ORIENTATION_TAG = 0x0112;
+
+/**
+ * Lit l'orientation EXIF d'un JPEG. Rend `1` (aucune rotation) pour tout ce
+ * qui n'est pas un JPEG, n'a pas d'EXIF, ou est illisible.
+ *
+ * Pourquoi c'est nécessaire : un appareil photo n'écrit pas les pixels dans
+ * le sens où l'on voit l'image, il ajoute une consigne de rotation dans
+ * l'EXIF. Une photo prise en portrait est donc stockée couchée. Les
+ * navigateurs et les visionneuses appliquent la consigne, mais rien ne
+ * garantit qu'un modèle d'image le fasse — il peut recevoir la photo à plat.
+ *
+ * Sans cette lecture, le comportement dépendait du POIDS du fichier : au-delà
+ * du plafond d'upload la photo passait par `canvas`, qui applique la rotation
+ * et efface l'EXIF ; en dessous elle partait brute, consigne intacte. La même
+ * photo pouvait donc arriver droite ou couchée selon son poids.
+ */
+export function readExifOrientation(buffer: ArrayBuffer): number {
+  const view = new DataView(buffer);
+  if (view.byteLength < 4 || view.getUint16(0) !== 0xffd8) return 1;
+
+  let offset = 2;
+  while (offset + 4 <= view.byteLength) {
+    if (view.getUint8(offset) !== 0xff) return 1;
+    const marker = view.getUint8(offset + 1);
+    // SOS : les données d'image commencent, plus aucun en-tête après.
+    if (marker === 0xda) return 1;
+
+    const size = view.getUint16(offset + 2);
+    if (size < 2) return 1;
+
+    // APP1 : le seul segment qui porte l'EXIF.
+    if (marker === 0xe1 && offset + 10 <= view.byteLength) {
+      const isExif =
+        view.getUint32(offset + 4) === 0x45786966 && // "Exif"
+        view.getUint16(offset + 8) === 0x0000;
+      if (isExif) {
+        const found = readOrientationFromTiff(view, offset + 10);
+        if (found) return found;
+      }
+    }
+
+    offset += 2 + size;
+  }
+  return 1;
+}
+
+/** Parcourt l'IFD0 du bloc TIFF de l'EXIF à la recherche du tag orientation. */
+function readOrientationFromTiff(view: DataView, tiffStart: number): number {
+  if (tiffStart + 8 > view.byteLength) return 0;
+
+  const byteOrder = view.getUint16(tiffStart);
+  if (byteOrder !== 0x4949 && byteOrder !== 0x4d4d) return 0;
+  const little = byteOrder === 0x4949;
+
+  const ifdOffset = view.getUint32(tiffStart + 4, little);
+  const ifd = tiffStart + ifdOffset;
+  if (ifd + 2 > view.byteLength) return 0;
+
+  const entries = view.getUint16(ifd, little);
+  for (let i = 0; i < entries; i++) {
+    const entry = ifd + 2 + i * 12;
+    if (entry + 12 > view.byteLength) return 0;
+    if (view.getUint16(entry, little) === EXIF_ORIENTATION_TAG) {
+      const value = view.getUint16(entry + 8, little);
+      return value >= 1 && value <= 8 ? value : 0;
+    }
+  }
+  return 0;
+}
+
 /** Poids réel des octets encodés dans une data URL base64. */
 export function dataUrlByteLength(dataUrl: string): number {
   const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
@@ -123,14 +196,34 @@ async function compressImage(file: File): Promise<PreparedImage> {
  * pleine résolution : la meilleure entrée possible pour le modèle. On ne
  * ré-encode que ce qui est trop lourd — auparavant tout fichier de plus de
  * 2 Mo était ramené à 1536 px, y compris quand rien ne l'imposait.
+ *
+ * Seconde raison de ré-encoder : une orientation EXIF non neutre. Le passage
+ * par `canvas` applique la rotation dans les pixels, de sorte que le modèle
+ * reçoit la photo dans le sens où l'utilisateur la voit, qu'il honore ou non
+ * l'EXIF. Cf. `readExifOrientation`.
  */
 export async function prepareImage(file: File): Promise<PreparedImage> {
-  if (file.size > MAX_UPLOAD_BYTES) {
+  const orientation = await readFileOrientation(file);
+  if (file.size > MAX_UPLOAD_BYTES || orientation !== 1) {
     return compressImage(file);
   }
   const dataUrl = await readFileAsDataUrl(file);
   const { base64, mimeType } = stripDataUrlPrefix(dataUrl);
   return { previewUrl: dataUrl, base64, mimeType };
+}
+
+/**
+ * Orientation EXIF d'un fichier, lue sur ses premiers octets seulement.
+ * Toute erreur de lecture rend `1` : un EXIF illisible ne doit pas empêcher
+ * l'utilisateur d'envoyer sa photo.
+ */
+async function readFileOrientation(file: File): Promise<number> {
+  try {
+    const head = await file.slice(0, EXIF_SCAN_BYTES).arrayBuffer();
+    return readExifOrientation(head);
+  } catch {
+    return 1;
+  }
 }
 
 export function validateImageFile(file: File): string | null {
