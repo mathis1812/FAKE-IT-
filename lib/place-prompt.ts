@@ -68,31 +68,29 @@ export function buildPlacePrompt(userNote?: string): string {
  * d'identité. Les deux prompts servent des opérations opposées et ne
  * doivent jamais partager cette ligne.
  *
- * Volontairement très court, et sans `REALISM_CORE`. Une requête concurrente
- * qui tient en une phrase (« Replace the most prominent vehicle… with a
- * <couleur> <modèle> ») sort un meilleur résultat que notre version
- * détaillée : véhicule aux vraies proportions, ombre naturelle, décor
- * intact. Chaque consigne ajoutée pousse gemini-3-pro-image (modèle
- * d'édition) de la retouche chirurgicale vers la re-génération complète de
- * la scène. En particulier, décrire l'ombre à dessiner donnait une ombre
- * plate et fausse ; ne rien en dire donne une ombre correcte.
+ * UNE SEULE PHRASE, sans point final, sans `REALISM_CORE` : exactement le
+ * `userQuery` du produit de référence, au caractère près.
  *
- * On ne garde qu'un ajout par rapport à la requête nue : « taille réelle du
- * modèle », parce que le modèle a tendance à caler le nouveau véhicule sur
- * l'empreinte de l'ancien (une supercar ramenée à la taille d'une citadine).
+ * Historique, pour éviter de refaire les mêmes essais. Une version
+ * antérieure ajoutait trois phrases — « change only that vehicle », « true
+ * real-world size and proportions », « licence plate left blank » — portant
+ * le prompt à 456 caractères. Sur gemini-3-pro-image, les retirer n'a PAS
+ * amélioré le rendu, et les remettre une par une non plus : le défaut de
+ * proportions persistait quoi qu'on écrive. Il venait du modèle, pas du
+ * texte.
  *
- * Le verrou de ratio (`imageConfig.aspectRatio`) est aussi désactivé pour
- * cette catégorie côté route — cf. `templateLocksAspectRatio`.
+ * Depuis le 04/09 les swaps tournent sur Nano Banana 2 Lite (cf.
+ * `modelForTemplate`), ce qui rend ces essais caducs — ils avaient été
+ * jugés sur un autre modèle. On repart donc de la formulation de référence,
+ * la plus courte, et on ne rallonge que si un rendu réel le justifie.
+ *
+ * Ne rien ajouter « pour bien faire » : chaque consigne pousse un modèle
+ * d'édition de la retouche chirurgicale vers la re-génération de la scène.
+ * Décrire l'ombre à dessiner, par exemple, donnait une ombre plate et
+ * fausse ; ne rien en dire donne une ombre correcte.
  */
 export function buildVehicleSwapPrompt(vehicleSpec: string): string {
-  return (
-    `Replace the most prominent vehicle in the photo with a factory-stock, ${vehicleSpec}. ` +
-    "Change only that vehicle; keep the location, camera angle, framing, background, ground and " +
-    "lighting exactly as in the original photograph. " +
-    "Render it at the true real-world size and proportions of that exact model, not scaled to the " +
-    "vehicle it replaces. " +
-    "Any licence plate must be left blank or unreadable, never a real one."
-  );
+  return `Replace the most prominent vehicle in the photo with a factory-stock, ${vehicleSpec}`;
 }
 
 /**
