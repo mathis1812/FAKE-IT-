@@ -112,13 +112,14 @@ export default function ConfidentialitePage() {
             </h3>
             <p>
               Account data is retained for as long as the account remains
-              active. Photos you upload for a generation are stored in our
-              own storage, associated with your account, and are transmitted
-              to the AI provider only for the duration of processing.
-              Successful generation results (images and videos) are stored in
-              your Gallery, also associated with your account. Both your
-              uploaded photos and your results are erased when your account
-              is deleted, or earlier if you request their removal.
+              active. Photos you upload for a generation are stored in our own
+              storage, associated with your account, and are transmitted to the
+              AI provider only for the duration of processing. They are
+              automatically deleted 7 days after they are uploaded. Successful
+              generation results (images and videos) are stored in your
+              Gallery, also associated with your account, and are kept until
+              your account is deleted. You may request the removal of either at
+              any time.
             </p>
           </section>
 
