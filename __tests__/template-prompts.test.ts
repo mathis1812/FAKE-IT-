@@ -109,13 +109,19 @@ describe("templateUsesStyleReference", () => {
 });
 
 describe("getQualityCheck", () => {
-  it("fournit un check pour les univers", () => {
-    for (const slug of ["minecraft", "gta-5", "lego"]) {
+  it("fournit un check pour minecraft et lego", () => {
+    for (const slug of ["minecraft", "lego"]) {
       const check = getQualityCheck(slug);
       expect(check, slug).not.toBeNull();
       expect(check?.criteria.length).toBeGreaterThan(0);
       expect(check?.retrySuffix.length).toBeGreaterThan(0);
     }
+  });
+
+  it("null pour gta-5, dont le prompt court exclut tout retry", () => {
+    // Son ancien retrySuffix redemandait le HUD et les shaders : il aurait
+    // réinjecté en silence ce que le prompt court retire.
+    expect(getQualityCheck("gta-5")).toBeNull();
   });
 
   it("null pour les gabarits sans check (pranks, swap, inconnu)", () => {

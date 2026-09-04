@@ -31,29 +31,31 @@ FINISH: cinematic 3D voxel render with soft global illumination, ambient occlusi
 
 The final image contains only the person and the voxel landscape: no game interface, no hotbar, no crosshair, no health or hunger bar, no text, no logo, and no Minecraft game characters or creatures.`;
 
-// Prompt fourni par le propriétaire du produit (fiche los_santos_game v2.0.0).
-// v2 = transfert de rendu IN-PLACE : garde le lieu d'origine (v1 le remplaçait
-// par une ville type Los Santos), enrichit la scène en props, ajoute des
-// étiquettes texte sur les objets (marques réelles substituées), un HUD
-// générique en bas à gauche, et renforce les traits du visage. Envoyé avec la
-// seule photo user — pas de référence de style (voir templateUsesStyleReference).
-export const GTA5_WORLD_PROMPT = `Re-render this photograph as a single in-game screenshot from a modern open-world crime video game, using a high-end real-time game engine.
-
-KEEP THE SAME PLACE. This is critical: do not move the subject to a different location, city or setting. Whatever room, street or landscape they are in stays that same place, with the same layout, the same furniture and objects in the same positions, the same window views, the same camera angle, the same framing and the same distances. You are changing how the scene is rendered, not where it happens.
-
-THE PERSON: re-render them as a 3D game character while keeping them clearly recognizable. Preserve their facial structure, features, skin tone, hairstyle, facial hair, body type, exact pose, hand position and head angle, and their entire outfit down to the cut, color and fabric of every garment plus any watch, tie, jewelry, glasses and shoes. Render all of it in game-engine style: skin with a smooth semi-matte shader and subtle subsurface scattering instead of real pore detail, slightly sharper and more chiseled facial structure with deeper defined creases around the eyes and mouth, hair as sculpted layered geometry rather than individual strands, clothing with simplified folds and clean baked normal-map creases, and a subtle darker edge separating the character from the background. Proportions very slightly heightened — a touch broader in the shoulders and hands, features a little more angular. They must still read as the same person, rendered by a game engine.
-
-THE SCENE: rebuild every surface and object in the same game engine style, and enrich the environment so it feels like a purpose-built game level rather than a bare room. Add depth and density to what is already there: warmer and richer materials, wood panelling and detailed grain on furniture, fuller and more organised shelving, additional plausible props that fit the setting, a warm practical light source such as a brass desk lamp, stacked papers and folders, and small everyday objects on surfaces. Everything must stay consistent with the original location and its purpose — you are dressing the existing set, not inventing a new one.
-
-PROP LABELS: give a few foreground objects short bold labels in uppercase condensed type, the way game props are labelled — for example a book spine, a folder cover or a file tab. Keep them legible, clean and perfectly rendered. Replace any real brand name or real company name visible in the photo with an invented generic equivalent of the same kind, and keep any personal or case names as short invented ones. Never reproduce a real logo or real trademark.
-
-LIGHT AND GRADE: keep the original light direction and time of day, but push it into game-engine lighting — stronger contrast, warm golden key light, deep controlled shadows, soft global illumination bouncing warm tones onto nearby surfaces, and a clear warm-to-cool separation between lit areas and shadow. Rich saturated color grade leaning warm amber and deep navy, gentle vignette at the frame corners, mild bloom on bright highlights, faint chromatic aberration at the edges and a light film grain.
-
-HUD: in the bottom left corner, overlay a simple game interface: a small semi-transparent square minimap showing an abstract grey street or floorplan layout with a white directional arrow at its center, a couple of tiny monochrome icons stacked along its left edge, and three thin horizontal status bars below it in green, blue and yellow. Keep the HUD understated, flat, low-opacity and purely graphic, with no text, no numbers, no logo and no branding of any kind.
-
-RENDER QUALITY: sharp high-fidelity real-time render, screen-space ambient occlusion, crisp contact shadows, detailed material textures, high dynamic range, ultra detailed, subject in sharp focus with a slight depth-of-field falloff on the background.
-
-The image contains only the character, the scene and the corner HUD: no other interface elements, no real logos, no real brand names, no watermark, and no additional people unless they were in the original photo.`;
+/**
+ * ⚠️ ESSAI 04/09 — remplacé par la requête du produit de référence, 51
+ * caractères contre 4 084 pour la version précédente.
+ *
+ * L'ancien prompt (fiche `los_santos_game` v2.0.0, fourni par le
+ * propriétaire) décrivait en sept sections la personne, la scène, les
+ * étiquettes de props, l'étalonnage, le HUD et la qualité de rendu. Son
+ * rendu a été jugé mauvais à l'usage. Le texte complet reste récupérable
+ * dans l'historique git, commit précédant celui-ci.
+ *
+ * Ce qui est mis à la place est le `userQuery` d'usenoway, verbatim — donc
+ * en français et à la première personne. Attention : ce n'est PAS leur
+ * prompt serveur, qui reste invisible ; c'est l'intention utilisateur que
+ * leur front envoie à leur backend. On teste donc « la formulation la plus
+ * courte possible », pas « exactement ce qu'ils envoient au modèle ».
+ *
+ * Le pari repose sur ce qu'on a constaté le même jour sur les swaps
+ * véhicule : raccourcir de 456 à 132 caractères n'a rien dégradé, et
+ * l'essentiel du défaut venait d'ailleurs. À juger sur des rendus réels.
+ *
+ * Le contrôle qualité de `gta-5` a été retiré en même temps : son
+ * `retrySuffix` redemandait le HUD et les shaders, il aurait réinjecté à la
+ * première régénération tout ce qu'on retire ici.
+ */
+export const GTA5_WORLD_PROMPT = `Transforme ma photo en capture d'écran du jeu GTA 5`;
 
 export const LEGO_WORLD_PROMPT = `Rebuild this entire photograph as a scene made of real LEGO bricks, photographed like an official LEGO set render.
 

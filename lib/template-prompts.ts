@@ -250,19 +250,12 @@ const TEMPLATE_QUALITY_CHECKS: Record<string, QualityCheck> = {
     retrySuffix:
       "The previous result was off. Regenerate keeping the person pixel-identical to the source photograph — same face, outfit, pose and position — and only rebuild the surrounding environment in voxel blocks.",
   },
-  "gta-5": {
-    // v2 : le lieu doit rester le même (pas de relocalisation), et un petit
-    // HUD graphique en bas à gauche est ATTENDU — mais sans texte/chiffres ni
-    // marque réelle. Ne pas traiter le HUD comme un défaut.
-    criteria:
-      "- The whole image looks like a 3D video-game engine render, NOT a real photograph and NOT a flat cartoon/illustration.\n" +
-      "- It is the SAME location as the source: the scene has not been moved to a different room, street or city.\n" +
-      "- The person is recognizably the same individual, with the same outfit and pose.\n" +
-      "- No real brand name or real logo is visible.\n" +
-      "- A small graphic HUD in a corner is allowed and expected; only fail the HUD if it shows readable text or numbers.",
-    retrySuffix:
-      "Regenerate. Keep the exact same location, layout, camera angle, face, outfit and pose as the source photograph. Change only the rendering: make it a real-time game engine screenshot with shader skin, sculpted hair, baked cloth folds, warm contrasted game lighting and a small graphic HUD in the bottom left corner. Not a photograph, not a cartoon.",
-  },
+  // ⚠️ `gta-5` n'a plus de contrôle qualité depuis le 04/09. Son prompt a été
+  // ramené à une phrase (cf. `GTA5_WORLD_PROMPT`), or son `retrySuffix`
+  // redemandait explicitement le HUD, les shaders et les plis de tissu : à la
+  // première régénération, il aurait réinjecté tout ce que l'essai retire,
+  // sans que rien ne le signale. Le rétablir seulement si le prompt long
+  // revient — le texte complet est dans l'historique git.
   lego: {
     criteria:
       "- The person is turned into a glossy LEGO minifigure, still recognizable (matching hair and outfit colors).\n" +
