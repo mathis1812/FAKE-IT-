@@ -167,10 +167,44 @@ export default function Home() {
   const isRailDraggingRef = useRef(false);
   const [dragTranslate, setDragTranslate] = useState<number | null>(null);
 
+  /**
+   * Hauteur réelle d'un panneau, mesurée sur le conteneur `h-dvh`.
+   *
+   * Les panneaux sont dimensionnés en CSS (`h-dvh`) mais déplacés en JS. Tant
+   * que le déplacement se calculait sur `window.innerHeight`, les deux
+   * divergeaient : `dvh` se recalcule en continu quand la barre d'adresse
+   * mobile apparaît ou disparaît, alors qu'`innerHeight` n'était relu qu'au
+   * rendu React suivant — et aucun écouteur de redimensionnement ne
+   * provoquait ce rendu. Le rail se décalait donc du panneau, laissant voir
+   * une bande de l'écran voisin, et le seuil de bascule du glissement se
+   * mesurait sur une hauteur fausse.
+   *
+   * Un `ResizeObserver` sur l'élément qui porte `h-dvh` rend CSS et JS
+   * d'accord par construction : c'est la même hauteur, plus une estimation.
+   */
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [panelHeight, setPanelHeight] = useState(0);
+
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const measure = () => setPanelHeight(el.getBoundingClientRect().height);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const screenTranslate = useCallback(
-    (s: "studio" | "templates") =>
-      s === "templates" ? -window.innerHeight : 0,
-    [],
+    (s: "studio" | "templates") => {
+      if (s !== "templates") return 0;
+      // Avant la première mesure — rendu serveur, tout premier rendu client —
+      // on retombe sur `innerHeight` plutôt que sur 0, sinon le rail
+      // afficherait brièvement le studio alors que l'écran est « templates ».
+      if (panelHeight > 0) return -panelHeight;
+      return typeof window === "undefined" ? 0 : -window.innerHeight;
+    },
+    [panelHeight],
   );
 
   // Distance avant de trancher entre tap et glissement — en dessous, le
@@ -230,11 +264,12 @@ export default function Home() {
       // sur une carte (lien) — sinon le retour est bloqué partout où
       // l'écran gabarits est couvert de cartes, ce qui le rend impraticable.
       e.preventDefault();
-      const vh = window.innerHeight;
+      // Même hauteur que celle des panneaux : cf. `panelHeight`.
+      const vh = panelHeight || window.innerHeight;
       const next = Math.min(0, Math.max(-vh, drag.startTranslate + deltaY));
       setDragTranslate(next);
     },
-    [screen],
+    [panelHeight, screen],
   );
 
   const onRailPointerUp = useCallback(() => {
@@ -244,7 +279,7 @@ export default function Home() {
       isRailDraggingRef.current = false;
       return;
     }
-    const vh = window.innerHeight;
+    const vh = panelHeight || window.innerHeight;
     const traveled = dragTranslate ?? screenTranslate(screen);
     const destination = screen === "templates" ? "studio" : "templates";
     // Bascule dès qu'on a franchi le quart de l'écran DANS LE SENS DU
@@ -264,7 +299,7 @@ export default function Home() {
     setTimeout(() => {
       isRailDraggingRef.current = false;
     }, 0);
-  }, [dragTranslate, screen, screenTranslate]);
+  }, [dragTranslate, panelHeight, screen, screenTranslate]);
 
   // Un glissement confirmé qui s'est terminé sur une carte (lien) ou un
   // bouton ne doit pas aussi déclencher son clic — sinon relâcher après
@@ -608,7 +643,10 @@ export default function Home() {
     // overflow-hidden : clippe le rail pour qu'un seul panneau (h-dvh
     // chacun) soit visible à la fois — le second est physiquement présent
     // juste hors champ, pas démonté.
-    <div className="h-dvh overflow-hidden">
+    // `viewportRef` : c'est CET élément qui porte `h-dvh`, donc la hauteur
+    // qu'un panneau occupe réellement. On la mesure ici plutôt que de la
+    // déduire de `window.innerHeight` — cf. `panelHeight`.
+    <div ref={viewportRef} className="h-dvh overflow-hidden">
       <StudioTopBar
         credits={credits}
         planId={planId}
