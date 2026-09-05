@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import EditPanel from "@/components/EditPanel";
 import { sendAsRedSnap as sendAsRedSnapFn } from "@/lib/share-utils";
 
 /**
@@ -18,14 +19,25 @@ export default function ResultActions({
   canShare,
   onReset,
   onError,
+  onEdited,
+  editLabel,
 }: {
   resultUrl: string;
   hasRedSnap: boolean;
   canShare: boolean;
   onReset: () => void;
   onError: (message: string) => void;
+  /**
+   * Remonte l'URL du rendu retouché. Optionnelle : sans elle, le bouton
+   * « Edit » n'est pas proposé — c'est ce qui laisse inchangés les appelants
+   * qui ne savent pas remplacer leur résultat affiché.
+   */
+  onEdited?: (imageUrl: string) => void;
+  /** Libellé de l'entrée d'origine, repris pour nommer la retouche. */
+  editLabel?: string;
 }) {
   const [sendingRedSnap, setSendingRedSnap] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const download = useCallback(async () => {
     if (!resultUrl) return;
@@ -68,6 +80,22 @@ export default function ResultActions({
     });
   }, [resultUrl, onError]);
 
+  if (editing && onEdited) {
+    return (
+      <div className="mt-4">
+        <EditPanel
+          sourceUrl={resultUrl}
+          label={editLabel}
+          onCancel={() => setEditing(false)}
+          onEdited={(imageUrl) => {
+            setEditing(false);
+            onEdited(imageUrl);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
       <button
@@ -94,6 +122,16 @@ export default function ResultActions({
         >
           Unlock Red Snap
         </Link>
+      )}
+
+      {onEdited && (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="flex h-12 items-center justify-center rounded-3xl border-[1.5px] border-white/20 px-6 text-[16px] font-medium text-white transition active:opacity-90"
+        >
+          Edit
+        </button>
       )}
 
       <button

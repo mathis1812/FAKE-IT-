@@ -3,9 +3,18 @@ import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { refundCredits, spendCredits } from "@/lib/credits";
+import { EDIT_COST } from "@/lib/generation-cost";
 import { persistImageBytes } from "@/lib/gallery-server";
-import { assessTemplateResult, generateGeminiImage } from "@/lib/gemini-jobs";
-import { buildPlacePrompt, buildScenePrompt } from "@/lib/place-prompt";
+import {
+  assessTemplateResult,
+  generateGeminiImage,
+  LITE_IMAGE_MODEL_ID,
+} from "@/lib/gemini-jobs";
+import {
+  buildInPlaceEditPrompt,
+  buildPlacePrompt,
+  buildScenePrompt,
+} from "@/lib/place-prompt";
 import {
   asPlanId,
   isQualityOpen,
@@ -85,7 +94,20 @@ type GenerateBody = {
   variantSlug?: string;
   /** Qualité demandée par le studio libre : "normal" | "high" | "max". */
   quality?: string;
+  /**
+   * Retouche d'un rendu précédent : la description libre de ce que le client
+   * veut changer. `sourceImageUrl` porte alors l'URL du rendu à retoucher,
+   * servie depuis notre bucket `gallery` — déjà en liste blanche, donc rien
+   * à assouplir côté SSRF.
+   *
+   * Exclusif d'un gabarit : les deux imposent un prompt, et les accepter
+   * ensemble laisserait l'un écraser l'autre en silence.
+   */
+  editPrompt?: string;
 };
+
+/** Plafond de la description de retouche, en caractères. */
+const MAX_EDIT_PROMPT_LENGTH = 500;
 
 export async function POST(req: NextRequest) {
   // Un seul fournisseur sur le chemin de génération depuis le 25/08 :
@@ -123,6 +145,30 @@ export async function POST(req: NextRequest) {
     templateSlug,
     variantSlug,
   } = body;
+
+  // Retouche d'un rendu précédent. Refusée si elle arrive avec un gabarit :
+  // les deux imposent un prompt, et accepter la combinaison laisserait l'un
+  // écraser l'autre sans que personne ne le voie.
+  const editRequest =
+    typeof body.editPrompt === "string" ? body.editPrompt.trim() : "";
+  const isEditRequest = editRequest.length > 0;
+
+  if (isEditRequest) {
+    if (typeof templateSlug === "string" && templateSlug.trim()) {
+      return NextResponse.json(
+        { error: "An edit cannot also request a template." },
+        { status: 400 },
+      );
+    }
+    if (editRequest.length > MAX_EDIT_PROMPT_LENGTH) {
+      return NextResponse.json(
+        {
+          error: `Description too long (max ${MAX_EDIT_PROMPT_LENGTH} characters).`,
+        },
+        { status: 400 },
+      );
+    }
+  }
 
   // Un gabarit impose son prompt : celui que le client aurait pu joindre est
   // ignoré, jamais fusionné. Un gabarit inconnu, ou une variante manquante,
@@ -183,7 +229,9 @@ export async function POST(req: NextRequest) {
   // de lieu, le prompt est généré automatiquement par analyse vision ; sans
   // elles, la description libre de l'utilisateur tient lieu de prompt. Il
   // faut l'un ou l'autre, sinon le modèle n'a aucune indication de scène.
-  if (placeUrls.length === 0 && (!prompt || !prompt.trim())) {
+  // Une retouche est exemptée : `editPrompt` EST son indication de scène, et
+  // il a déjà été validé plus haut (non vide, sous le plafond).
+  if (!isEditRequest && placeUrls.length === 0 && (!prompt || !prompt.trim())) {
     return NextResponse.json(
       {
         error:
@@ -255,7 +303,10 @@ export async function POST(req: NextRequest) {
     }
   }
   const resolution = QUALITY_LABEL[quality];
-  const cost = photoCost(quality);
+  // Une retouche a son propre tarif, annoncé au client sur le bouton d'envoi
+  // par `EDIT_COST`. Le dériver de `quality`, qui décrit le studio libre,
+  // ferait payer autre chose que ce qui est affiché.
+  const cost = isEditRequest ? EDIT_COST : photoCost(quality);
 
   let hasCredits: boolean;
   try {
@@ -285,7 +336,12 @@ export async function POST(req: NextRequest) {
   // ce socle.
   const imageInput = [sourceImageUrl];
   let finalPrompt: string;
-  if (isTemplateRequest) {
+  if (isEditRequest) {
+    // `buildInPlaceEditPrompt` était écrit pour exactement ça : appliquer un
+    // seul changement décrit en gardant tout le reste — sujet, pose, lieu,
+    // angle, lumière. Il ne servait jusqu'ici qu'aux pranks.
+    finalPrompt = buildInPlaceEditPrompt(editRequest);
+  } else if (isTemplateRequest) {
     finalPrompt = (prompt as string).trim();
     // Univers (Minecraft, LEGO, GTA V) : joindre l'exemple de rendu comme
     // référence de style améliore nettement la fidélité — plus que
@@ -325,11 +381,14 @@ export async function POST(req: NextRequest) {
     finalPrompt = buildScenePrompt(prompt as string);
   }
 
-  // Certaines catégories rendent mieux sur un autre modèle que le défaut —
-  // les swaps véhicule sur Nano Banana 2 Lite. Cf. `modelForTemplate`.
-  const model = isTemplateRequest
-    ? modelForTemplate(templateSlug as string)
-    : undefined;
+  // Certaines catégories rendent mieux sur un autre modèle que le défaut.
+  // Cf. `modelForTemplate`. Une retouche est une édition chirurgicale, donc
+  // exactement l'exercice où le Lite s'est montré le meilleur.
+  const model = isEditRequest
+    ? LITE_IMAGE_MODEL_ID
+    : isTemplateRequest
+      ? modelForTemplate(templateSlug as string)
+      : undefined;
   const temperature = isTemplateRequest
     ? temperatureForTemplate(templateSlug as string)
     : undefined;

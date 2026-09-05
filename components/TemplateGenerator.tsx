@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RevealBurst, SparkleFrame } from "@/components/MagicSparkles";
 import ResultActions from "@/components/ResultActions";
+import ResultViewer from "@/components/ResultViewer";
 import {
   asPlanId,
   hasRedSnap as planHasRedSnap,
@@ -92,6 +93,9 @@ export default function TemplateGenerator({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
+  // Vue plein ecran du rendu : la vignette le rogne (cadre 9/11 en
+  // object-cover) et le degrade en couvrait la moitie basse.
+  const [viewerOpen, setViewerOpen] = useState(false);
   const [canShare, setCanShare] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
@@ -288,12 +292,21 @@ export default function TemplateGenerator({
         <div className="relative aspect-[9/11] overflow-hidden rounded-t-3xl bg-black">
           {result ? (
             <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={result}
-                alt={`Your ${template.label} result`}
-                className="animate-magic-reveal absolute inset-0 h-full w-full object-cover"
-              />
+              {/* Cliquable : la vignette rogne le rendu, le plein ecran le
+                  montre entier. Cf. ResultViewer. */}
+              <button
+                type="button"
+                onClick={() => setViewerOpen(true)}
+                aria-label="View full size"
+                className="absolute inset-0 h-full w-full cursor-zoom-in"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={result}
+                  alt={`Your ${template.label} result`}
+                  className="animate-magic-reveal absolute inset-0 h-full w-full object-cover"
+                />
+              </button>
               <RevealBurst />
             </>
           ) : (
@@ -361,9 +374,15 @@ export default function TemplateGenerator({
         </div>
 
         {/* Fond de l'image dans le noir de la page, plutôt qu'une coupure
-            nette : reprend le dégradé exact du modèle. */}
+            nette : reprend le dégradé exact du modèle.
+
+            Jamais sur un RÉSULTAT : il y couvrait la moitié basse du rendu du
+            client, qui ne voyait donc que la partie haute de sa propre
+            image. Il n'a de sens que sur l'exemple du gabarit, qu'il fond
+            dans la page. */}
         <div
           aria-hidden
+          hidden={!!result}
           className="pointer-events-none absolute inset-x-0 -bottom-2 h-[43%]"
           style={{
             background:
@@ -396,6 +415,22 @@ export default function TemplateGenerator({
         </p>
       )}
 
+      {viewerOpen && result && (
+        <ResultViewer
+          resultUrl={result}
+          alt={`Your ${template.label} result`}
+          hasRedSnap={hasRedSnap}
+          canShare={canShare}
+          onReset={reset}
+          onError={setError}
+          onEdited={setResult}
+          editLabel={
+            variant ? `${template.label} — ${variant.label}` : template.label
+          }
+          onClose={() => setViewerOpen(false)}
+        />
+      )}
+
       <div className="shrink-0 pb-[calc(env(safe-area-inset-bottom)+8px)]">
         {result ? (
           <ResultActions
@@ -404,6 +439,13 @@ export default function TemplateGenerator({
             canShare={canShare}
             onReset={reset}
             onError={setError}
+            editLabel={
+              variant ? `${template.label} — ${variant.label}` : template.label
+            }
+            // La retouche devient le rendu affiche : elle est elle-meme
+            // retouchable, et Save/Download portent bien sur la derniere
+            // version. L'originale reste dans la galerie.
+            onEdited={setResult}
           />
         ) : (
           <>

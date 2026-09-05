@@ -6,6 +6,7 @@ import { SparkleFrame, RevealBurst } from "@/components/MagicSparkles";
 import StudioTopBar from "@/components/StudioTopBar";
 import { playRevealChime, unlockAudioContext } from "@/lib/reveal-chime";
 import ResultActions from "@/components/ResultActions";
+import ResultViewer from "@/components/ResultViewer";
 import {
   asPlanId,
   hasRedSnap as planHasRedSnap,
@@ -111,6 +112,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
+  // Vue plein ecran du rendu : la vignette le rogne en object-cover.
+  const [viewerOpen, setViewerOpen] = useState(false);
   const [canShare, setCanShare] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
@@ -815,12 +818,21 @@ export default function Home() {
 
             {result ? (
               <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={result}
-                  alt="Your generated scene"
-                  className="animate-magic-reveal h-full w-full object-cover"
-                />
+                {/* Cliquable : la vignette rogne le rendu, le plein ecran le
+                    montre entier. Cf. ResultViewer. */}
+                <button
+                  type="button"
+                  onClick={() => setViewerOpen(true)}
+                  aria-label="View full size"
+                  className="h-full w-full cursor-zoom-in"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={result}
+                    alt="Your generated scene"
+                    className="animate-magic-reveal h-full w-full object-cover"
+                  />
+                </button>
                 <RevealBurst />
               </>
             ) : paywalled ? (
@@ -928,6 +940,19 @@ export default function Home() {
             </p>
           )}
 
+          {viewerOpen && result && (
+            <ResultViewer
+              resultUrl={result}
+              alt="Your generated scene"
+              hasRedSnap={hasRedSnap}
+              canShare={canShare}
+              onReset={reset}
+              onError={setError}
+              onEdited={setResult}
+              onClose={() => setViewerOpen(false)}
+            />
+          )}
+
           {result && (
             <ResultActions
               resultUrl={result}
@@ -935,6 +960,7 @@ export default function Home() {
               canShare={canShare}
               onReset={reset}
               onError={setError}
+              onEdited={setResult}
             />
           )}
         </div>

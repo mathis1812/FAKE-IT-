@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import EditPanel from "@/components/EditPanel";
 
 type GalleryEntry = {
   id: string;
@@ -81,6 +82,9 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
   const [selected, setSelected] = useState<GalleryEntry | null>(null);
   const [sharingId, setSharingId] = useState<string | null>(null);
   const [shareError, setShareError] = useState("");
+  // Retouche en cours sur l'entree ouverte. Remise a false a chaque
+  // ouverture : rouvrir une image doit repartir de la vue de detail.
+  const [editing, setEditing] = useState(false);
 
   const visible =
     filter === "all" ? entries : entries.filter((e) => e.mode === filter);
@@ -158,7 +162,10 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
           <button
             key={entry.id}
             type="button"
-            onClick={() => setSelected(entry)}
+            onClick={() => {
+              setEditing(false);
+              setSelected(entry);
+            }}
             aria-label={`View full size: ${entry.label}`}
             className="relative aspect-square overflow-hidden rounded-2xl bg-[#161616] active:opacity-80"
           >
@@ -194,7 +201,24 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
             className="flex max-h-[85vh] max-w-[90vw] flex-col items-center"
             onClick={(e) => e.stopPropagation()}
           >
-            {selected.mode === "video" ? (
+            {editing && selected.mode === "image" ? (
+              <div className="w-full max-w-[520px]">
+                <EditPanel
+                  sourceUrl={selected.result_url}
+                  label={selected.label}
+                  onCancel={() => setEditing(false)}
+                  onEdited={(imageUrl) => {
+                    setEditing(false);
+                    // La retouche remplace l'image AFFICHEE, pas l'entree en
+                    // base : l'originale reste dans la galerie, et la
+                    // nouvelle y apparait au prochain chargement. On garde
+                    // l'id et la date de l'entree ouverte, qui ne servent
+                    // ici qu'a l'affichage.
+                    setSelected({ ...selected, result_url: imageUrl });
+                  }}
+                />
+              </div>
+            ) : selected.mode === "video" ? (
               <video
                 src={selected.result_url}
                 controls
@@ -211,7 +235,13 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
                 className="max-h-[75vh] max-w-[90vw] rounded-2xl object-contain"
               />
             )}
-            <div className="mt-3 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* Masquee pendant une retouche : EditPanel porte ses propres
+                boutons, les afficher tous les deux donnerait deux jeux
+                d'actions concurrents a l'ecran. */}
+            <div
+              hidden={editing}
+              className="mt-3 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+            >
               <div>
                 <p className="text-sm font-medium text-neutral-100">
                   {selected.label}
@@ -232,6 +262,15 @@ export default function GalleryGrid({ entries }: { entries: GalleryEntry[] }) {
                     className="rounded-xl border border-primary/30 bg-primary/10 px-3.5 py-2 text-xs font-bold text-primary transition hover:border-primary/50 hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {sharingId === selected.id ? "Preparing…" : "Share to Snapchat"}
+                  </button>
+                )}
+                {selected.mode === "image" && (
+                  <button
+                    type="button"
+                    onClick={() => setEditing(true)}
+                    className="rounded-xl border border-white/10 px-3.5 py-2 text-xs font-bold text-neutral-100 transition hover:border-white/20"
+                  >
+                    Edit
                   </button>
                 )}
                 <button

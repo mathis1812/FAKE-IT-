@@ -134,9 +134,21 @@ export function videoCost(duration: VideoDuration): number {
 }
 
 /**
- * Qualité appliquée aux gabarits. Le modèle la fixe à 2K quel que soit le
- * palier (`CRAN_TEMPLATE = "high"`) : un gabarit a un rendu de référence
- * montré au client, il doit sortir au même niveau pour tout le monde.
+ * Palier appliqué aux gabarits, identique pour tous les abonnements : un
+ * gabarit a un rendu de référence montré au client, il doit sortir au même
+ * niveau pour tout le monde.
+ *
+ * ⚠️ Depuis que tous les gabarits tournent sur Nano Banana 2 Lite, cette
+ * constante ne pilote plus que le PRIX. Le modèle refuse `imageSize`, filtré
+ * par `MODELS_WITHOUT_IMAGE_SIZE` dans `gemini-jobs` : la résolution que
+ * `QUALITY_LABEL` en déduit n'est jamais envoyée, et le rendu sort à la
+ * taille fixe du modèle quoi qu'on mette ici.
+ *
+ * D'où `"normal"` depuis le 05/09 : `photoCost` rend 100 crédits au lieu de
+ * 150, sans toucher au rendu. La valeur doit rester alignée sur
+ * `IMAGE_GENERATION_COST`, qui est le montant annoncé au client avant qu'il
+ * ne lance sa génération — les faire diverger ferait payer autre chose que
+ * ce qui est affiché.
  *
  * Le 4K a été essayé le 03/09 puis abandonné : plus lourd et plus lent, sans
  * gain visible. La photo d'entrée dépasse rarement 4000 px, donc demander du
@@ -144,4 +156,4 @@ export function videoCost(duration: VideoDuration): number {
  * pleine résolution d'entrée avait corrigé (cf. `ENCODE_STEPS` dans
  * `lib/studio-image.ts`).
  */
-export const TEMPLATE_QUALITY: ImageQuality = "high";
+export const TEMPLATE_QUALITY: ImageQuality = "normal";
