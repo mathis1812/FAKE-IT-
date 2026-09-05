@@ -229,7 +229,11 @@ export default function Home() {
           screen === "templates" ? (templatesPanelRef.current?.scrollTop ?? 0) : 0,
         confirmed: false,
       };
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      // Capture sur LE RAIL, pas sur `e.target`. La cible est la carte ou
+      // l'image touchée : si elle est re-rendue ou retirée pendant le geste,
+      // la capture se perd, plus aucun pointermove n'arrive, et le rail se
+      // fige à mi-course. Le rail, lui, reste monté d'un bout à l'autre.
+      railRef.current?.setPointerCapture(e.pointerId);
     },
     [screen, screenTranslate],
   );
@@ -300,6 +304,74 @@ export default function Home() {
       isRailDraggingRef.current = false;
     }, 0);
   }, [dragTranslate, panelHeight, screen, screenTranslate]);
+
+  /**
+   * Le navigateur nous retire le geste : défilement natif qu'il a décidé de
+   * prendre, geste système, appel entrant, second doigt posé.
+   *
+   * On ANNULE — le rail revient à son écran courant. Câbler `pointercancel`
+   * sur `onRailPointerUp`, comme c'était le cas, revenait à traiter cet
+   * arrachement comme un relâché délibéré : si le doigt avait déjà parcouru
+   * un quart de hauteur, l'écran basculait alors que l'utilisateur n'avait
+   * rien terminé. C'est la cause des changements d'écran involontaires.
+   */
+  /**
+   * Réclame le geste vertical AVANT que le navigateur ne le prenne.
+   *
+   * Le panneau des gabarits est défilable. Sur mobile, le navigateur décide
+   * dès le premier `touchmove` si un geste vertical lui appartient — et une
+   * fois le défilement lancé, plus rien ne l'annule. Le `preventDefault()`
+   * des gestionnaires de pointeur, appelé seulement après le seuil de dix
+   * pixels, arrivait donc toujours trop tard : le glissement démarrait sur
+   * quelques pixels, le navigateur coupait, le parcours restait sous le
+   * quart de hauteur et le rail retombait sur les gabarits. Vu de
+   * l'utilisateur : le studio s'entrouvre puis se referme, et le retour est
+   * impossible.
+   *
+   * L'écouteur est posé à la main parce que React ne permet pas de choisir
+   * `passive: false`, et qu'un écouteur passif ne peut rien empêcher.
+   *
+   * La décision se prend au premier mouvement, sur le seul cas où elle est
+   * certaine : écran gabarits, liste tout en haut, doigt qui descend. Là, le
+   * geste ne peut être qu'un retour au studio — il n'y a rien à défiler vers
+   * le haut. Tout le reste est laissé au navigateur, donc la liste continue
+   * de défiler normalement.
+   */
+  useEffect(() => {
+    const el = railRef.current;
+    if (!el) return;
+
+    const onTouchMove = (e: TouchEvent) => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      if (drag.confirmed) {
+        e.preventDefault();
+        return;
+      }
+      const touch = e.touches[0];
+      if (!touch) return;
+      if (
+        screen === "templates" &&
+        drag.startScrollTop === 0 &&
+        touch.clientY - drag.startY > 0
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => el.removeEventListener("touchmove", onTouchMove);
+  }, [screen]);
+
+  const onRailPointerCancel = useCallback(() => {
+    dragRef.current = null;
+    setDragTranslate(null);
+    // Même report que pour un relâché : le clic synthétisé doit encore
+    // trouver la garde levée. Cf. `onRailClickCapture`.
+    setTimeout(() => {
+      isRailDraggingRef.current = false;
+    }, 0);
+  }, []);
 
   // Un glissement confirmé qui s'est terminé sur une carte (lien) ou un
   // bouton ne doit pas aussi déclencher son clic — sinon relâcher après
@@ -668,7 +740,7 @@ export default function Home() {
         onPointerDown={onRailPointerDown}
         onPointerMove={onRailPointerMove}
         onPointerUp={onRailPointerUp}
-        onPointerCancel={onRailPointerUp}
+        onPointerCancel={onRailPointerCancel}
         onClickCapture={onRailClickCapture}
         // Glisser depuis une carte déclenche sinon le glissé-déposé natif
         // du navigateur sur son image (dragstart), qui vole le geste : le
