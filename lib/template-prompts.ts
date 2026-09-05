@@ -180,21 +180,23 @@ export function templateUsesStyleReference(templateSlug: string): boolean {
  */
 /**
  * Modèle d'image à employer pour un gabarit, ou `undefined` pour laisser le
- * défaut (Nano Banana Pro).
+ * défaut (Nano Banana Pro), que seul le studio libre utilise désormais.
  *
- * Les swaps véhicule passent sur Nano Banana 2 Lite depuis le 04/09 :
- * comparaison des modèles faite sur des rendus réels, il tient bien mieux les
- * proportions de carrosserie et il est plus rapide. C'était le seul défaut
- * restant sur cette catégorie, et ni le prompt ni `imageConfig` ne l'avaient
- * corrigé — plusieurs allers-retours pour rien avant d'en arriver là.
+ * TOUS les gabarits tournent sur Nano Banana 2 Lite depuis le 05/09. Les
+ * swaps véhicule y sont passés la veille — il tenait bien mieux les
+ * proportions de carrosserie, un défaut que ni le prompt ni `imageConfig`
+ * n'avaient corrigé en plusieurs allers-retours. Les univers ont suivi après
+ * comparaison des rendus GTA sur les deux modèles.
  *
- * Volontairement limité à `swap-vehicule` : les pranks et les univers n'ont
- * pas été jugés sur ce modèle. Ne les basculer qu'après comparaison.
+ * Vérifié sur l'API avant la bascule des univers, qui ont des besoins que les
+ * swaps n'ont pas : le Lite accepte `imageConfig.aspectRatio` et une seconde
+ * image de référence de style, y compris ensemble. Il refuse en revanche
+ * `imageSize` — cf. `MODELS_WITHOUT_IMAGE_SIZE` dans `gemini-jobs`, qui le
+ * filtre. Conséquence assumée : la sortie tombe à ~1200 px de large pour tous
+ * les gabarits, contre 2390 px auparavant sur les univers.
  */
 export function modelForTemplate(templateSlug: string): string | undefined {
-  return categoryOfTemplate(templateSlug)?.slug === "swap-vehicule"
-    ? LITE_IMAGE_MODEL_ID
-    : undefined;
+  return categoryOfTemplate(templateSlug) ? LITE_IMAGE_MODEL_ID : undefined;
 }
 
 /**

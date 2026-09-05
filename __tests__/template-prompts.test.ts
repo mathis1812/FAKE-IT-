@@ -160,11 +160,19 @@ describe("modelForTemplate", () => {
     }
   });
 
-  it("modèle par défaut pour les pranks et les univers", () => {
-    // Non jugés sur le Lite : ils doivent rester sur Nano Banana Pro tant
-    // qu'une comparaison n'a pas été faite.
+  it("Nano Banana 2 Lite aussi pour les pranks et les univers", () => {
     for (const slug of ["voiture-accidentee", "minecraft", "gta-5", "lego"]) {
-      expect(modelForTemplate(slug), slug).toBeUndefined();
+      expect(modelForTemplate(slug), slug).toBe(LITE_IMAGE_MODEL_ID);
+    }
+  });
+
+  it("tous les gabarits du catalogue sont couverts", () => {
+    // Un gabarit ajouté plus tard hériterait du Lite sans qu'on y pense :
+    // ce test le rend explicite plutôt qu'implicite.
+    for (const template of allTemplates()) {
+      expect(modelForTemplate(template.slug), template.slug).toBe(
+        LITE_IMAGE_MODEL_ID,
+      );
     }
   });
 
