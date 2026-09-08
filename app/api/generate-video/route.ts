@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { refundCredits, spendCredits } from "@/lib/credits";
 import { persistVideoFromUrl } from "@/lib/gallery-server";
 import { createFalTask, pollFalTask } from "@/lib/fal-jobs";
-import { buildSeedanceInput, SEEDANCE_MODEL_ID } from "@/lib/seedance";
+import { buildKlingVideoInput, KLING_VIDEO_MODEL_ID } from "@/lib/kling-video";
 import {
   asPlanId,
   isVideoOpen,
@@ -36,7 +36,7 @@ type GenerateVideoBody = {
 };
 
 /**
- * Photo → vidéo, sur Seedance 2.5 via la queue fal.ai.
+ * Photo → vidéo, sur Kling 3.0 via la queue fal.ai.
  *
  * Remplace la route Kling de remplacement d'objet dans une vidéo existante,
  * qui n'avait aucun appelant depuis la migration et savait pourtant débiter
@@ -170,8 +170,8 @@ export async function POST(req: NextRequest) {
   try {
     const task = await createFalTask(
       apiKey,
-      SEEDANCE_MODEL_ID,
-      buildSeedanceInput({
+      KLING_VIDEO_MODEL_ID,
+      buildKlingVideoInput({
         imageUrl: sourceImageUrl,
         prompt: prompt.trim(),
         duration: videoDuration,

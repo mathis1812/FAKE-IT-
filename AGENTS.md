@@ -32,7 +32,7 @@ Deux agents ne travaillent jamais dans la même zone en même temps.
 
 | Zone | Fichiers |
 |---|---|
-| **Génération** | `lib/gemini-jobs.ts`, `lib/place-prompt.ts`, `lib/template-prompts.ts`, `lib/world-prompts.ts`, `lib/templates.ts`, `lib/seedance.ts`, `lib/fal-jobs.ts`, `app/api/generate*` |
+| **Génération** | `lib/gemini-jobs.ts`, `lib/place-prompt.ts`, `lib/template-prompts.ts`, `lib/world-prompts.ts`, `lib/templates.ts`, `lib/kling-video.ts`, `lib/fal-jobs.ts`, `app/api/generate*` |
 | **Interface** | `app/page.tsx`, `app/landing/`, `components/`, `tailwind.config.ts` |
 | **Paiement & comptes** | `app/api/stripe/`, `lib/stripe.ts`, `lib/credits.ts`, `lib/generation-tiers.ts`, `app/account/` |
 | **Schéma** | `supabase/migrations/` |
@@ -88,6 +88,7 @@ qu'une piste a déjà été essayée et abandonnée, et pourquoi.
 | Allonger le prompt de swap véhicule | N'a jamais corrigé les proportions : le défaut venait du modèle | `lib/place-prompt.ts`, `buildVehicleSwapPrompt` |
 | Joindre une 2ᵉ image de référence au swap véhicule | Le décor de la référence contamine tout le rendu | commit `730025f`, annulé par `0ff70c1` |
 | Écraser la photo d'entrée sous la taille de sortie | Le modèle agrandit et invente le micro-détail | `lib/studio-image.ts`, `ENCODE_STEPS` |
+| Seedance 2.5 comme moteur photo → vidéo | 0,221 $/s en 480p et 0,473 $/s en 720p, contre 0,126 $/s pour Kling 3.0 à qualité jugée équivalente : la marge tombait de ~79 % à ~63 %, voire ~21 % | `lib/kling-video.ts`, en-tête |
 
 ## 6. Secrets
 
