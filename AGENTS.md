@@ -32,7 +32,7 @@ Deux agents ne travaillent jamais dans la même zone en même temps.
 
 | Zone | Fichiers |
 |---|---|
-| **Génération** | `lib/gemini-jobs.ts`, `lib/place-prompt.ts`, `lib/template-prompts.ts`, `lib/world-prompts.ts`, `lib/templates.ts`, `app/api/generate*` |
+| **Génération** | `lib/gemini-jobs.ts`, `lib/place-prompt.ts`, `lib/template-prompts.ts`, `lib/world-prompts.ts`, `lib/templates.ts`, `lib/seedance.ts`, `lib/fal-jobs.ts`, `app/api/generate*` |
 | **Interface** | `app/page.tsx`, `app/landing/`, `components/`, `tailwind.config.ts` |
 | **Paiement & comptes** | `app/api/stripe/`, `lib/stripe.ts`, `lib/credits.ts`, `lib/generation-tiers.ts`, `app/account/` |
 | **Schéma** | `supabase/migrations/` |

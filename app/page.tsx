@@ -83,6 +83,7 @@ export default function Home() {
           <StudioCard
             prepared={studio.prepared}
             result={studio.result}
+            resultKind={studio.resultKind}
             loading={studio.loading}
             paywalled={studio.paywalled}
             isDragging={studio.isDragging}
@@ -105,7 +106,11 @@ export default function Home() {
               </p>
             )}
 
-            {viewerOpen && studio.result && (
+            {/* Le plein écran et la retouche ne valent que pour une image :
+                `ResultViewer` rend une `<img>`, et `/api/generate` refuse une
+                vidéo en entrée d'édition. La galerie applique déjà la même
+                règle. */}
+            {viewerOpen && studio.result && studio.resultKind !== "video" && (
               <ResultViewer
                 resultUrl={studio.result}
                 alt="Your generated scene"
@@ -125,7 +130,9 @@ export default function Home() {
                 canShare={canShare}
                 onReset={studio.reset}
                 onError={studio.setError}
-                onEdited={studio.setResult}
+                onEdited={
+                  studio.resultKind === "video" ? undefined : studio.setResult
+                }
               />
             )}
           </StudioCard>
@@ -135,6 +142,11 @@ export default function Home() {
             setUserNote={studio.setUserNote}
             quality={studio.quality}
             setQuality={studio.setQuality}
+            mode={studio.mode}
+            setMode={studio.setMode}
+            videoDuration={studio.videoDuration}
+            setVideoDuration={studio.setVideoDuration}
+            videoOpen={account.videoOpen}
             plan={account.plan}
             canSubmit={studio.canSubmit}
             onGenerate={() => void studio.generate()}

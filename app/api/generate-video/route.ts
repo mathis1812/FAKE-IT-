@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import {
-  VIDEO_GENERATION_COST,
-  refundCredits,
-  spendCredits,
-} from "@/lib/credits";
+import { refundCredits, spendCredits } from "@/lib/credits";
 import { persistVideoFromUrl } from "@/lib/gallery-server";
 import { createFalTask, pollFalTask } from "@/lib/fal-jobs";
+import { buildSeedanceInput, SEEDANCE_MODEL_ID } from "@/lib/seedance";
+import {
+  asPlanId,
+  isVideoOpen,
+  VIDEO_DURATIONS,
+  videoCost,
+  type VideoDuration,
+} from "@/lib/generation-tiers";
 import {
   DISALLOWED_ASSET_URL_MESSAGE,
   isAllowedAssetUrl,
@@ -15,11 +19,6 @@ import {
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const MODEL_ID = "fal-ai/kling-video/o1/video-to-video/edit";
-// La photo de l'objet est transmise via `image_urls`, que Kling référence
-// par `@Image1` dans le prompt (`@Element1` correspond au champ `elements`,
-// que nous n'utilisons pas).
-const OBJECT_REFERENCE_TAG = "Image1";
 const POLL_INTERVAL_MS = 4_000;
 // 230 s au lieu de 280 : le reste du budget `maxDuration` sert à
 // télécharger la vidéo chez fal.ai et à la réhéberger dans notre Storage.
@@ -27,21 +26,31 @@ const POLL_INTERVAL_MS = 4_000;
 // la persistance, et l'utilisateur se retrouverait avec une URL temporaire.
 const POLL_TIMEOUT_MS = 230_000;
 
+const MAX_PROMPT_LENGTH = 500;
+
 type GenerateVideoBody = {
-  sourceVideoUrl?: string;
-  objectImageUrl?: string;
+  sourceImageUrl?: string;
   prompt?: string;
+  duration?: number;
   label?: string;
 };
 
+/**
+ * Photo → vidéo, sur Seedance 2.5 via la queue fal.ai.
+ *
+ * Remplace la route Kling de remplacement d'objet dans une vidéo existante,
+ * qui n'avait aucun appelant depuis la migration et savait pourtant débiter
+ * des crédits.
+ *
+ * L'ordre des contrôles n'est pas indifférent : entrées, liste blanche,
+ * palier, et le débit seulement ensuite. Tout ce qui peut refuser la requête
+ * le fait avant qu'un seul crédit ne bouge.
+ */
 export async function POST(req: NextRequest) {
   const apiKey = process.env.FAL_KEY?.trim();
   if (!apiKey) {
     return NextResponse.json(
-      {
-        error:
-          "Missing API key. Set FAL_KEY in your environment variables.",
-      },
+      { error: "Missing API key. Set FAL_KEY in your environment variables." },
       { status: 500 },
     );
   }
@@ -56,40 +65,45 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { sourceVideoUrl, objectImageUrl, prompt, label } = body;
+  const { sourceImageUrl, prompt, duration, label } = body;
 
-  if (!sourceVideoUrl || typeof sourceVideoUrl !== "string") {
+  if (!sourceImageUrl || typeof sourceImageUrl !== "string") {
     return NextResponse.json(
-      { error: "Missing source video. Upload a file and try again." },
-      { status: 400 },
-    );
-  }
-
-  if (!objectImageUrl || typeof objectImageUrl !== "string") {
-    return NextResponse.json(
-      {
-        error:
-          "Missing replacement object photo. Upload an image and try again.",
-      },
+      { error: "Missing source photo. Upload an image and try again." },
       { status: 400 },
     );
   }
 
   if (!prompt || !prompt.trim()) {
     return NextResponse.json(
-      {
-        error:
-          "Missing prompt. Describe the object replacement to perform in the video.",
-      },
+      { error: "Describe the motion you want in the video." },
       { status: 400 },
     );
   }
 
-  // Anti-SSRF : ces URLs sont transmises telles quelles au fournisseur et
-  // peuvent être téléchargées côté serveur. Elles doivent provenir de nos
-  // hôtes d'hébergement (Supabase Storage pour la vidéo source, kie.ai pour
-  // la photo de l'objet). Contrôle effectué avant tout débit de crédits.
-  if (![sourceVideoUrl, objectImageUrl].every(isAllowedAssetUrl)) {
+  if (prompt.trim().length > MAX_PROMPT_LENGTH) {
+    return NextResponse.json(
+      { error: `Description too long (max ${MAX_PROMPT_LENGTH} characters).` },
+      { status: 400 },
+    );
+  }
+
+  // La durée est validée contre la liste, jamais reprise telle quelle : elle
+  // pilote directement ce que fal.ai nous facture. Une valeur falsifiée à 30
+  // coûterait plus de six fois le tarif d'un 4 s, débité au prix d'un 4 s.
+  if (!VIDEO_DURATIONS.includes(duration as VideoDuration)) {
+    return NextResponse.json(
+      {
+        error: `Invalid duration. Choose ${VIDEO_DURATIONS.join(", ")} seconds.`,
+      },
+      { status: 400 },
+    );
+  }
+  const videoDuration = duration as VideoDuration;
+
+  // Anti-SSRF : cette URL est transmise au fournisseur, qui la télécharge.
+  // Elle doit provenir de notre Storage. Contrôle effectué avant tout débit.
+  if (!isAllowedAssetUrl(sourceImageUrl)) {
     return NextResponse.json(
       { error: DISALLOWED_ASSET_URL_MESSAGE },
       { status: 400 },
@@ -108,9 +122,34 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("plan")
+    .eq("id", user.id)
+    .single();
+  if (profileError) {
+    console.error(
+      `Failed to read plan for user ${user.id}:`,
+      profileError.message,
+    );
+  }
+  const planId = asPlanId(profile?.plan as string | null | undefined);
+
+  // La vidéo est réservée aux paliers Pro et Max. L'interface masque déjà le
+  // mode aux autres ; ce contrôle rattrape une requête falsifiée, sinon un
+  // compte sans palier obtiendrait la génération la plus chère du produit.
+  if (!isVideoOpen(planId)) {
+    return NextResponse.json(
+      { error: "Video is available on the Pro and Max plans." },
+      { status: 403 },
+    );
+  }
+
+  const cost = videoCost(videoDuration);
+
   let hasCredits: boolean;
   try {
-    hasCredits = await spendCredits(user.id, VIDEO_GENERATION_COST);
+    hasCredits = await spendCredits(user.id, cost);
   } catch (err) {
     console.error("Failed to check credits:", err);
     return NextResponse.json(
@@ -128,16 +167,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const finalPrompt =
-    `${prompt.trim()} Integrate the luxury replacement object shown in @${OBJECT_REFERENCE_TAG} photorealistically, ` +
-    "while preserving the original motion, camera angles, lighting and background.";
-
   try {
-    const task = await createFalTask(apiKey, MODEL_ID, {
-      prompt: finalPrompt,
-      video_url: sourceVideoUrl,
-      image_urls: [objectImageUrl],
-    });
+    const task = await createFalTask(
+      apiKey,
+      SEEDANCE_MODEL_ID,
+      buildSeedanceInput({
+        imageUrl: sourceImageUrl,
+        prompt: prompt.trim(),
+        duration: videoDuration,
+      }),
+    );
     const resultUrl = await pollFalTask(apiKey, task, {
       intervalMs: POLL_INTERVAL_MS,
       timeoutMs: POLL_TIMEOUT_MS,
@@ -145,17 +184,14 @@ export async function POST(req: NextRequest) {
     const storedUrl = await persistVideoFromUrl(
       user.id,
       resultUrl,
-      label?.trim() || "Object replacement",
+      label?.trim() || "Video generation",
     );
     return NextResponse.json({ videoUrl: storedUrl });
   } catch (err) {
-    await refundCredits(user.id, VIDEO_GENERATION_COST);
+    await refundCredits(user.id, cost);
     if (err instanceof Error && err.message === "TIMEOUT") {
       return NextResponse.json(
-        {
-          error:
-            "Generation took too long. Try again in a few moments.",
-        },
+        { error: "Generation took too long. Try again in a few moments." },
         { status: 504 },
       );
     }

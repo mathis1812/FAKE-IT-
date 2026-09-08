@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { playRevealChime, unlockAudioContext } from "@/lib/reveal-chime";
-import { maxQualityFor, type ImageQuality } from "@/lib/generation-tiers";
+import {
+  DEFAULT_VIDEO_DURATION,
+  maxQualityFor,
+  type GenerationMode,
+  type ImageQuality,
+  type VideoDuration,
+} from "@/lib/generation-tiers";
 import type { PlanId } from "@/lib/stripe";
 import {
   prepareAndUpload,
@@ -71,6 +77,21 @@ export function useStudioGeneration({
    * connu — un visiteur non abonné reste sur 1K, seul cran non verrouillé.
    */
   const [quality, setQuality] = useState<ImageQuality>("normal");
+
+  /**
+   * Photo ou vidéo. Le mode vit ici et pas dans la barre, parce qu'il change
+   * la route appelée, le coût débité et la nature du résultat — pas seulement
+   * l'apparence des outils.
+   */
+  const [mode, setMode] = useState<GenerationMode>("photo");
+  const [videoDuration, setVideoDuration] =
+    useState<VideoDuration>(DEFAULT_VIDEO_DURATION);
+  /**
+   * Ce que `result` contient. Une vidéo ne se rend pas dans une `<img>`, et
+   * elle n'est pas retouchable : sans ce drapeau, la carte afficherait un
+   * cadre vide et proposerait un bouton Edit qui échouerait côté serveur.
+   */
+  const [resultKind, setResultKind] = useState<GenerationMode>("photo");
 
   const { elapsedSeconds, progressPercent } = useElapsedProgress(
     loading,
@@ -192,25 +213,44 @@ export function useStudioGeneration({
 
     try {
       const sourceImageUrl = await ensureUploaded(prepared);
+      const isVideo = mode === "video";
 
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sourceImageUrl,
-          prompt: userNote.trim(),
-          quality,
-          label: "Image generation",
-        }),
-      });
+      const res = await fetch(
+        isVideo ? "/api/generate-video" : "/api/generate",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            isVideo
+              ? {
+                  sourceImageUrl,
+                  prompt: userNote.trim(),
+                  duration: videoDuration,
+                  label: "Video generation",
+                }
+              : {
+                  sourceImageUrl,
+                  prompt: userNote.trim(),
+                  quality,
+                  label: "Image generation",
+                },
+          ),
+        },
+      );
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         setError(data?.error || "Generation failed. Please try again.");
         return;
       }
-      if (data?.imageUrl) {
-        setResult(data.imageUrl);
+      // Les deux routes ne renvoient pas la même clé : `imageUrl` pour
+      // l'image, `videoUrl` pour la vidéo. `resultKind` est posé AVANT
+      // `result`, sinon la carte rendrait brièvement une vidéo dans une
+      // `<img>` au rendu qui suit.
+      const url = isVideo ? data?.videoUrl : data?.imageUrl;
+      if (url) {
+        setResultKind(isVideo ? "video" : "photo");
+        setResult(url as string);
         void refreshCredits();
       } else {
         setError("Unexpected response from the server. Please try again.");
@@ -228,6 +268,8 @@ export function useStudioGeneration({
     prepared,
     userNote,
     quality,
+    mode,
+    videoDuration,
     isSubscribed,
     ensureUploaded,
     refreshCredits,
@@ -258,6 +300,11 @@ export function useStudioGeneration({
     setIsDragging,
     quality,
     setQuality,
+    mode,
+    setMode,
+    videoDuration,
+    setVideoDuration,
+    resultKind,
     loadingMessageIndex,
     elapsedSeconds,
     progressPercent,

@@ -6,7 +6,11 @@ import {
   isQualityOpen,
   photoCost,
   QUALITY_LABEL,
+  VIDEO_DURATIONS,
+  videoCost,
+  type GenerationMode,
   type ImageQuality,
+  type VideoDuration,
 } from "@/lib/generation-tiers";
 import type { PlanId } from "@/lib/stripe";
 
@@ -54,6 +58,11 @@ export default function PromptBar({
   setUserNote,
   quality,
   setQuality,
+  mode,
+  setMode,
+  videoDuration,
+  setVideoDuration,
+  videoOpen,
   plan,
   canSubmit,
   onGenerate,
@@ -64,6 +73,12 @@ export default function PromptBar({
   setUserNote: (note: string) => void;
   quality: ImageQuality;
   setQuality: (quality: ImageQuality) => void;
+  mode: GenerationMode;
+  setMode: (mode: GenerationMode) => void;
+  videoDuration: VideoDuration;
+  setVideoDuration: (duration: VideoDuration) => void;
+  /** Vidéo ouverte au palier — Pro et Max seulement. */
+  videoOpen: boolean;
   plan: PlanId | null;
   canSubmit: boolean;
   onGenerate: () => void;
@@ -127,6 +142,53 @@ export default function PromptBar({
   useEffect(() => {
     if (!showTools) setResolutionOpen(false);
   }, [showTools]);
+
+  const isVideo = mode === "video";
+
+  // Le sélecteur segmenté reste ouvert en changeant de mode, sinon il
+  // afficherait des durées sous un libellé de résolution le temps d'un rendu.
+  useEffect(() => {
+    setResolutionOpen(false);
+  }, [mode]);
+
+  // Un palier qui perd la vidéo (fin d'abonnement, rétrogradation) ne doit
+  // pas laisser le studio en mode vidéo : le bouton d'envoi afficherait un
+  // coût que la route refuserait ensuite en 403.
+  useEffect(() => {
+    if (!videoOpen && mode === "video") setMode("photo");
+  }, [videoOpen, mode, setMode]);
+
+  const cost = isVideo ? videoCost(videoDuration) : photoCost(quality);
+
+  /**
+   * Le segmenté à droite du mode : crans de résolution en photo, durées en
+   * vidéo. Une seule liste normalisée plutôt que deux blocs JSX jumeaux —
+   * l'animation de repli (max-w-0, jamais display:none) et les rôles ARIA
+   * sont délicats, les dupliquer les ferait diverger.
+   */
+  const options: {
+    key: string;
+    label: string;
+    open: boolean;
+    active: boolean;
+    select: () => void;
+  }[] = isVideo
+    ? VIDEO_DURATIONS.map((d) => ({
+        key: String(d),
+        label: `${d}s`,
+        // Aucune durée n'est verrouillée : le palier ouvre la vidéo ou pas,
+        // et les trois durées vont avec.
+        open: true,
+        active: videoDuration === d,
+        select: () => setVideoDuration(d),
+      }))
+    : IMAGE_QUALITIES.map((q) => ({
+        key: q,
+        label: QUALITY_LABEL[q],
+        open: isQualityOpen(q, plan),
+        active: quality === q,
+        select: () => setQuality(q),
+      }));
 
   return (
     // Pas de gap ici : l'écart avec le textarea vient du mr-2 du bouton
@@ -261,7 +323,7 @@ export default function PromptBar({
                 type="button"
                 onClick={onGenerate}
                 disabled={!canSubmit}
-                aria-label={`Generate for ${photoCost(quality)} credits`}
+                aria-label={`Generate for ${cost} credits`}
                 className="absolute right-1.5 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-[#333333] p-1.5 transition active:opacity-70 disabled:opacity-60"
               >
                 <span className="flex h-full w-full items-center justify-center rounded-full bg-white/15 text-white">
@@ -305,35 +367,55 @@ export default function PromptBar({
                     d'envoi hors champ. min-w-0 autorise ce conteneur à passer
                     sous la largeur de son contenu, condition du défilement. */}
                 <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  {/* Mode : Photo actif, Vidéo présent mais verrouillé — le
-                      moteur image→vidéo n'est pas encore branché. */}
-                  <div className="flex h-12 shrink-0 items-center rounded-full bg-[#333333] p-1">
-                    <span className="flex h-10 items-center justify-center rounded-full bg-primary px-4 text-[14px] font-semibold text-white">
-                      Photo
-                    </span>
-                    {/* Se replie pendant que la résolution est ouverte : les
-                        deux groupes se partagent la même largeur, et c'est ainsi
-                        que le modèle fait de la place aux trois crans plutôt que
-                        de pousser le bouton d'envoi hors de l'écran. */}
-                    <button
-                      type="button"
-                      disabled
-                      title="Video is coming soon"
-                      aria-label="Video (coming soon)"
-                      aria-hidden={resolutionOpen || undefined}
-                      tabIndex={resolutionOpen ? -1 : undefined}
-                      className={`flex h-10 min-w-0 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full text-[14px] font-semibold text-white/40 transition-[max-width,padding] duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                        resolutionOpen
-                          ? "pointer-events-none max-w-0 px-0"
-                          : "max-w-24 px-3"
-                      }`}
-                    >
-                      Video
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
-                        <rect width="14" height="10" x="5" y="11" rx="2" />
-                        <path d="M8 11V7a4 4 0 0 1 8 0" />
-                      </svg>
-                    </button>
+                  {/* Mode : Photo ou Vidéo, comme sur le modèle. Le cran
+                      inactif se replie pendant que le segmenté de droite est
+                      ouvert — les deux groupes se partagent la largeur, et
+                      c'est ainsi que le modèle fait de la place aux trois
+                      crans plutôt que de pousser l'envoi hors de l'écran. */}
+                  <div
+                    className="flex h-12 shrink-0 items-center rounded-full bg-[#333333] p-1"
+                    role="radiogroup"
+                    aria-label="Generation mode"
+                  >
+                    {(["photo", "video"] as const).map((m) => {
+                      const active = mode === m;
+                      const locked = m === "video" && !videoOpen;
+                      const collapsed = resolutionOpen && !active;
+                      return (
+                        <button
+                          key={m}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          disabled={locked || collapsed}
+                          aria-hidden={collapsed || undefined}
+                          tabIndex={collapsed ? -1 : undefined}
+                          title={
+                            locked ? "Video is available on Pro and Max" : undefined
+                          }
+                          onClick={() => setMode(m)}
+                          className={`flex h-10 min-w-0 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full text-[14px] font-semibold capitalize transition-[max-width,padding,background-color,color] duration-[400ms,400ms,300ms,300ms] ease-[cubic-bezier(0.22,1,0.36,1),cubic-bezier(0.22,1,0.36,1),ease,ease] ${
+                            collapsed
+                              ? "pointer-events-none max-w-0 px-0"
+                              : "max-w-24 px-4"
+                          } ${
+                            active
+                              ? "bg-primary text-white"
+                              : locked
+                                ? "text-white/25"
+                                : "text-white/40 active:opacity-70"
+                          }`}
+                        >
+                          {m}
+                          {locked && (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
+                              <rect width="14" height="10" x="5" y="11" rx="2" />
+                              <path d="M8 11V7a4 4 0 0 1 8 0" />
+                            </svg>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   {/* Résolution : segmenté inline 1K/2K/4K, comme le modèle. Le
@@ -343,11 +425,15 @@ export default function PromptBar({
                   <div
                     className="flex h-12 shrink-0 items-center rounded-full bg-[#333333] p-1"
                     role={resolutionOpen ? "radiogroup" : undefined}
-                    aria-label={resolutionOpen ? "Image resolution" : undefined}
+                    aria-label={
+                      resolutionOpen
+                        ? isVideo
+                          ? "Video duration"
+                          : "Image resolution"
+                        : undefined
+                    }
                   >
-                    {IMAGE_QUALITIES.map((q) => {
-                      const open = isQualityOpen(q, plan);
-                      const active = quality === q;
+                    {options.map(({ key, label, open, active, select }) => {
                       // Replié, seul le cran choisi occupe de la place : les
                       // autres passent en max-w-0/px-0 (jamais display:none, pour
                       // que l'ouverture glisse) et sortent de l'ordre de
@@ -356,7 +442,7 @@ export default function PromptBar({
                       const collapsed = !resolutionOpen && !active;
                       return (
                         <button
-                          key={q}
+                          key={key}
                           type="button"
                           disabled={!open || collapsed}
                           aria-hidden={collapsed || undefined}
@@ -366,7 +452,7 @@ export default function PromptBar({
                               setResolutionOpen(true);
                               return;
                             }
-                            setQuality(q);
+                            select();
                             setResolutionOpen(false);
                           }}
                           {...(resolutionOpen
@@ -374,7 +460,9 @@ export default function PromptBar({
                             : {
                                 "aria-haspopup": true,
                                 "aria-expanded": false,
-                                "aria-label": `Resolution: ${QUALITY_LABEL[q]}`,
+                                "aria-label": isVideo
+                                  ? `Duration: ${label}`
+                                  : `Resolution: ${label}`,
                               })}
                           className={`flex h-10 min-w-0 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-full text-[14px] font-semibold tabular-nums transition-[max-width,padding,background-color,color] duration-[400ms,400ms,300ms,300ms] ease-[cubic-bezier(0.22,1,0.36,1),cubic-bezier(0.22,1,0.36,1),ease,ease] ${
                             collapsed
@@ -390,7 +478,7 @@ export default function PromptBar({
                                 : "text-white/25"
                           }`}
                         >
-                          {QUALITY_LABEL[q]}
+                          {label}
                           {!open && (
                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
                               <rect width="18" height="11" x="3" y="11" rx="2" />
@@ -410,14 +498,14 @@ export default function PromptBar({
                   type="button"
                   onClick={onGenerate}
                   disabled={!canSubmit}
-                  aria-label={`Generate for ${photoCost(quality)} credits`}
+                  aria-label={`Generate for ${cost} credits`}
                   className="flex h-12 shrink-0 items-center gap-1.5 rounded-full bg-[#333333] pl-3.5 pr-1.5 transition active:opacity-70 disabled:opacity-60"
                 >
                   <span className="flex items-center gap-1 text-[15px] font-bold tabular-nums text-white">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                       <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
                     </svg>
-                    {photoCost(quality)}
+                    {cost}
                   </span>
                   <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white">
                     <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { SparkleFrame, RevealBurst } from "@/components/MagicSparkles";
+import type { GenerationMode } from "@/lib/generation-tiers";
 import type { PreparedImage } from "@/lib/studio-image";
 import { GENERATION_LOADING_MESSAGES } from "./useElapsedProgress";
 
@@ -25,6 +26,7 @@ const PAYWALL_PREVIEW_IMAGE = "/landing/rooftop.jpg";
 export default function StudioCard({
   prepared,
   result,
+  resultKind,
   loading,
   paywalled,
   isDragging,
@@ -41,6 +43,8 @@ export default function StudioCard({
 }: {
   prepared: PreparedImage | null;
   result: string;
+  /** Ce que `result` contient — une vidéo ne se rend pas dans une `<img>`. */
+  resultKind: GenerationMode;
   loading: boolean;
   paywalled: boolean;
   isDragging: boolean;
@@ -144,7 +148,23 @@ export default function StudioCard({
             onChange={onInputChange}
           />
 
-          {result ? (
+          {result && resultKind === "video" ? (
+            <>
+              {/* Pas de plein écran ni de zoom sur une vidéo : elle porte ses
+                  propres commandes, et un bouton par-dessus les intercepterait.
+                  `object-contain` plutôt que `cover` — une vidéo rognée perd
+                  son cadrage, et il n'y a pas de vue entière pour compenser. */}
+              <video
+                src={result}
+                controls
+                playsInline
+                autoPlay
+                loop
+                className="h-full w-full bg-black object-contain"
+              />
+              <RevealBurst />
+            </>
+          ) : result ? (
             <>
               {/* Cliquable : la vignette rogne le rendu, le plein ecran le
                   montre entier. Cf. ResultViewer. */}
