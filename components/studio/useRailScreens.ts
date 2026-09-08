@@ -112,11 +112,8 @@ export function useRailScreens() {
             : 0,
         confirmed: false,
       };
-      // Capture sur LE RAIL, pas sur `e.target`. La cible est la carte ou
-      // l'image touchée : si elle est re-rendue ou retirée pendant le geste,
-      // la capture se perd, plus aucun pointermove n'arrive, et le rail se
-      // fige à mi-course. Le rail, lui, reste monté d'un bout à l'autre.
-      railRef.current?.setPointerCapture(e.pointerId);
+      // Aucune capture de pointeur ici — elle est prise plus tard, au moment
+      // où le geste devient un vrai glissement. Voir `onRailPointerMove`.
     },
     [screen, screenTranslate],
   );
@@ -145,6 +142,25 @@ export function useRailScreens() {
         }
         drag.confirmed = true;
         isRailDraggingRef.current = true;
+
+        // La capture est prise ICI, et pas au premier contact.
+        //
+        // Sur LE RAIL, pas sur `e.target` : la cible est la carte ou l'image
+        // touchée, et si elle est re-rendue ou retirée pendant le geste, la
+        // capture se perd, plus aucun pointermove n'arrive, et le rail se
+        // fige à mi-course. Le rail, lui, reste monté d'un bout à l'autre.
+        //
+        // Mais la prendre dès `pointerdown` cassait TOUS les clics du rail :
+        // la capture détourne le `pointerup` vers l'élément capturant, et le
+        // navigateur en déduit que le `click` appartient au rail plutôt qu'au
+        // bouton touché. Le bouton ne recevait donc jamais son `onClick` —
+        // c'est ce qui rendait les sélecteurs de résolution et de mode
+        // inertes. Relevé le 08/09 : `pointerdown` sur « 2K », `pointerup` et
+        // `click` sur le rail.
+        //
+        // Ici, le seuil est déjà franchi : le geste ne peut plus devenir un
+        // tap, donc rien de cliquable n'est sacrifié.
+        railRef.current?.setPointerCapture(e.pointerId);
       }
 
       // Confirmé : on prend la main sur le geste, y compris s'il a commencé
